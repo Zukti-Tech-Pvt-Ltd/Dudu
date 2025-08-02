@@ -1,21 +1,38 @@
-// 
+//
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  DarkTheme,
+  DefaultTheme,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import WelcomeScreen from './src/WelcomeScreen';
 import MapsScreen from './src/GoogleMaps';
+import HomeScreen from './src/screens/home/test';
+import MainTabs from './src/navigations/appNavigations';
+import { useColorScheme } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const scheme = useColorScheme(); // 'dark' | 'light'
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Welcome">
-        <Stack.Screen
+    <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack.Navigator
+        screenOptions={{
+                headerShown: false, // Hides the header on all screens
+
+        }}
+      >
+        {/* <Stack.Screen
           name="Welcome"
-          component={WelcomeScreen}
+          component={HomeScreen}
           options={{ headerShown: false }}
-        />
+          
+        /> */}
+        <Stack.Screen name="maintab" component={MainTabs}  options={{ headerTitle: () => null }}
+ />
+
         <Stack.Screen
           name="GoogleMaps"
           component={MapsScreen}

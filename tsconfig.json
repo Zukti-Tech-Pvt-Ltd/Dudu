@@ -2,7 +2,9 @@
   "extends": "@react-native/typescript-config",
    "include": [
     "src",           // or wherever your TS/TSX code lives
-    "global.d.ts"    // or "src/global.d.ts" depending on location
+    "global.d.ts" ,   // or "src/global.d.ts" depending on location
+        "declarations.d.ts"  // add this line if you put the file in root
+
   ]
 }
 
