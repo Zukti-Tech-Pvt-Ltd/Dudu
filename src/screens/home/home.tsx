@@ -1,57 +1,136 @@
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import {
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Pressable,
+  TextInput,
+  ScrollView,
+} from 'react-native';
 import React, { use, useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../supabase/supabase';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { SvgUri } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
+  type RootStackParamList = {
+    Home: undefined;
+    search: { query: string }; // example target screen with params
+
+    GoogleMaps: undefined;
+    // other screens...
+  };
+  type HomeNavigationProp = NativeStackNavigationProp<
+    RootStackParamList,
+    'Home'
+  >;
+
   const getItems = async () => {
     let { data: Services, error } = await supabase.from('Services').select('*');
     if (error) console.error('Supabase error:', error);
 
     return Services;
   };
-    const navigation = useNavigation();
+  const navigation = useNavigation<HomeNavigationProp>();
 
   useEffect(() => {
     navigation.setOptions({
-      title:'home'
-    })
+      title: 'Dudu',
+
+      headerRight: () => (
+        <Pressable
+          className=""
+          onPress={() => navigation.navigate('GoogleMaps')}
+          // onPress={()=>navigation.navigate('Notification')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Image
+            className="pr-12"
+            source={require('../../../assets/navIcons/notification.png')}
+            style={{
+              width: 20,
+              height: 20,
+              resizeMode: 'contain',
+            }}
+          />
+        </Pressable>
+      ),
+    });
     getItems().then(res => setServices(res ?? []));
   }, []);
   console.log(servies);
   const renderItems = ({ item }: { item: any }) => {
     return (
       <View className="flex-col items-center justify-center p-4">
-       
-        <SvgUri
-          uri={item.image }
-          className="w-20 h-20 rounded-full bg-blue-500"
-        />
-        <Text className="ml-3 font-semibold text-white text-center">
+        <View className="shadow-lg rounded-full bg-white p-1 ">
+          <SvgUri uri={item.image} width={50} height={50} fill="#3b82f6" />
+        </View>
+        <Text className="ml-3 font-semibold text-black dark:text-white text-center">
           {item.name}
         </Text>
       </View>
     );
   };
+
+  const renderFeatureProduct = ({ item }: { item: any }) => (
+    <View className="flex-1 m-2 bg-white rounded-xl shadow-md p-4 items-center">
+      <Image
+        source={{ uri: item.image }}
+        className="w-24 h-24 rounded-full shadow-lg"
+      />
+      <Text className="ml-3 font-semibold text-black dark:text-white text-center">
+        {item.name}
+      </Text>
+    </View>
+  );
   return (
     <SafeAreaView>
-       <Text className=' text-white text-lg font-bold ml-3 pl-3'>
+      <Pressable
+        className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
+        onPress={() =>
+          navigation.navigate({ name: 'search', params: { query: '' } })
+        }
+      >
+        <Text className="text-gray-400">Search services...</Text>
+      </Pressable>
+      <ScrollView>
+        <Text className=" text-black dark:text-white text-lg font-bold ml-3 pl-3">
           Services
         </Text>
-      <FlatList
-        data={servies}
-        keyExtractor={item => item.id?.toString() ?? Math.random().toString()}
-        renderItem={renderItems}
-        numColumns={3}
-        contentContainerStyle={{ alignItems: 'center', justifyContent: 'center' }} 
 
-      >
-        <Text>home</Text>
-      </FlatList>
+        <FlatList
+          data={servies}
+          keyExtractor={item => item.id?.toString() ?? Math.random().toString()}
+          renderItem={renderItems}
+          numColumns={4}
+          contentContainerStyle={{
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        ></FlatList>
+        <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3 mt-6">
+          Featured Products
+        </Text>
+        <FlatList
+          data={servies}
+          keyExtractor={item =>
+            'big-' + (item.id?.toString() ?? Math.random().toString())
+          }
+          renderItem={renderFeatureProduct}
+          numColumns={2}
+          scrollEnabled={false} // disable individual scrolling to delegate scrolling to parent ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 10,
+            paddingBottom: 40,
+          }}
+        />
+      </ScrollView>
     </SafeAreaView>
   );
 }

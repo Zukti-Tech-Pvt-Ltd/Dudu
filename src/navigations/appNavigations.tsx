@@ -51,7 +51,7 @@ export default function MainTabs() {
       >
         <Tab.Screen name="home" component={Home} options={{title:"Home",headerShown: true}} />
         {/* <Tab.Screen name="search" component={SearchScreen} /> */}
-                <Tab.Screen name="search" component={HomeScreen} options={{title:"Search",headerShown: true}}/>
+                <Tab.Screen name="search" component={SearchScreen} options={{title:"Search",headerShown: true}}/>
 
         <Tab.Screen name="pay" component={PayScreen}options={{title:"Pay",headerShown: true}} />
         <Tab.Screen name="cart" component={CartScreen} options={{title:"Cart",headerShown: true}}/>
