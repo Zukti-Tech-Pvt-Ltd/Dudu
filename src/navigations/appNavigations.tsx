@@ -22,6 +22,7 @@ const icons: Record<RouteName, ImageSourcePropType> = {
   profile: require('../../assets/navIcons/profile.png'),
 };
 
+
 export default function MainTabs() {
   return (
     <Tab.Navigator
@@ -51,12 +52,12 @@ export default function MainTabs() {
         options={{ title: 'Home', headerShown: true }}
       />
       {/* <Tab.Screen name="search" component={SearchScreen} /> */}
+
       <Tab.Screen
         name="category"
-        component={Category}
+        component={Category} // single Category screen
         options={{ title: 'Category', headerShown: true }}
       />
-
       <Tab.Screen
         name="pay"
         component={PayScreen}

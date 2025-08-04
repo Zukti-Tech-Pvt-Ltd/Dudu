@@ -8,6 +8,7 @@ import {
   Pressable,
   TextInput,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import React, { use, useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,14 +17,15 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { SvgUri } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
+import Header from './header';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
-
+  const [loading, setLoading] = useState(true);
   type RootStackParamList = {
     Home: undefined;
     SearchScreen: { query: string }; // example target screen with params
-    category: { categoryId: string };  // category expects param categoryId
+    category: { categoryId: string ,categoryName:string}; // category expects param categoryId
     GoogleMaps: undefined;
     // other screens...
   };
@@ -32,11 +34,12 @@ export default function Home() {
     'Home'
   >;
 
-
   const getItems = async () => {
+    setLoading(true);
     let { data: Services, error } = await supabase.from('Services').select('*');
-    if (error) console.error('Supabase error:', error);
-    const sortedService=Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
+    const sortedService =
+      Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
+    setLoading(false);
     return sortedService;
   };
 
@@ -44,7 +47,7 @@ export default function Home() {
 
   useEffect(() => {
     navigation.setOptions({
-      title: 'Dudu',
+      headerTitle: () => <Header />,
 
       headerRight: () => (
         <Pressable
@@ -65,29 +68,35 @@ export default function Home() {
         </Pressable>
       ),
     });
-    
+
     getItems().then(res => setServices(res ?? []));
   }, []);
+
   console.log(servies);
   const renderItems = ({ item }: { item: any }) => {
     return (
       <TouchableOpacity
-      onPress={() => navigation.navigate('category',{categoryId:item.id})}
-    >
-      <View className="flex-col items-center justify-center p-4">
-        <View className="shadow-lg rounded-full bg-white p-1 ">
-          <SvgUri uri={item.image} width={50} height={50} fill="#3b82f6" />
-        </View>
-        
-        <Text className="ml-3 font-semibold text-black dark:text-white text-center">
-          {item.name}
-        </Text>
-      </View>
-            </TouchableOpacity>
+        onPress={() => navigation.navigate('category', { categoryId: item.id ,categoryName: item.name})}
+      >
+        <View className="flex-col items-center justify-center p-4">
+          <View className="shadow-lg rounded-full bg-white p-1 ">
+            <SvgUri uri={item.image} width={50} height={50} fill="#3b82f6" />
+          </View>
 
+          <Text className="ml-3 font-semibold text-black dark:text-white text-center">
+            {item.name}
+          </Text>
+        </View>
+      </TouchableOpacity>
     );
   };
-
+if (loading) {
+  return (
+    <SafeAreaView className="flex-1 justify-center items-center">
+      <ActivityIndicator size="large" color="#3b82f6" />
+    </SafeAreaView>
+  );
+}
   const renderFeatureProduct = ({ item }: { item: any }) => (
     <View className="flex-1 m-2 bg-white rounded-xl shadow-md p-4 items-center">
       <Image
@@ -119,7 +128,6 @@ export default function Home() {
           keyExtractor={item => item.id?.toString() ?? Math.random().toString()}
           renderItem={renderItems}
           numColumns={4}
-          
           contentContainerStyle={{
             alignItems: 'center',
             justifyContent: 'center',
