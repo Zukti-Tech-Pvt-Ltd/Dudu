@@ -19,10 +19,11 @@ import { useNavigation } from '@react-navigation/native';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
+
   type RootStackParamList = {
     Home: undefined;
-    search: { query: string }; // example target screen with params
-
+    SearchScreen: { query: string }; // example target screen with params
+    category: { categoryId: string };  // category expects param categoryId
     GoogleMaps: undefined;
     // other screens...
   };
@@ -31,12 +32,14 @@ export default function Home() {
     'Home'
   >;
 
+
   const getItems = async () => {
     let { data: Services, error } = await supabase.from('Services').select('*');
     if (error) console.error('Supabase error:', error);
-
-    return Services;
+    const sortedService=Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
+    return sortedService;
   };
+
   const navigation = useNavigation<HomeNavigationProp>();
 
   useEffect(() => {
@@ -62,19 +65,26 @@ export default function Home() {
         </Pressable>
       ),
     });
+    
     getItems().then(res => setServices(res ?? []));
   }, []);
   console.log(servies);
   const renderItems = ({ item }: { item: any }) => {
     return (
+      <TouchableOpacity
+      onPress={() => navigation.navigate('category',{categoryId:item.id})}
+    >
       <View className="flex-col items-center justify-center p-4">
         <View className="shadow-lg rounded-full bg-white p-1 ">
           <SvgUri uri={item.image} width={50} height={50} fill="#3b82f6" />
         </View>
+        
         <Text className="ml-3 font-semibold text-black dark:text-white text-center">
           {item.name}
         </Text>
       </View>
+            </TouchableOpacity>
+
     );
   };
 
@@ -94,7 +104,7 @@ export default function Home() {
       <Pressable
         className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
         onPress={() =>
-          navigation.navigate({ name: 'search', params: { query: '' } })
+          navigation.navigate({ name: 'SearchScreen', params: { query: '' } })
         }
       >
         <Text className="text-gray-400">Search services...</Text>
@@ -109,6 +119,7 @@ export default function Home() {
           keyExtractor={item => item.id?.toString() ?? Math.random().toString()}
           renderItem={renderItems}
           numColumns={4}
+          
           contentContainerStyle={{
             alignItems: 'center',
             justifyContent: 'center',
