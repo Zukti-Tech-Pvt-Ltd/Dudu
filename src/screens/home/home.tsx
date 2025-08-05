@@ -18,14 +18,16 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SvgUri } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import Header from './header';
+import {  getRandomProducts } from '../../api/homeApi';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [featureProduct, setFeatureProduct] = useState<any[]>([]);
   type RootStackParamList = {
     Home: undefined;
     SearchScreen: { query: string }; // example target screen with params
-    category: { categoryId: string ,categoryName:string}; // category expects param categoryId
+    category: { categoryId: string; categoryName: string }; // category expects param categoryId
     GoogleMaps: undefined;
     // other screens...
   };
@@ -42,6 +44,17 @@ export default function Home() {
     setLoading(false);
     return sortedService;
   };
+
+  // const getFeatureProduct = async () => {
+  //   setLoading(true);
+  //   let { data: Services, error } = await supabase
+  //     .from('FeatureProduct')
+  //     .select('*');
+  //   const sortedService =
+  //     Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
+  //   setLoading(false);
+  //   return sortedService;
+  // };
 
   const navigation = useNavigation<HomeNavigationProp>();
 
@@ -70,13 +83,24 @@ export default function Home() {
     });
 
     getItems().then(res => setServices(res ?? []));
+    getRandomProducts().then(res => setFeatureProduct(res ?? []));
+
+    // const randomProduct = async () => {
+    //   const res = await getRandomProducts();
+    //   setFeatureProduct(res ?? []);
+    // };
   }, []);
 
   console.log(servies);
   const renderItems = ({ item }: { item: any }) => {
     return (
       <TouchableOpacity
-        onPress={() => navigation.navigate('category', { categoryId: item.id ,categoryName: item.name})}
+        onPress={() =>
+          navigation.navigate('category', {
+            categoryId: item.id,
+            categoryName: item.name,
+          })
+        }
       >
         <View className="flex-col items-center justify-center p-4">
           <View className="shadow-lg rounded-full bg-white p-1 ">
@@ -90,13 +114,13 @@ export default function Home() {
       </TouchableOpacity>
     );
   };
-if (loading) {
-  return (
-    <SafeAreaView className="flex-1 justify-center items-center">
-      <ActivityIndicator size="large" color="#3b82f6" />
-    </SafeAreaView>
-  );
-}
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </SafeAreaView>
+    );
+  }
   const renderFeatureProduct = ({ item }: { item: any }) => (
     <View className="flex-1 m-2 bg-white rounded-xl shadow-md p-4 items-center">
       <Image
