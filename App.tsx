@@ -7,10 +7,10 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MapsScreen from './src/GoogleMaps';
-import HomeScreen from './src/screens/home/test';
 import MainTabs from './src/navigations/appNavigations';
 import { useColorScheme } from 'react-native';
 import SearchScreen from './src/screens/search/search';
+import DetailScreen from './src/screens/productDetail/foodDetail';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,6 +39,12 @@ export default function App() {
           component={MapsScreen}
           options={{ title: 'Google Maps' }}
         />
+        <Stack.Screen
+          name="DetailScreen"
+          component={DetailScreen}
+          options={{ title: 'Product Detail' }}
+        />
+
         <Stack.Screen
           name="SearchScreen"
           component={SearchScreen}

@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ImageSourcePropType } from 'react-native';
 
-import HomeScreen from '../screens/home/test';
+// import HomeScreen from '../screens/home/test';
 import SearchScreen from '../screens/search/search';
 import PayScreen from '../screens/pay/pay';
 import CartScreen from '../screens/cart/cart';
@@ -14,7 +14,7 @@ import Category from '../category/category';
 const Tab = createBottomTabNavigator();
 type RouteName = 'home' | 'category' | 'pay' | 'cart' | 'order' | 'profile';
 const icons: Record<RouteName, ImageSourcePropType> = {
-  home: require('../../assets/navIcons/home.png'),~
+  home: require('../../assets/navIcons/home.png'),
   category: require('../../assets/navIcons/category.png'),
   pay: require('../../assets/navIcons/wallet.png'),
   cart: require('../../assets/navIcons/cart.png'),
@@ -30,7 +30,7 @@ export default function MainTabs() {
         tabBarShowLabel: true,
         tabBarStyle: { height: 65 },
         tabBarIcon: ({ focused, size }) => {
-          const imageSource = icons[route.name as RouteName];~
+          const imageSource = icons[route.name as RouteName];
           return (
             <Image
               source={imageSource}
@@ -56,6 +56,17 @@ export default function MainTabs() {
         name="category"
         component={Category} // single Category screen
         options={{ title: 'Category', headerShown: true }}
+        listeners={({ navigation }) => ({
+          tabPress: e => {
+            e.preventDefault();
+            navigation.navigate('category',
+              {
+                categoryId: '12',
+
+                categoryName: 'category',
+              });
+          },
+        })}
       />
       <Tab.Screen
         name="pay"

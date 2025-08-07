@@ -10,25 +10,29 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import React, { use, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../supabase/supabase';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Video from 'react-native-video';
 
 import { SvgUri } from 'react-native-svg';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Header from './header';
-import {  getRandomProducts } from '../../api/homeApi';
+import { getRandomProducts, getVideo } from '../../api/homeApi';
+import  { FeaturedVideo } from './video';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [featureProduct, setFeatureProduct] = useState<any[]>([]);
+  const [fetchVideo, setFetchVideo] = useState<any[]>([]);
   type RootStackParamList = {
     Home: undefined;
     SearchScreen: { query: string }; // example target screen with params
     category: { categoryId: string; categoryName: string }; // category expects param categoryId
     GoogleMaps: undefined;
+    DetailScreen: { productId: string; productName: string };
     // other screens...
   };
   type HomeNavigationProp = NativeStackNavigationProp<
@@ -36,6 +40,13 @@ export default function Home() {
     'Home'
   >;
 
+  const scrollRef = useRef<ScrollView>(null);
+  useFocusEffect(
+    React.useCallback(() => {
+      // Reset scroll to top when screen is focused
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, []),
+  );
   const getItems = async () => {
     setLoading(true);
     let { data: Services, error } = await supabase.from('Services').select('*');
@@ -45,20 +56,11 @@ export default function Home() {
     return sortedService;
   };
 
-  // const getFeatureProduct = async () => {
-  //   setLoading(true);
-  //   let { data: Services, error } = await supabase
-  //     .from('FeatureProduct')
-  //     .select('*');
-  //   const sortedService =
-  //     Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
-  //   setLoading(false);
-  //   return sortedService;
-  // };
-
   const navigation = useNavigation<HomeNavigationProp>();
 
   useEffect(() => {
+      console.log('servies', servies);
+
     navigation.setOptions({
       headerTitle: () => <Header />,
 
@@ -84,8 +86,14 @@ export default function Home() {
 
     getItems().then(res => setServices(res ?? []));
     getRandomProducts().then(res => setFeatureProduct(res ?? []));
+    const fetchVideos = async () => {
+      setLoading(true);
+      const videos = await getVideo();
+      setFetchVideo(videos);
+      setLoading(false);
+    };
 
-    // const randomProduct = async () => {
+    fetchVideos(); // const randomProduct = async () => {
     //   const res = await getRandomProducts();
     //   setFeatureProduct(res ?? []);
     // };
@@ -122,16 +130,65 @@ export default function Home() {
     );
   }
   const renderFeatureProduct = ({ item }: { item: any }) => (
-    <View className="flex-1 m-2 bg-white rounded-xl shadow-md p-4 items-center">
+    <TouchableOpacity
+             onPress={() => navigation.navigate('DetailScreen',{
+            productId: item.id,
+            productName: item.name,
+          })}
+
+    activeOpacity={0.7}
+  >
+    <View
+      className="m-2 bg-white rounded-xl shadow-md items-center p-0 -ml-1 mr-2.5"
+      style={{ width: 185, height: 160 }}
+    >
       <Image
-        source={{ uri: item.image }}
-        className="w-24 h-24 rounded-full shadow-lg"
+        source={{ uri: item.image_url }}
+        style={{
+          width: '100%', // Let the image scale to the container
+          height: 100, // Remains as specified
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          resizeMode: 'cover',
+        }}
       />
-      <Text className="ml-3 font-semibold text-black dark:text-white text-center">
-        {item.name}
-      </Text>
+      <View
+        style={{
+          width: '100%',
+          height: 40,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Text className="font-semibold text-black dark:text-white text-center">
+          {item.name}
+        </Text>
+      </View>
     </View>
+    </TouchableOpacity>
   );
+  // const renderVideo = ({ item }: { item: any }) => (
+  //   <View
+  //     style={{
+  //       width: '100%',
+  //       height: 200,
+  //       marginBottom: 20,
+  //       backgroundColor: 'black',
+  //     }}
+  //   >
+  //     <Video
+  //       source={{ uri: item.video }} // or your video URL
+  //       style={{ width: '100%', height: '100%' }}
+  //       controls={true}
+  //       resizeMode="contain"
+  //       paused={false}
+  //       repeat={true}
+  //       onBuffer={e => console.log('Buffering:', e)}
+  //       onError={e => console.error('Video Error:', e)}
+  //     />
+  //   </View>
+  // );
+  console.log('renderFeatureProduct', featureProduct);
   return (
     <SafeAreaView>
       <Pressable
@@ -142,7 +199,7 @@ export default function Home() {
       >
         <Text className="text-gray-400">Search services...</Text>
       </Pressable>
-      <ScrollView>
+      <ScrollView ref={scrollRef}>
         <Text className=" text-black dark:text-white text-lg font-bold ml-3 pl-3">
           Services
         </Text>
@@ -152,18 +209,23 @@ export default function Home() {
           keyExtractor={item => item.id?.toString() ?? Math.random().toString()}
           renderItem={renderItems}
           numColumns={4}
+          scrollEnabled={false}
           contentContainerStyle={{
             alignItems: 'center',
             justifyContent: 'center',
           }}
         ></FlatList>
+        {/* <HorizontalVideos videos={fetchVideo} /> */}
+<FeaturedVideo />
+
+
         <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3 mt-6">
           Featured Products
         </Text>
         <FlatList
-          data={servies}
+          data={featureProduct}
           keyExtractor={item =>
-            'big-' + (item.id?.toString() ?? Math.random().toString())
+            'big' + (item.id?.toString() ?? Math.random().toString())
           }
           renderItem={renderFeatureProduct}
           numColumns={2}
