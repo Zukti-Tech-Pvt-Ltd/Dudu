@@ -14,14 +14,13 @@ import Category from '../category/category';
 const Tab = createBottomTabNavigator();
 type RouteName = 'home' | 'category' | 'pay' | 'cart' | 'order' | 'profile';
 const icons: Record<RouteName, ImageSourcePropType> = {
-  home: require('../../assets/navIcons/home.png'),
+  home: require('../../assets/navIcons/home.png'),~
   category: require('../../assets/navIcons/category.png'),
   pay: require('../../assets/navIcons/wallet.png'),
   cart: require('../../assets/navIcons/cart.png'),
   order: require('../../assets/navIcons/orders.png'),
   profile: require('../../assets/navIcons/profile.png'),
 };
-
 
 export default function MainTabs() {
   return (
@@ -31,7 +30,7 @@ export default function MainTabs() {
         tabBarShowLabel: true,
         tabBarStyle: { height: 65 },
         tabBarIcon: ({ focused, size }) => {
-          const imageSource = icons[route.name as RouteName];
+          const imageSource = icons[route.name as RouteName];~
           return (
             <Image
               source={imageSource}
