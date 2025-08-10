@@ -9,7 +9,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
+  useColorScheme
 } from 'react-native';
+
 import React, { useRef, useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '../../../supabase/supabase';
@@ -21,19 +23,23 @@ import { SvgUri } from 'react-native-svg';
 import { FeaturedVideo } from './video';
 import PayScreen from '../pay/pay';
 import OrdersScreen from '../order/order';
+import TwoByTwoGrid from '../order/order';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [featureProduct, setFeatureProduct] = useState<any[]>([]);
   const [fetchVideo, setFetchVideo] = useState<any[]>([]);
+  const colorScheme = useColorScheme();
+const isDarkMode = colorScheme === 'dark';
+
 
   type RootStackParamList = {
     Home: undefined;
     SearchScreen: { query: string };
     category: { categoryId: string; categoryName: string };
     GoogleMaps: undefined;
-    DetailScreen: { productId: string; productName: string };
+    DetailScreen: { productId: string; productName: string ; tableName:string}; 
   };
 
   type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -110,13 +116,14 @@ export default function Home() {
       </View>
     </TouchableOpacity>
   );
-
+  console.log("featureProduct=====",featureProduct)
   const renderFeatureProduct = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() =>
         navigation.navigate('DetailScreen', {
           productId: item.id,
           productName: item.name,
+          tableName:item.table
         })
       }
       activeOpacity={0.7}
@@ -160,21 +167,26 @@ export default function Home() {
   }
 
  return (
-  <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView className={`${isDarkMode ? 'bg-gray-900' : 'bg-white'} flex-1`}>
+
     <Pressable
       className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
       onPress={() => navigation.navigate('SearchScreen', { query: '' })}
     >
-      <Text className="text-gray-400">Search services...</Text>
+              <Text className={`${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>
+Search services...</Text>
     </Pressable>
+          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
 
-    <FlatList
-      ListHeaderComponent={
-        <>
-          <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3">Services</Text>
+
+    
+           <Text
+          className={`text-lg font-bold ml-3 pl-3 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
+        >Services</Text>
           <FlatList
             data={servies}
-            keyExtractor={item => item.id?.toString() ?? Math.random().toString()}
+            keyExtractor={(item, index) => item.id?.toString() ?? `index-${index}`}
+
             renderItem={renderItems}
             numColumns={4}
             scrollEnabled={false}
@@ -183,24 +195,19 @@ export default function Home() {
               justifyContent: 'center',
             }}
           />
-
-          <FeaturedVideo />
-          <OrdersScreen />
-
-          <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3 mt-6">
+<Text className={`text-lg font-bold ml-3 pl-3 mt-6 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
             Featured Products
           </Text>
-        </>
-      }
-      data={featureProduct}
-      keyExtractor={item => 'big' + (item.id?.toString() ?? Math.random().toString())}
-      renderItem={renderFeatureProduct}
-      numColumns={2}
-      contentContainerStyle={{
-        paddingHorizontal: 10,
-        paddingBottom: 40,
-      }}
-    />
+<TwoByTwoGrid />
+
+          {/* <FeaturedVideo /> */}
+
+          
+          {/* <OrdersScreen /> */}
+
+          
+      </ScrollView>
+
   </SafeAreaView>
 );
 

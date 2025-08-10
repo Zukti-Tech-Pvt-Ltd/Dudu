@@ -9,185 +9,267 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // or your icon library
 import { supabase } from '../../supabase/supabase';
-import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
+import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { getRandomProducts } from '../api/homeApi';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-type BottomTabParamList = {
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_MARGIN = 8;
+const CARD_WIDTH = (SCREEN_WIDTH - CARD_MARGIN * 3) / 2; // Two columns with margin
+
+
+  type BottomTabParamList = {
   category: { categoryId: string; categoryName: string };
-};
+      DetailScreen: { productId: string; productName: string ; tableName:string}; 
 
+};
+type CategoryNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'category'>;
 type CategoryRouteProp = RouteProp<BottomTabParamList, 'category'>;
 
 export default function Category() {
+const navigation = useNavigation<CategoryNavigationProp>();
+
+  
   const route = useRoute<CategoryRouteProp>();
-  const { categoryId, categoryName } = route.params;
+  var { categoryId, categoryName } = route.params;
+
   const [food, setFood] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<FlatList<any>>(null);
-  const [selected, setSelected] = useState('All');
-  const [name, setName] = useState(categoryName);
-
+  const [selected, setSelected] = useState('');
+  const [name, setName] = useState('');
   const filters = [
     { label: 'All' },
     { label: 'Food' },
+    { label: 'Li Ha Moto' },
+    { label: 'Shop' },
     { label: 'Job' },
     { label: 'Delivery' },
     { label: 'Home' },
     { label: 'Buy/Sell' },
-
-    { label: 'Li Ha Moto' },
-
-    { label: 'Shop' },
-
     { label: 'Games' },
   ];
+
   useFocusEffect(
     React.useCallback(() => {
-      // Reset scroll to top when screen is focused
       scrollRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, []),
   );
-  console.log("categoryName",categoryName)
-  console.log("categoryId",categoryId)
-
+  console.log('categoryName', categoryName);
+  console.log('selected', selected);
   const getItems = async () => {
-  let { data, error } = await supabase
-    .from(categoryName)
-    .select('*')
-    // .eq('service_id', categoryId);
-  if (error) {
-    console.log('Supabase error:', error);
-    return [];
-  }
-  return data || [];
-};
-
+    let { data, error } = await supabase.from(selected).select('*');
+    if (error) return [];
+    return data || [];
+  };
+  useEffect(() => {
+    setSelected(categoryName);
+  }, [categoryName]);
   useEffect(() => {
     setLoading(true);
+    if (!selected) return;
 
-    if (categoryName=='category') {
+    if (selected === 'All' ) {
       getRandomProducts()
-        .then(res => {setFood(res);setLoading(false)})
-        .finally(() => setLoading(false));
-    } else
+        .then(res => {
+          setFood(res);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
+      console.log('selected', selected);
       getItems()
-        .then(res => {setFood(res);setLoading(false)})
-        .finally(() => setLoading(false));
-    // }
-        console.log('========services  =======', food);
+        .then(res => {
+          setFood(res);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+      console.log('food', food);
+    }
+  }, [selected]);
 
-  }, [categoryId, categoryName]);
-
-  // Dummy rating data for illustration. Replace with actual rating from your data if possible.
-
-  if (loading) {
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
+    const isFirstColumn = index % 2 === 0;
+    console.log('item', item);
     return (
-      <SafeAreaView className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </SafeAreaView>
-    );
-  }
-
-  const renderItem = ({ item }: { item: any }) => {
-    return (
-      <View className="flex-1 bg-white rounded-2xl shadow-md m-2">
-        {/* Product Image */}
+      <TouchableOpacity
+      onPress={() =>{
+        if (selected === 'All') {
+           navigation.navigate('DetailScreen', {
+          productId: item.id,
+          productName: item.name,
+          tableName:item.table
+        })
+          
+        }
+        else{
+        navigation.navigate('DetailScreen', {
+          productId: item.id,
+          productName: item.name,
+          tableName:selected
+        })
+      }
+      }
+    }
+      activeOpacity={0.7}
+      >
+      <View
+        className="bg-white rounded-2xl mb-2 mr-2"
+        style={{
+          width: CARD_WIDTH,
+          backgroundColor: 'white',
+          borderRadius: 16,
+          shadowColor: '#888',
+          shadowOpacity: 0.13,
+          shadowRadius: 12,
+          marginBottom: CARD_MARGIN,
+          marginLeft: isFirstColumn ? CARD_MARGIN : CARD_MARGIN / 2,
+          marginRight: isFirstColumn ? CARD_MARGIN / 2 : CARD_MARGIN,
+          elevation: 2,
+        }}
+      >
         <Image
           source={{ uri: item.image_url }}
-          className="w-250 h-24 rounded-t-2xl"
-          style={{ resizeMode: 'cover' }}
+          style={{
+            width: '100%',
+            height: 110,
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            resizeMode: 'cover',
+          }}
         />
-        {/* Product Info */}
-        <View className="p-3 pb-4">
+        <View className="px-3 pb-4 pt-3">
           <Text
-            className="font-semibold text-black text-base mb-1"
+            className="font-bold text-gray-900 text-base mb-1"
             numberOfLines={2}
           >
             {item.name}
           </Text>
-          <View className="flex-row items-center mb-2">
+
+          {/* Rating Row */}
+          <View className="flex-row items-center mb-1.5">
             <Image
               source={require('../../assets/navIcons/star.png')}
-              className="w-4 h-4 tint-yellow-400"
+              style={{ width: 16, height: 16, tintColor: '#fcc419' }}
             />
-            <Text className="ml-1 text-sm text-black font-medium">
+            <Text className="ml-1 text-[13px] font-semibold text-gray-800">
               {item.rate}
             </Text>
             <Text className="ml-1 text-xs text-gray-500">({item.count})</Text>
           </View>
-          <View className="flex-row items-center justify-between mt-auto">
-            <Text className="text-blue-600 font-bold text-base">
+
+          {/* Price + Add button */}
+          <View className="flex-row items-center justify-between">
+            <Text className="text-[#2563eb] font-bold text-[15px]">
               ${item.price ?? 'N/A'}
             </Text>
-            <TouchableOpacity className="bg-blue-500 rounded-full p-2">
-              {/* <Icon name="plus" size={18} color="#fff" /> */}
+            <TouchableOpacity
+              className="rounded-full items-center justify-center"
+              style={{
+                backgroundColor: '#2563eb',
+                padding: 7,
+              }}
+            >
               <Image
                 source={require('../../assets/navIcons/plus.png')}
-                className="w-3 h-3 tint-yellow-400"
+                style={{ width: 16, height: 16, tintColor: '#fff' }}
               />
             </TouchableOpacity>
           </View>
         </View>
       </View>
+      </TouchableOpacity>
     );
   };
 
-  // Top search/filter + products found
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      {/* Search Bar, can be made interactive if needed */}
-      <View className="flex-row items-center mt-4 mx-4 bg-white rounded-xl px-4">
-        <Image
-          source={require('../../assets/navIcons/search.png')}
-          className="w-4 h-4 tint-yellow-400"
-        />
-        <TextInput
-          className="flex-1 h-10 pl-2 text-base"
-          placeholder="Search for products..."
-          placeholderTextColor="#9ca3af"
-        />
+    <SafeAreaView className="flex-1 bg-[#f3f4f6]">
+      {/* Search + Filter */}
+      <View className="m-1.5">
+        {/* Search Bar */}
+        <View className="flex-row items-center bg-white rounded-2xl px-4 h-11">
+          <Image
+            source={require('../../assets/navIcons/search.png')}
+            style={{ width: 16, height: 16, tintColor: '#fcc419' }}
+          />
+          <TextInput
+            className="flex-1 h-10 pl-2 text-[15px]"
+            placeholder="Search for products..."
+            placeholderTextColor="#9ca3af"
+          />
+        </View>
+
+        {/* Filter Row */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mt-4 mb-2 px-0.5"
+          contentContainerStyle={{ flexDirection: 'row', alignItems: 'center' }}
+        >
+          {filters.map((filter, idx) => (
+            <TouchableOpacity
+              key={idx}
+              onPress={() => {
+                setSelected(filter.label);
+              }}
+              className={`px-[18px] h-9 mr-2 rounded-full items-center justify-center `}
+              style={{
+                backgroundColor:
+                  selected === filter.label ? '#2563eb' : '#e0e7ef',
+              }}
+            >
+              <Text
+                className="font-medium text-lg"
+                style={{
+                  color: selected === filter.label ? 'white' : '#374151',
+                }}
+              >
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="px-3 mt-4 mb-1 text-gray-700"
-        contentContainerStyle={{ flexDirection: 'row', alignItems: 'center' }}
-      >
-        {filters.map((filter, index) => (
-          <TouchableOpacity
-            key={index}
-            onPress={() => setSelected(filter.label)}
-            className={`px-6 h-9 mr-2 rounded-full flex items-center justify-center ${
-              selected === filter.label
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            <Text
-              className={`font-medium ${
-                selected === filter.label ? 'text-white' : 'text-gray-600'
-              }text-lg mb-[-1px]`}
-            >
-              {filter.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Product List */}
+      <View className="flex-1">
+        {loading ? (
+          <View className="flex-1 justify-center items-center py-10">
+            <ActivityIndicator size="large" color="#2563eb" />
+          </View>
+        ) : (
+          <FlatList
+            ref={scrollRef}
+            data={food}
+            keyExtractor={(item, index) => `prod-${item.id}-${index}`}
 
-      {/* Product Grid */}
-      <FlatList
-        ref={scrollRef}
-        data={food}
-        keyExtractor={item => `prod-${item.id}`}
-        renderItem={renderItem}
-        numColumns={2}
-        contentContainerClassName="px-2 pb-10"
-        columnWrapperClassName="justify-between"
-      />
+            renderItem={renderItem}
+            numColumns={2}
+            columnWrapperStyle={{
+              justifyContent: 'flex-start',
+            }}
+            contentContainerStyle={{
+              paddingRight: CARD_MARGIN, // extra space on the right
+            }}
+            ListEmptyComponent={() => (
+              <View className="items-center mt-10">
+                <Image
+                  source={require('../../assets/navIcons/empty.png')}
+                  style={{ width: 80, height: 80, marginBottom: 12 }}
+                />
+                <Text className="text-gray-500 text-base">
+                  No products found
+                </Text>
+              </View>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }

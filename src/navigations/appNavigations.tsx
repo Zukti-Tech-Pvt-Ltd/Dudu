@@ -63,7 +63,7 @@ export default function MainTabs() {
               {
                 categoryId: '12',
 
-                categoryName: 'category',
+                categoryName: 'All',
               });
           },
         })}

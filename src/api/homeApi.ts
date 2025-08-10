@@ -24,14 +24,17 @@ export const getRandomProducts = async () => {
   if (foodResult.error) console.error('Food error', foodResult.error);
   if (shopResult.error) console.error('Shop error', shopResult.error);
   if (lihaResult.error) console.error('Li Ha Moto error', lihaResult.error);
+  const food = (foodResult.data || []).map(item=>({...item,table:'Food'}));
+  const shop = (shopResult.data || []).map(item=>({...item,table:'Shop'}));
+  const liha = (lihaResult.data || []).map(item=>({...item,table:'Li Ha Moto'}));
 
   // Pick 2 random items from each dataset
-  const food = getRandomElements(foodResult.data || [], 2);
-  const shop = getRandomElements(shopResult.data || [], 2);
-  const liha = getRandomElements(lihaResult.data || [], 2);
 
   // Combine all as a single array (for flat display)
-  return [...food, ...shop, ...liha];
+  return [...getRandomElements(food, 2),
+    ...getRandomElements(shop, 2),
+    ...getRandomElements(liha, 2),
+    ];
 };
 
 export const getVideo = async () => {

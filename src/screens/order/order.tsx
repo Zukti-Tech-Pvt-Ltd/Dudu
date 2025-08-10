@@ -1,220 +1,170 @@
-import React, { useRef, useState, memo } from 'react';
-import {
-  FlatList,
-  View,
-  Image,
-  Dimensions,
-  StyleSheet,
-  ActivityIndicator,
-  ViewToken,
-} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Image, Pressable, TouchableOpacity, Dimensions } from 'react-native';
 import Video, { VideoRef } from 'react-native-video';
+import { getRandomProducts } from '../../api/homeApi';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 
+type Product = {
+  id: string;
+  image_url: string;
+  name: string;
+  table: string;
+};
+
+type HoldToPlayVideoProps = {
+  thumbnail: string;
+  label: string;
+  videoUri: string;
+  productId: string;
+  productName: string;
+  tableName: string;
+};
+
+type RootStackParamList = {
+  TwoByTwoGrid: { categoryId: string; categoryName: string };
+  DetailScreen: { productId: string; productName: string; tableName: string };
+};
+
+type CategoryNavigationProp = NativeStackNavigationProp<RootStackParamList, 'TwoByTwoGrid'>;
+
+// const DEFAULT_VIDEO = 'https://www.w3schools.com/html/mov_bbb.mp4';
+const DEFAULT_VIDEO = require("../../../assets/images/butterfly.mp4");
 const windowWidth = Dimensions.get('window').width;
-const ITEM_MARGIN = 10;
-const NUM_COLUMNS = 2;
-const PADDING_HORIZONTAL = ITEM_MARGIN;
-const ITEM_HEIGHT = 150;
+const cardMargin = 12;
+const cardWidth = (windowWidth - cardMargin * 3) / 2; // two cards per row with margins
+const videoHeight = cardWidth * (19 / 16); // slightly taller than 16:9
 
-type DataItem = {
-  image: any;
-  video: any;
-};
-
-const data: DataItem[] = [
-  {
-    image: require('../../../assets/images/electronic-products-regulations-singapore.jpg'),
-    video: require('../../../assets/images/9940-221773846_small.mp4'),
-  },
-  {
-    image: require('../../../assets/images/electronics-1.png'),
-    video: require('../../../assets/images/dog.mp4'),
-  },
-  {
-    image: require('../../../assets/images/naco.png'),
-    video: require('../../../assets/images/flower.mp4'),
-  },
-  {
-    image: require('../../../assets/images/sal.png'),
-    video: require('../../../assets/images/street.mp4'),
-  },
-];
-
-// Custom start time in seconds for each video
-const videoStartTimes: { [key: number]: number } = {
-  0: 2,
-  1: 5,
-  2: 0,
-  3: 3,
-};
-
-const itemWidth =
-  (windowWidth - PADDING_HORIZONTAL * 2 - ITEM_MARGIN * (NUM_COLUMNS - 1)) /
-  NUM_COLUMNS;
-
-type VideoItemProps = {
-  item: DataItem;
-  index: number;
-  isVisible: boolean;
-  videoLoaded: boolean;
-  isLastInRow: boolean;
-  onVideoLoad: (index: number) => void;
-  videoRefs: React.MutableRefObject<{ [key: number]: VideoRef | null }>;
-};
-
-const VideoItem = memo(
-  ({
-    item,
-    index,
-    isVisible,
-    videoLoaded,
-    isLastInRow,
-    onVideoLoad,
-    videoRefs,
-  }: VideoItemProps) => {
-    return (
-      <View
-        style={[
-          styles.mediaContainer,
-          {
-            width: itemWidth,
-            marginRight: isLastInRow ? 0 : ITEM_MARGIN,
-          },
-        ]}
-      >
-        <Image source={item.image} style={styles.media} resizeMode="cover" />
-
-        {!videoLoaded && isVisible && (
-          <ActivityIndicator size="large" color="#3b82f6" style={styles.loader} />
-        )}
-
-        <Video
-          ref={(ref) => {
-            videoRefs.current[index] = ref;
-          }}
-          source={item.video}
-          style={[
-            styles.media,
-            styles.videoOverlay,
-            { opacity: isVisible && videoLoaded ? 1 : 0 },
-          ]}
-          paused={!isVisible}
-          resizeMode="cover"
-          repeat
-          muted
-          controls={false}
-          disableFocus={true}
-          fullscreen={false}
-          onLoad={() => onVideoLoad(index)}
-          bufferConfig={{
-            minBufferMs: 5000,
-            maxBufferMs: 15000,
-            bufferForPlaybackMs: 1500,
-            bufferForPlaybackAfterRebufferMs: 3000,
-          }}
-        />
-      </View>
-    );
-  }
-);
-
-export default function OrdersScreen() {
-  const [videosLoaded, setVideosLoaded] = useState<{ [key: number]: boolean }>({});
-  const [currentVisibleIndices, setCurrentVisibleIndices] = useState<Set<number>>(new Set());
-  const flatListRef = useRef<FlatList<DataItem>>(null);
-  const videoRefs = useRef<{ [key: number]: VideoRef | null }>({});
-
-  // Include current, previous, and next video indices as "visible" for preloading
-  const onViewableItemsChanged = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const indices = new Set<number>();
-      viewableItems.forEach((item) => {
-        if (item.index !== null && item.isViewable) {
-          indices.add(item.index);
-          if (item.index > 0) indices.add(item.index - 1);
-          if (item.index < data.length - 1) indices.add(item.index + 1);
-        }
-      });
-      setCurrentVisibleIndices(indices);
-    }
-  );
-
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 100, // your requested 100% visibility threshold
-  });
-
-  const onVideoLoad = (index: number) => {
-    setVideosLoaded((prev) => ({ ...prev, [index]: true }));
-    const ref = videoRefs.current[index];
-    const seekTime = videoStartTimes[index] ?? 0;
-    if (ref && typeof seekTime === 'number') {
-      ref.seek(seekTime);
-    }
-  };
+const HoldToPlayVideo = ({
+  thumbnail,
+  label,
+  videoUri,
+  productId,
+  productName,
+  tableName,
+}: HoldToPlayVideoProps) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<VideoRef>(null);
+  const navigation = useNavigation<CategoryNavigationProp>();
+const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <FlatList
-      ref={flatListRef}
-      data={data}
-      keyExtractor={(_, index) => index.toString()}
-      numColumns={NUM_COLUMNS}
-      columnWrapperStyle={{ justifyContent: 'flex-start' }}
-      contentContainerStyle={{
-        paddingHorizontal: PADDING_HORIZONTAL,
-        paddingVertical: 100,
-      }}
-      renderItem={({ item, index }) => {
-        const isLastInRow = (index + 3) % NUM_COLUMNS === 0;
-        const isVisible = currentVisibleIndices.has(index);
-        const videoLoaded = videosLoaded[index] === true;
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() =>
+        navigation.navigate('DetailScreen', {
+          productId,
+          productName,
+          tableName,
+        })
+      }
+      className="rounded-2xl mb-4 overflow-hidden items-center
+                 bg-white dark:bg-gray-800
+                 shadow-md dark:shadow-black/50"
+      style={{ width: cardWidth }}
+    >
+      <View
+  className="w-full rounded-t-2xl overflow-hidden bg-black relative"
+  style={{ height: videoHeight }}
+>
 
-        return (
-          <VideoItem
-            item={item}
-            index={index}
-            isVisible={isVisible}
-            videoLoaded={videoLoaded}
-            isLastInRow={isLastInRow}
-            onVideoLoad={onVideoLoad}
-            videoRefs={videoRefs}
+        {isPlaying ? (
+          <Video
+            ref={(ref) => {
+              videoRef.current = ref;
+            }}
+            source={{ uri: videoUri }}
+            className="w-full h-full"
+            paused={!isPlaying}
+            resizeMode="cover"
+            onLoadStart={() => setIsLoading(true)}
+  onLoad={() => setIsLoading(false)}
+            repeat
+            muted
+            controls={false}
           />
-        );
-      }}
-      pagingEnabled={false}
-      showsVerticalScrollIndicator={true}
-      onViewableItemsChanged={onViewableItemsChanged.current}
-      viewabilityConfig={viewabilityConfig.current}
-      scrollEventThrottle={16}
-      windowSize={5}
-      initialNumToRender={4}
-      maxToRenderPerBatch={4}
-      removeClippedSubviews={true}
-    />
+        ) : (
+          <Image source={{ uri: thumbnail }} className="w-full h-full" resizeMode="cover" />
+        )}
+  {isPlaying && isLoading && (
+  <View className="absolute inset-0 justify-center items-center bg-black">
+    {/* You can put an ActivityIndicator or text here */}
+    {/* <ActivityIndicator size="large" color="#fff" /> */}
+    <Text className="text-white text-sm">Loading...</Text>
+  </View>
+)}
+
+        <Pressable
+          className="absolute top-0 left-0 right-0 bottom-0"
+          onPressIn={() => {
+            videoRef.current?.seek?.(0);
+            setIsPlaying(true);
+          }}
+          onPressOut={() => setIsPlaying(false)}
+        />
+      </View>
+      <View className="py-2 w-full items-center">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100 capitalize text-center mt-1">
+          {label}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+export default function TwoByTwoGrid() {
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    getRandomProducts().then((res) => setProducts(res ?? []));
+  }, []);
+
+  const gridProducts = products.slice(0, 6);
+
+  return (
+    <View className="flex-1 justify-center
+                    bg-gray-50 dark:bg-gray-900
+                    px-4 py-6"
+    >
+      <View className="flex-row mb-4 justify-between">
+        {gridProducts.slice(0, 2).map((p) => (
+          <HoldToPlayVideo
+            key={p.id}
+            thumbnail={p.image_url}
+            label={p.name}
+            videoUri={DEFAULT_VIDEO}
+            productId={p.id}
+            productName={p.name}
+            tableName={p.table}
+          />
+        ))}
+      </View>
+      <View className="flex-row mb-4 justify-between">
+        {gridProducts.slice(2, 4).map((p) => (
+          <HoldToPlayVideo
+            key={p.id}
+            thumbnail={p.image_url}
+            label={p.name}
+            videoUri={DEFAULT_VIDEO}
+            productId={p.id}
+            productName={p.name}
+            tableName={p.table}
+          />
+        ))}
+      </View>
+      <View className="flex-row justify-between">
+        {gridProducts.slice(4, 6).map((p) => (
+          <HoldToPlayVideo
+            key={p.id}
+            thumbnail={p.image_url}
+            label={p.name}
+            videoUri={DEFAULT_VIDEO}
+            productId={p.id}
+            productName={p.name}
+            tableName={p.table}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mediaContainer: {
-    height: ITEM_HEIGHT,
-    marginBottom: ITEM_MARGIN,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  media: {
-    width: '100%',
-    height: '100%',
-  },
-  videoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  loader: {
-    position: 'absolute',
-    zIndex: 10,
-  },
-});

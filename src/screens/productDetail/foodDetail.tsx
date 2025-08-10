@@ -1,122 +1,149 @@
-import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, SafeAreaView } from "react-native";
-import Icon from "react-native-vector-icons/Feather";
-import { Route, RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  SafeAreaView,
+  ActivityIndicator,
+} from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { supabase } from '../../../supabase/supabase';
 
 const DetailScreen = () => {
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
-  type BottomTabParamsList={
-    product:{productId:string;productName:string}
-  }
+  type BottomTabParamsList = {
+    product: { productId: string; productName: string; tableName: string };
+  };
 
-  type ProductRouteProp=RouteProp<BottomTabParamsList,'product'>
-    const route = useRoute<ProductRouteProp>();
-  
-    const { productId = '', productName = '' } = route.params ?? {};
+  type ProductRouteProp = RouteProp<BottomTabParamsList, 'product'>;
+  const route = useRoute<ProductRouteProp>();
+
+  const { productId = '', productName = '', tableName = '' } = route.params ?? {};
+
+  const getItems = async () => {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .eq('id', productId)
+      .single();
+
+    if (error) {
+      console.log('Supabase error:', error);
+      return null;
+    }
+    return data || null;
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const item = await getItems();
+      if (item) {
+        setProduct(item);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [productName]);
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Back Button */}
-      <View className="absolute top-10 left-4 z-10">
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          className="w-9 h-9 rounded-full bg-black/10 items-center justify-center"
-        >
-          <Icon name="arrow-left" size={26} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Header */}
-      <View className="bg-[#3b82f6] pt-10 pb-5 rounded-b-3xl items-center justify-center relative">
-        <Image
-          source={{ uri: "https://i.imgur.com/Fm5e22l.png" }}
-          className="w-32 h-40 mb-2"
-          style={{ resizeMode: "contain" }}
-        />
-
-        {/* Right icons */}
-        <View className="absolute right-5 top-12 flex-row">
-          <TouchableOpacity>
-            <Icon name="heart" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity className="ml-4">
-            <Icon name="share" size={24} color="#fff" />
-          </TouchableOpacity>
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={{ marginTop: 10 }}>Loading...</Text>
         </View>
-        
-        {/* Organic Badge */}
-        <View className="bg-[#37c563] rounded-2xl px-5 py-1 absolute -bottom-3 self-center">
-          <Text className="text-white font-medium text-base">100% Organic</Text>
-        </View>
-      </View>
+      ) : product ? (
+        <View style={{ flex: 1 }}>
+          {/* Back Button */}
+          <View className="absolute top-10 left-4 z-10">
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className="w-9 h-9 rounded-full bg-black/10 items-center justify-center"
+            >
+              <Image
+                source={require('../../../assets/navIcons/left-arrow.png')}
+                className="w-4 h-4 tint-yellow-400"
+              />
+            </TouchableOpacity>
+          </View>
 
-      {/* Content Card */}
-      <View className="mt-10 mx-2 bg-white rounded-2xl p-5 shadow">
-        <Text className="text-xl font-semibold text-neutral-800 mb-2">
-          Honey Cider (1L)
-        </Text>
-        <View className="flex-row items-center mb-2">
-          <Text className="text-lg font-bold text-[#3b82f6]">$180</Text>
-          <Text className="ml-2 text-base line-through text-gray-400">$210</Text>
-          <View className="bg-yellow-300 rounded px-2 ml-2">
-            <Text className="font-medium text-sm text-gray-800">26% off</Text>
-          </View>
-        </View>
-        <View className="flex-row items-center my-3">
-          <TouchableOpacity
-            onPress={() => setQuantity(Math.max(1, quantity - 1))}
-            className="w-8 h-8 rounded bg-gray-200 items-center justify-center"
-          >
-            <Text className="text-xl text-gray-800">-</Text>
-          </TouchableOpacity>
-          <Text className="mx-4 text-lg font-medium">{quantity}</Text>
-          <TouchableOpacity
-            onPress={() => setQuantity(quantity + 1)}
-            className="w-8 h-8 rounded bg-gray-200 items-center justify-center"
-          >
-            <Text className="text-xl text-gray-800">+</Text>
-          </TouchableOpacity>
-        </View>
+          {/* Header */}
+          <View className="bg-[#3b82f6] pt-10 pb-5 rounded-b-3xl items-center justify-center relative">
+            <Image
+              source={{ uri: product.image_url || 'https://i.imgur.com/Fm5e22l.png' }}
+              className="w-32 h-40 mb-2"
+              style={{ resizeMode: 'contain' }}
+            />
 
-        <Text className="font-bold mt-2 mb-1 text-base">Description</Text>
-        <Text className="text-gray-600 text-sm mb-3">
-          Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since.
-        </Text>
+            {/* Right Icons */}
+            <View className="absolute right-5 top-12 flex-row">
+              <TouchableOpacity>
+                <Image
+                  source={require('../../../assets/navIcons/heart.png')}
+                  className="w-4 h-4 tint-yellow-400"
+                />
+              </TouchableOpacity>
+              <TouchableOpacity className="ml-4">
+                <Image
+                  source={require('../../../assets/navIcons/send.png')}
+                  className="w-4 h-4 tint-yellow-400"
+                />
+              </TouchableOpacity>
+            </View>
 
-        {/* Info Grid */}
-        <View className="flex-row flex-wrap">
-          <View className="w-1/2 my-1">
-            <Text className="text-gray-500 font-semibold text-sm">Type</Text>
-            <Text className="text-base text-gray-800">Yellow honey</Text>
+            {/* Badge */}
+            <View className="bg-[#37c563] rounded-2xl px-5 py-1 absolute -bottom-3 self-center">
+              <Text className="text-white font-medium text-base">100% Organic</Text>
+            </View>
           </View>
-          <View className="w-1/2 my-1">
-            <Text className="text-gray-500 font-semibold text-sm">Weight</Text>
-            <Text className="text-base text-gray-800">500gm</Text>
-          </View>
-          <View className="w-1/2 my-1">
-            <Text className="text-gray-500 font-semibold text-sm">Organic</Text>
-            <Text className="text-base text-green-600 font-bold">✔ Yes</Text>
-          </View>
-          <View className="w-1/2 my-1">
-            <Text className="text-gray-500 font-semibold text-sm">Local Bee keeper</Text>
-            <Text className="text-base text-green-600 font-bold">✔ Yes</Text>
-          </View>
-          <View className="w-1/2 my-1">
-            <Text className="text-gray-500 font-semibold text-sm">Jar Type</Text>
-            <Text className="text-base text-gray-800">Plastic</Text>
-          </View>
-          <View className="w-1/2 my-1">
-            <Text className="text-gray-500 font-semibold text-sm">UMF</Text>
-            <Text className="text-base text-gray-800">Only forManuka</Text>
+
+          {/* Content */}
+          <View className="mt-10 mx-2 bg-white rounded-2xl p-5 shadow">
+            <Text className="text-xl font-semibold text-neutral-800 mb-2">
+              {product.name?.trim()}
+            </Text>
+
+            <View className="flex-row items-center mb-2">
+              <Text className="text-lg font-bold text-[#3b82f6]">${product.price ?? 0}</Text>
+            </View>
+
+            {/* Quantity Controls */}
+            <View className="flex-row items-center my-3">
+              <TouchableOpacity
+                onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-8 h-8 rounded bg-gray-200 items-center justify-center"
+              >
+                <Text className="text-xl text-gray-800">-</Text>
+              </TouchableOpacity>
+              <Text className="mx-4 text-lg font-medium">{quantity}</Text>
+              <TouchableOpacity
+                onPress={() => setQuantity(quantity + 1)}
+                className="w-8 h-8 rounded bg-gray-200 items-center justify-center"
+              >
+                <Text className="text-xl text-gray-800">+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Description */}
+            <Text className="font-bold mt-2 mb-1 text-base">Description</Text>
+            <Text className="text-gray-600 text-sm mb-3">
+              {product.description || 'No description available.'}
+            </Text>
           </View>
         </View>
-      </View>
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text>No Product Found</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
-
-
 
 export default DetailScreen;
