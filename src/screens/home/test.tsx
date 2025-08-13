@@ -1,57 +1,211 @@
-import React from 'react';
 import {
-  View,
-  Text,
-  Pressable,
-  StatusBar,
-  useColorScheme,
+  FlatList,
   Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import React, { useRef, useEffect, useState } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../../supabase/supabase';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Header from './header';
+import { getRandomProducts, getVideo } from '../../api/homeApi';
+import { SvgUri } from 'react-native-svg';
+import { FeaturedVideo } from './video';
+import PayScreen from '../pay/pay';
+import OrdersScreen from '../order/order';
 
-export default function HomeScreen({ navigation }: any) {
-  const isDarkMode = useColorScheme() === 'dark';
+export default function Home() {
+  const [servies, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [featureProduct, setFeatureProduct] = useState<any[]>([]);
+  const [fetchVideo, setFetchVideo] = useState<any[]>([]);
 
-  return (
-    <>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={isDarkMode ? '#1f2937' : '#f9fafb'}
-      />
+  type RootStackParamList = {
+    Home: undefined;
+    SearchScreen: { query: string };
+    category: { categoryId: string; categoryName: string };
+    GoogleMaps: undefined;
+    DetailScreen: { productId: string; productName: string ; tableName:string}; 
+  };
 
-      <LinearGradient
-        colors={isDarkMode ? ['#0f172a', '#1e293b'] : ['#f3f4f6', '#e0e7ff']}
-        className="flex-1 items-center justify-center p-6"
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        {/* Optional Logo or Image on top */}
-        <Image
-          source={{ uri: 'https://reactnative.dev/img/tiny_logo.png' }}
-          className="w-24 h-24 mb-8 rounded-full shadow-lg"
-          resizeMode="contain"
-        />
+  type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-        <View className="bg-white dark:bg-gray-800 rounded-xl p-8 w-full max-w-md shadow-lg">
-          <Text className="text-4xl font-extrabold text-purple-700 dark:text-purple-400 mb-4 text-center">
-            Welcome to Dudu!
-          </Text>
+  const scrollRef = useRef<ScrollView>(null);
 
-          <Text className="text-lg text-gray-700 dark:text-gray-300 mb-10 text-center leading-relaxed">
-            All Products
-          </Text>
-
-          <Pressable
-            className="bg-purple-600 dark:bg-purple-500 rounded-full py-4 shadow-md active:bg-purple-700 dark:active:bg-purple-600"
-            onPress={() => navigation.navigate('GoogleMaps')}
-            android_ripple={{ color: '#7c3aed' }}
-          >
-            <Text className="text-white text-xl font-semibold tracking-wide text-center">
-              Go to Google Maps
-            </Text>
-          </Pressable>
-        </View>
-      </LinearGradient>
-    </>
+  useFocusEffect(
+    React.useCallback(() => {
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, []),
   );
+
+  const getItems = async () => {
+    setLoading(true);
+    let { data: Services, error } = await supabase.from('Services').select('*');
+    const sortedService = Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
+    setLoading(false);
+    return sortedService;
+  };
+
+  const navigation = useNavigation<HomeNavigationProp>();
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => <Header />,
+      headerRight: () => (
+        <Pressable
+          onPress={() => navigation.navigate('GoogleMaps')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Image
+            source={require('../../../assets/navIcons/notification.png')}
+            style={{
+              width: 20,
+              height: 20,
+              resizeMode: 'contain',
+              marginRight: 12,
+            }}
+          />
+        </Pressable>
+      ),
+    });
+
+    getItems().then(res => setServices(res ?? []));
+    getRandomProducts().then(res => setFeatureProduct(res ?? []));
+    const fetchVideos = async () => {
+      setLoading(true);
+      const videos = await getVideo();
+      setFetchVideo(videos);
+      setLoading(false);
+    };
+    fetchVideos();
+  }, []);
+
+  const windowWidth = Dimensions.get('window').width;
+  const itemWidth = (windowWidth - 40) / 2; // 20 padding each side
+
+  const renderItems = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('category', {
+          categoryId: item.id,
+          categoryName: item.name,
+        })
+      }
+    >
+      <View className="flex-col items-center justify-center p-4">
+        <View className="shadow-lg rounded-full bg-white p-1">
+          <SvgUri uri={item.image} width={50} height={50} fill="#3b82f6" />
+        </View>
+        <Text className="ml-3 font-semibold text-black dark:text-white text-center">
+          {item.name}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+  console.log("featureProduct=====",featureProduct)
+  const renderFeatureProduct = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate('DetailScreen', {
+          productId: item.id,
+          productName: item.name,
+          tableName:item.table
+        })
+      }
+      activeOpacity={0.7}
+    >
+      <View
+        className="m-2 bg-white rounded-xl shadow-md items-center p-0"
+        style={{ width: itemWidth, height: 160 }}
+      >
+        <Image
+          source={{ uri: item.image_url }}
+          style={{
+            width: '100%',
+            height: 100,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            resizeMode: 'cover',
+          }}
+        />
+        <View
+          style={{
+            width: '100%',
+            height: 40,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <Text className="font-semibold text-black dark:text-white text-center">
+            {item.name}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </SafeAreaView>
+    );
+  }
+
+ return (
+  <SafeAreaView style={{ flex: 1 }}>
+    <Pressable
+      className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
+      onPress={() => navigation.navigate('SearchScreen', { query: '' })}
+    >
+      <Text className="text-gray-400">Search services...</Text>
+    </Pressable>
+
+    <FlatList
+      ListHeaderComponent={
+        <>
+          <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3">Services</Text>
+          <FlatList
+            data={servies}
+            keyExtractor={(item, index) => item.id?.toString() ?? `index-${index}`}
+
+            renderItem={renderItems}
+            numColumns={4}
+            scrollEnabled={false}
+            contentContainerStyle={{
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          />
+
+          {/* <FeaturedVideo /> */}
+          
+          {/* <OrdersScreen /> */}
+
+          <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3 mt-6">
+            Featured Products
+          </Text>
+        </>
+      }
+      data={featureProduct}
+      keyExtractor={(item, index) => 'big' + (item.id?.toString() ?? index.toString())}
+
+      renderItem={renderFeatureProduct}
+      numColumns={2}
+      contentContainerStyle={{
+        paddingHorizontal: 10,
+        paddingBottom: 40,
+      }}
+    />
+  </SafeAreaView>
+);
+
 }
