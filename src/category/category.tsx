@@ -15,6 +15,7 @@ import { supabase } from '../../supabase/supabase';
 import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { getRandomProducts } from '../api/homeApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { API_BASE_URL } from '@env';
 
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -133,7 +134,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
         }}
       >
         <Image
-          source={{ uri: item.image_url }}
+          source={{ uri: `${API_BASE_URL}/${item.image.replace(/^\/+/, '')}` }}
           style={{
             width: '100%',
             height: 110,

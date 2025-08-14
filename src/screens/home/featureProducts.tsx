@@ -4,26 +4,35 @@ import Video, { VideoRef } from 'react-native-video';
 import { getRandomProducts } from '../../api/homeApi';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { API_BASE_URL } from '@env';
 
 type Product = {
-  id: string;
-  image_url: string;
+   id: number;
+  image: string;
+  video: string;
   name: string;
-  table: string;
+  category: string;
+  description: string;
+  order: number;
+  price: number;
+  rate: number;
+  count: number;
+  createdAt: string;
+  table:string
 };
 
 type HoldToPlayVideoProps = {
   thumbnail: string;
   label: string;
   videoUri: string;
-  productId: string;
+  productId: number;
   productName: string;
   tableName: string;
 };
 
 type RootStackParamList = {
   TwoByTwoGrid: { categoryId: string; categoryName: string };
-  DetailScreen: { productId: string; productName: string; tableName: string };
+  DetailScreen: { productId: number; productName: string; tableName: string };
 };
 
 type CategoryNavigationProp = NativeStackNavigationProp<RootStackParamList, 'TwoByTwoGrid'>;
@@ -34,6 +43,7 @@ const windowWidth = Dimensions.get('window').width;
 const cardMargin = 12;
 const cardWidth = (windowWidth - cardMargin * 3) / 2; // two cards per row with margins
 const videoHeight = cardWidth * (19 / 16); // slightly taller than 16:9
+
 
 const HoldToPlayVideo = ({
   thumbnail,
@@ -84,8 +94,11 @@ const [isLoading, setIsLoading] = useState(true);
             controls={false}
           />
         ) : (
-          <Image source={{ uri: thumbnail }} className="w-full h-full" resizeMode="cover" />
-        )}
+<Image 
+  source={{ uri: `${API_BASE_URL}/${thumbnail.replace(/^\/+/, '')}` }}
+  className="w-full h-full"
+  resizeMode="cover"
+/>        )}
   {isPlaying && isLoading && (
   <View className="absolute inset-0 justify-center items-center bg-black">
     {/* You can put an ActivityIndicator or text here */}
@@ -130,7 +143,8 @@ export default function TwoByTwoGrid() {
         {gridProducts.slice(0, 2).map((p) => (
           <HoldToPlayVideo
             key={p.id}
-            thumbnail={p.image_url}
+            thumbnail= {`${p.image}` }
+
             label={p.name}
             videoUri={DEFAULT_VIDEO}
             productId={p.id}
@@ -143,7 +157,7 @@ export default function TwoByTwoGrid() {
         {gridProducts.slice(2, 4).map((p) => (
           <HoldToPlayVideo
             key={p.id}
-            thumbnail={p.image_url}
+            thumbnail= {`${p.image}` }
             label={p.name}
             videoUri={DEFAULT_VIDEO}
             productId={p.id}
@@ -156,7 +170,7 @@ export default function TwoByTwoGrid() {
         {gridProducts.slice(4, 6).map((p) => (
           <HoldToPlayVideo
             key={p.id}
-            thumbnail={p.image_url}
+            thumbnail= {`${p.image}` }
             label={p.name}
             videoUri={DEFAULT_VIDEO}
             productId={p.id}

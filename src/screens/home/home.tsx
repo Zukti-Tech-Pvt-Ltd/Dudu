@@ -18,7 +18,7 @@ import { supabase } from '../../../supabase/supabase';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Header from './header';
-import { getRandomProducts, getVideo } from '../../api/homeApi';
+// import { getRandomProducts, getVideo } from '../../api/homeApi';
 import { SvgUri } from 'react-native-svg';
 import { FeaturedVideo } from './video';
 import PayScreen from '../pay/pay';
@@ -26,6 +26,7 @@ import OrdersScreen from '../order/order';
 import { getAllServices } from '../../api/services/serviceApi';
 import { API_BASE_URL } from '@env';
 import TwoByTwoGrid from './featureProducts';
+// import TwoByTwoGrid from './featureProducts';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
@@ -55,13 +56,14 @@ export default function Home() {
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, []),
   );
-
   const getItems = async () => {
     try {
       const data = await getAllServices();
       setServices(data.data); // because your API returns { status, data }
       return data.data;
     } catch (error) {
+      console.log('API_BASE_URL-=-=-=-===-=-==-=errrrrorrr==-');
+
       console.error('Error fetching services:', error);
     } finally {
       setLoading(false);
@@ -92,19 +94,19 @@ export default function Home() {
     });
 
     getItems().then(res => setServices(res ?? []));
-    getRandomProducts().then(res => setFeatureProduct(res ?? []));
-    const fetchVideos = async () => {
-      setLoading(true);
-      const videos = await getVideo();
-      setFetchVideo(videos);
-      setLoading(false);
-    };
-    fetchVideos();
+    // getRandomProducts().then(res => setFeatureProduct(res ?? []));
+    // const fetchVideos = async () => {
+    //   setLoading(true);
+    //   const videos = await getVideo();
+    //   setFetchVideo(videos);
+    //   setLoading(false);
+    // };
+    // fetchVideos();
   }, []);
 
   const windowWidth = Dimensions.get('window').width;
   const itemWidth = (windowWidth - 40) / 2; // 20 padding each side
-
+  console.log('servies', servies);
   const renderItems = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() =>
@@ -117,7 +119,8 @@ export default function Home() {
       <View className="flex-col items-center justify-center p-3.5">
         <View className="shadow-lg rounded-full bg-gray-100 overflow-hidden p-[1px] w-[65px] h-[65px] flex items-center justify-center">
           <Image
-            source={{ uri: `${API_BASE_URL}${item.image}` }}
+              source={{ uri: `${API_BASE_URL}/${item.image.replace(/^\/+/, '')}` }}
+            
             className="w-[110px] h-[110px]"
             resizeMode="cover"
           />
