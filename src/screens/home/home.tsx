@@ -9,7 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
-  useColorScheme
+  useColorScheme,
 } from 'react-native';
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -23,7 +23,9 @@ import { SvgUri } from 'react-native-svg';
 import { FeaturedVideo } from './video';
 import PayScreen from '../pay/pay';
 import OrdersScreen from '../order/order';
-import TwoByTwoGrid from '../order/order';
+import { getAllServices } from '../../api/services/serviceApi';
+import { API_BASE_URL } from '@env';
+import TwoByTwoGrid from './featureProducts';
 
 export default function Home() {
   const [servies, setServices] = useState<any[]>([]);
@@ -31,18 +33,20 @@ export default function Home() {
   const [featureProduct, setFeatureProduct] = useState<any[]>([]);
   const [fetchVideo, setFetchVideo] = useState<any[]>([]);
   const colorScheme = useColorScheme();
-const isDarkMode = colorScheme === 'dark';
-
+  const isDarkMode = colorScheme === 'dark';
 
   type RootStackParamList = {
     Home: undefined;
     SearchScreen: { query: string };
     category: { categoryId: string; categoryName: string };
     GoogleMaps: undefined;
-    DetailScreen: { productId: string; productName: string ; tableName:string}; 
+    DetailScreen: { productId: string; productName: string; tableName: string };
   };
 
-  type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+  type HomeNavigationProp = NativeStackNavigationProp<
+    RootStackParamList,
+    'Home'
+  >;
 
   const scrollRef = useRef<ScrollView>(null);
 
@@ -53,11 +57,15 @@ const isDarkMode = colorScheme === 'dark';
   );
 
   const getItems = async () => {
-    setLoading(true);
-    let { data: Services, error } = await supabase.from('Services').select('*');
-    const sortedService = Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
-    setLoading(false);
-    return sortedService;
+    try {
+      const data = await getAllServices();
+      setServices(data.data); // because your API returns { status, data }
+      return data.data;
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const navigation = useNavigation<HomeNavigationProp>();
@@ -106,24 +114,28 @@ const isDarkMode = colorScheme === 'dark';
         })
       }
     >
-      <View className="flex-col items-center justify-center p-4">
-        <View className="shadow-lg rounded-full bg-white p-1">
-          <SvgUri uri={item.image} width={50} height={50} fill="#3b82f6" />
+      <View className="flex-col items-center justify-center p-3.5">
+        <View className="shadow-lg rounded-full bg-gray-100 overflow-hidden p-[1px] w-[65px] h-[65px] flex items-center justify-center">
+          <Image
+            source={{ uri: `${API_BASE_URL}${item.image}` }}
+            className="w-[110px] h-[110px]"
+            resizeMode="cover"
+          />
         </View>
-        <Text className="ml-3 font-semibold text-black dark:text-white text-center">
+
+        <Text className="mt-0 font-semibold text-black dark:text-white text-center">
           {item.name}
         </Text>
       </View>
     </TouchableOpacity>
   );
-  console.log("featureProduct=====",featureProduct)
   const renderFeatureProduct = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() =>
         navigation.navigate('DetailScreen', {
           productId: item.id,
           productName: item.name,
-          tableName:item.table
+          tableName: item.table,
         })
       }
       activeOpacity={0.7}
@@ -166,49 +178,52 @@ const isDarkMode = colorScheme === 'dark';
     );
   }
 
- return (
-    <SafeAreaView className={`${isDarkMode ? 'bg-gray-900' : 'bg-white'} flex-1`}>
-
-    <Pressable
-      className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
-      onPress={() => navigation.navigate('SearchScreen', { query: '' })}
+  return (
+    <SafeAreaView
+      className={`${isDarkMode ? 'bg-gray-900' : 'bg-white'} flex-1`}
     >
-              <Text className={`${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>
-Search services...</Text>
-    </Pressable>
-          <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <Pressable
+        className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
+        onPress={() => navigation.navigate('SearchScreen', { query: '' })}
+      >
+        <Text className={`${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>
+          Search services...
+        </Text>
+      </Pressable>
+      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+        <Text
+          className={`text-lg font-bold ml-3 pl-3 ${
+            isDarkMode ? 'text-gray-100' : 'text-gray-900'
+          }`}
+        >
+          Services
+        </Text>
+        <FlatList
+          data={servies}
+          keyExtractor={(item, index) =>
+            item.id?.toString() ?? `index-${index}`
+          }
+          renderItem={renderItems}
+          numColumns={4}
+          scrollEnabled={false}
+          contentContainerStyle={{
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        />
+        <Text
+          className={`text-lg font-bold ml-3 pl-3 mt-6 ${
+            isDarkMode ? 'text-gray-100' : 'text-gray-900'
+          }`}
+        >
+          Featured Products
+        </Text>
+        <TwoByTwoGrid />
 
+        {/* <FeaturedVideo /> */}
 
-    
-           <Text
-          className={`text-lg font-bold ml-3 pl-3 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
-        >Services</Text>
-          <FlatList
-            data={servies}
-            keyExtractor={(item, index) => item.id?.toString() ?? `index-${index}`}
-
-            renderItem={renderItems}
-            numColumns={4}
-            scrollEnabled={false}
-            contentContainerStyle={{
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          />
-<Text className={`text-lg font-bold ml-3 pl-3 mt-6 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}>
-            Featured Products
-          </Text>
-<TwoByTwoGrid />
-
-          {/* <FeaturedVideo /> */}
-
-          
-          {/* <OrdersScreen /> */}
-
-          
+        {/* <OrdersScreen /> */}
       </ScrollView>
-
-  </SafeAreaView>
-);
-
+    </SafeAreaView>
+  );
 }

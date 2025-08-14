@@ -1,134 +1,72 @@
-import React, { useRef, useState, useEffect } from 'react';
-import {
-  FlatList,
-  View,
-  Image,
-  Dimensions,
-  StyleSheet,
-  ActivityIndicator,
-  ViewToken,
-} from 'react-native';
-import Video from 'react-native-video';
-
-const windowWidth = Dimensions.get('window').width;
-
-const data = [
-  {
-    image: require('../../../assets/images/electronic-products-regulations-singapore.jpg'),
-    video: require('../../../assets/images/9940-221773846_small.mp4'),
-  },
-  {
-    image: require('../../../assets/images/electronics-1.png'),
-    video: require('../../../assets/images/dog.mp4'),
-  },
-  {
-    image: require('../../../assets/images/Untitled design (5).png'),
-    video: require('../../../assets/images/flower.mp4'),
-  },
-  {
-    image: require('../../../assets/images/Untitled design (4).png'),
-    video: require('../../../assets/images/street.mp4'),
-  },
-];
+// src/screens/ServicesScreen.tsx
+import React, { useEffect, useState } from 'react';
+import { View, Text, Image, FlatList, StyleSheet } from 'react-native';
+import { getAllServices } from '../../api/services/serviceApi';
+import { API_BASE_URL } from '@env';
 
 export default function PayScreen() {
-  const [currentVisibleIndex, setCurrentVisibleIndex] = useState<number | null>(null);
-  const [videosLoaded, setVideosLoaded] = useState<{ [key: number]: boolean }>({});
-  const flatListRef = useRef<FlatList>(null);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    if (viewableItems.length > 0) {
-      setCurrentVisibleIndex(viewableItems[0].index);
-    }
-  });
+  useEffect(() => {
+    fetchServices();
+  }, []);
 
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 100,
-  });
-
-  const onVideoLoad = (index: number) => {
-    setVideosLoaded(prev => ({ ...prev, [index]: true }));
-  };
-
-  // 👇 Force FlatList to update visibility check on layout
-  const handleLayout = () => {
-    if (flatListRef.current) {
-      flatListRef.current.recordInteraction(); // triggers re-evaluation of visible items
+  const fetchServices = async () => {
+    try {
+      const data = await getAllServices();
+      setServices(data.data); // because your API returns { status, data }
+    } catch (error) {
+      console.error('Error fetching services:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const renderItem = ({ item }: { item: any }) => (
+    <View style={styles.card}>
+      <Image source={{ uri:`${API_BASE_URL}${item.image} `}} style={styles.image} />
+      <Text style={styles.name}>{item.name}</Text>
+    </View>
+  );
 
   return (
-    <FlatList
-      ref={flatListRef}
-      onLayout={handleLayout}
-      data={data}
-      keyExtractor={(_, index) => index.toString()}
-      renderItem={({ item, index }) => {
-        const isVisible = currentVisibleIndex === index;
-        const videoLoaded = videosLoaded[index] === true;
-
-        return (
-          <View style={styles.mediaContainer}>
-            <Image source={item.image} style={styles.media} resizeMode="cover" />
-            {isVisible && (
-              <>
-                {!videoLoaded && (
-                  <ActivityIndicator size="large" color="#3b82f6" style={styles.loader} />
-                )}
-                <Video
-                  source={item.video}
-                  style={[
-                    styles.media,
-                    styles.videoOverlay,
-                    { opacity: videoLoaded ? 1 : 0 },
-                  ]}
-                  paused={!isVisible}
-                  resizeMode="cover"
-                  repeat
-                  muted
-                  controls={false}
-                  disableFocus={true}
-                  fullscreen={false}
-                  onLoad={() => onVideoLoad(index)}
-                />
-              </>
-            )}
-          </View>
-        );
-      }}
-      pagingEnabled={false}
-      showsVerticalScrollIndicator={true}
-      onViewableItemsChanged={onViewableItemsChanged.current}
-      viewabilityConfig={viewabilityConfig.current}
-      contentContainerStyle={{ paddingVertical: 20 }}
-    />
+    <View style={styles.container}>
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : (
+        <FlatList
+          data={services}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+        />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mediaContainer: {
-    height: 300,
-    width: windowWidth * 0.9,
-    marginVertical: 10,
-    alignSelf: 'center',
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-    position: 'relative',
-    justifyContent: 'center',
+  container: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#fff',
+  },
+  card: {
+    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 10,
+    backgroundColor: '#f5f5f5',
+    padding: 10,
+    borderRadius: 8,
   },
-  media: {
-    width: '100%',
-    height: '100%',
+  image: {
+    width: 50,
+    height: 50,
+    marginRight: 10,
+    borderRadius: 5,
   },
-  videoOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  loader: {
-    position: 'absolute',
-    zIndex: 10,
+  name: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
