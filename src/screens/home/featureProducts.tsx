@@ -95,7 +95,7 @@ const [isLoading, setIsLoading] = useState(true);
           />
         ) : (
 <Image 
-  source={{ uri: `${API_BASE_URL}/${thumbnail.replace(/^\/+/, '')}` }}
+  source={{ uri: `${API_BASE_URL}/${thumbnail}` }}
   className="w-full h-full"
   resizeMode="cover"
 />        )}

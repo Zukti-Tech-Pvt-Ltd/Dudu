@@ -134,7 +134,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
         }}
       >
         <Image
-          source={{ uri: `${API_BASE_URL}/${item.image.replace(/^\/+/, '')}` }}
+          source={{ uri: `${API_BASE_URL}/${item.image}` }}
           style={{
             width: '100%',
             height: 110,

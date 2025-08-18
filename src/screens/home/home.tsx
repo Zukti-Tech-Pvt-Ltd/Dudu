@@ -119,7 +119,7 @@ export default function Home() {
       <View className="flex-col items-center justify-center p-3.5">
         <View className="shadow-lg rounded-full bg-gray-100 overflow-hidden p-[1px] w-[65px] h-[65px] flex items-center justify-center">
           <Image
-              source={{ uri: `${API_BASE_URL}/${item.image.replace(/^\/+/, '')}` }}
+              source={{ uri: `${API_BASE_URL}/${item.image}` }}
             
             className="w-[110px] h-[110px]"
             resizeMode="cover"
