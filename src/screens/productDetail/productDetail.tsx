@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { supabase } from '../../../supabase/supabase';
+import { getOne } from '../../api/serviceList/productApi';
+import { API_BASE_URL } from '@env';
 
 const DetailScreen = () => {
   const [quantity, setQuantity] = useState(1);
@@ -17,26 +18,29 @@ const DetailScreen = () => {
   const navigation = useNavigation();
 
   type BottomTabParamsList = {
-    product: { productId: string; productName: string; tableName: string };
+    product: { productId: number; productName: string; tableName: string };
   };
 
   type ProductRouteProp = RouteProp<BottomTabParamsList, 'product'>;
   const route = useRoute<ProductRouteProp>();
 
-  const { productId = '', productName = '', tableName = '' } = route.params ?? {};
+  const { productId = 0 } = route.params ?? {};
 
   const getItems = async () => {
-    const { data, error } = await supabase
-      .from(tableName)
-      .select('*')
-      .eq('id', productId)
-      .single();
+    try {
+      console.log('productId', productId);
 
-    if (error) {
-      console.log('Supabase error:', error);
-      return null;
+      const data = await getOne(productId);
+      console.log('data', data);
+      return data || null;
+    } catch (err) {
+      console.log(err);
     }
-    return data || null;
+    // const { data, error } = await supabase
+    //   .from(tableName)
+    //   .select('*')
+    //   .eq('id', productId)
+    //   .single();
   };
 
   useEffect(() => {
@@ -44,17 +48,19 @@ const DetailScreen = () => {
       setLoading(true);
       const item = await getItems();
       if (item) {
-        setProduct(item);
+        setProduct(item.data);
       }
       setLoading(false);
     };
     fetchData();
-  }, [productName]);
-
+  }, [productId]);
+  console.log('product===============', product);
   return (
     <SafeAreaView className="flex-1 bg-white">
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
           <ActivityIndicator size="large" color="#007AFF" />
           <Text style={{ marginTop: 10 }}>Loading...</Text>
         </View>
@@ -74,11 +80,10 @@ const DetailScreen = () => {
           </View>
 
           {/* Header */}
-          <View className="bg-[#3b82f6] pt-10 pb-5 rounded-b-3xl items-center justify-center relative">
+          <View className="bg-[#3b82f6] h-52 w-full rounded-b-3xl items-center justify-center relative">
             <Image
-              source={{ uri: product.image_url || 'https://i.imgur.com/Fm5e22l.png' }}
-              className="w-32 h-40 mb-2"
-              style={{ resizeMode: 'contain' }}
+              source={{ uri: `${API_BASE_URL}/${product.image}` }}
+              className="absolute top-0 left-0 w-full h-full rounded-b-3xl object-cover"
             />
 
             {/* Right Icons */}
@@ -99,7 +104,9 @@ const DetailScreen = () => {
 
             {/* Badge */}
             <View className="bg-[#37c563] rounded-2xl px-5 py-1 absolute -bottom-3 self-center">
-              <Text className="text-white font-medium text-base">100% Organic</Text>
+              <Text className="text-white font-medium text-base">
+                100% Organic
+              </Text>
             </View>
           </View>
 
@@ -110,7 +117,9 @@ const DetailScreen = () => {
             </Text>
 
             <View className="flex-row items-center mb-2">
-              <Text className="text-lg font-bold text-[#3b82f6]">${product.price ?? 0}</Text>
+              <Text className="text-lg font-bold text-[#3b82f6]">
+                ${product.price ?? 0}
+              </Text>
             </View>
 
             {/* Quantity Controls */}
@@ -138,7 +147,9 @@ const DetailScreen = () => {
           </View>
         </View>
       ) : (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
           <Text>No Product Found</Text>
         </View>
       )}

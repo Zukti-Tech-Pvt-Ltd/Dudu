@@ -74,7 +74,7 @@ const [isLoading, setIsLoading] = useState(true);
       style={{ width: cardWidth }}
     >
       <View
-  className="w-full rounded-t-2xl overflow-hidden bg-black relative"
+    className="w-full rounded-t-2xl overflow-hidden bg-gray-200 relative"
   style={{ height: videoHeight }}
 >
 
@@ -129,9 +129,10 @@ export default function TwoByTwoGrid() {
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
-    getRandomProducts().then((res) => setProducts(res ?? []));
+    getRandomProducts().then((res) => setProducts(res?.data?? []));
   }, []);
 
+  console.log('products', products);
   const gridProducts = products.slice(0, 6);
 
   return (

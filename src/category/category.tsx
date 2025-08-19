@@ -16,6 +16,7 @@ import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navig
 import { getRandomProducts } from '../api/homeApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { API_BASE_URL } from '@env';
+import { getByCategory } from '../api/serviceList/productApi';
 
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -25,7 +26,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - CARD_MARGIN * 3) / 2; // Two columns with mar
 
   type BottomTabParamList = {
   category: { categoryId: string; categoryName: string };
-      DetailScreen: { productId: string; productName: string ; tableName:string}; 
+      DetailScreen: { productId: string;}; 
 
 };
 type CategoryNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'category'>;
@@ -46,7 +47,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
   const filters = [
     { label: 'All' },
     { label: 'Food' },
-    { label: 'Li Ha Moto' },
+    { label: 'LiHaMoto' },
     { label: 'Shop' },
     { label: 'Job' },
     { label: 'Delivery' },
@@ -63,7 +64,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
   console.log('categoryName', categoryName);
   console.log('selected', selected);
   const getItems = async () => {
-    let { data, error } = await supabase.from(selected).select('*');
+    let { data, error } = await getByCategory(selected);
     if (error) return [];
     return data || [];
   };
@@ -77,7 +78,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
     if (selected === 'All' ) {
       getRandomProducts()
         .then(res => {
-          setFood(res);
+          setFood(res?.data??[]);
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -101,17 +102,16 @@ const navigation = useNavigation<CategoryNavigationProp>();
       onPress={() =>{
         if (selected === 'All') {
            navigation.navigate('DetailScreen', {
+
           productId: item.id,
-          productName: item.name,
-          tableName:item.table
+    
         })
           
         }
         else{
         navigation.navigate('DetailScreen', {
           productId: item.id,
-          productName: item.name,
-          tableName:selected
+       
         })
       }
       }

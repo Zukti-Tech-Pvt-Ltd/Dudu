@@ -10,7 +10,9 @@ import MapsScreen from './src/GoogleMaps';
 import MainTabs from './src/navigations/appNavigations';
 import { useColorScheme } from 'react-native';
 import SearchScreen from './src/screens/search/search';
-import DetailScreen from './src/screens/productDetail/foodDetail';
+import DetailScreen from './src/screens/productDetail/productDetail';
+import LoginScreen from './src/screens/login/login';
+import SignupScreen from './src/screens/login/signUp';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,8 +23,7 @@ export default function App() {
     <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack.Navigator
         screenOptions={{
-                headerShown: false, // Hides the header on all screens
-
+          headerShown: false, // Hides the header on all screens
         }}
       >
         {/* <Stack.Screen
@@ -31,9 +32,21 @@ export default function App() {
           options={{ headerShown: false }}
           
         /> */}
-        <Stack.Screen name="maintab" component={MainTabs}  options={{ headerTitle: () => null }}
- />
-
+        <Stack.Screen
+          name="maintab"
+          component={MainTabs}
+          options={{ headerTitle: () => null }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Signup"
+          component={SignupScreen}
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="GoogleMaps"
           component={MapsScreen}
@@ -54,4 +67,3 @@ export default function App() {
     </NavigationContainer>
   );
 }
-
