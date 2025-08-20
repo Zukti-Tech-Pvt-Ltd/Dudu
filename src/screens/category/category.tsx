@@ -11,12 +11,12 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { supabase } from '../../supabase/supabase';
+import { supabase } from '../../../supabase/supabase';
 import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
-import { getRandomProducts } from '../api/homeApi';
+import { getRandomProducts } from '../../api/homeApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { API_BASE_URL } from '@env';
-import { getByCategory } from '../api/serviceList/productApi';
+import { getByCategory } from '../../api/serviceList/productApi';
 
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -73,6 +73,8 @@ const navigation = useNavigation<CategoryNavigationProp>();
   }, [categoryName]);
   useEffect(() => {
     setLoading(true);
+      setFood([]);   // Clear old data immediately
+
     if (!selected) return;
 
     if (selected === 'All' ) {
@@ -97,6 +99,11 @@ const navigation = useNavigation<CategoryNavigationProp>();
   const renderItem = ({ item, index }: { item: any; index: number }) => {
     const isFirstColumn = index % 2 === 0;
     console.log('item', item);
+    const normalizedImage = item.image.startsWith('/')
+      ? item.image.slice(1)
+      : item.image;
+
+    const imageUri = `${API_BASE_URL}/${normalizedImage}`;
     return (
       <TouchableOpacity
       onPress={() =>{
@@ -134,7 +141,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
         }}
       >
         <Image
-          source={{ uri: `${API_BASE_URL}/${item.image}` }}
+          source={{ uri: imageUri}}
           style={{
             width: '100%',
             height: 110,
@@ -154,7 +161,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
           {/* Rating Row */}
           <View className="flex-row items-center mb-1.5">
             <Image
-              source={require('../../assets/navIcons/star.png')}
+              source={require('../../../assets/navIcons/star.png')}
               style={{ width: 16, height: 16, tintColor: '#fcc419' }}
             />
             <Text className="ml-1 text-[13px] font-semibold text-gray-800">
@@ -176,7 +183,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
               }}
             >
               <Image
-                source={require('../../assets/navIcons/plus.png')}
+                source={require('../../../assets/navIcons/plus.png')}
                 style={{ width: 16, height: 16, tintColor: '#fff' }}
               />
             </TouchableOpacity>
@@ -194,7 +201,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
         {/* Search Bar */}
         <View className="flex-row items-center bg-white rounded-2xl px-4 h-11">
           <Image
-            source={require('../../assets/navIcons/search.png')}
+            source={require('../../../assets/navIcons/search.png')}
             style={{ width: 16, height: 16, tintColor: '#fcc419' }}
           />
           <TextInput
@@ -259,7 +266,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
             ListEmptyComponent={() => (
               <View className="items-center mt-10">
                 <Image
-                  source={require('../../assets/navIcons/empty.png')}
+                  source={require('../../../assets/navIcons/empty.png')}
                   style={{ width: 80, height: 80, marginBottom: 12 }}
                 />
                 <Text className="text-gray-500 text-base">

@@ -107,31 +107,39 @@ export default function Home() {
   const windowWidth = Dimensions.get('window').width;
   const itemWidth = (windowWidth - 40) / 2; // 20 padding each side
   console.log('servies', servies);
-  const renderItems = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('category', {
-          categoryId: item.id,
-          categoryName: item.name,
-        })
-      }
-    >
-      <View className="flex-col items-center justify-center p-3.5">
-        <View className="shadow-lg rounded-full bg-gray-100 overflow-hidden p-[1px] w-[65px] h-[65px] flex items-center justify-center">
-          <Image
-              source={{ uri: `${API_BASE_URL}/${item.image}` }}
-            
-            className="w-[110px] h-[110px]"
-            resizeMode="cover"
-          />
-        </View>
 
-        <Text className="mt-0 font-semibold text-black dark:text-white text-center">
-          {item.name}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+  const renderItems = ({ item }: { item: any }) => {
+    const normalizedImage = item.image.startsWith('/')
+      ? item.image.slice(1)
+      : item.image;
+
+    const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+
+    return (
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate('category', {
+            categoryId: item.id,
+            categoryName: item.name,
+          })
+        }
+      >
+        <View className="flex-col items-center justify-center p-3.5">
+          <View className="shadow-lg rounded-full bg-gray-100 overflow-hidden p-[1px] w-[65px] h-[65px] flex items-center justify-center">
+            <Image
+              source={{ uri: imageUri }}
+              className="w-[110px] h-[110px]"
+              resizeMode="cover"
+            />
+          </View>
+
+          <Text className="mt-0 font-semibold text-black dark:text-white text-center">
+            {item.name}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
   const renderFeatureProduct = ({ item }: { item: any }) => (
     <TouchableOpacity
       onPress={() =>

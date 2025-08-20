@@ -10,7 +10,7 @@ import ProfileScreen from '../screens/profile/proflie';
 import { Image } from 'react-native';
 import home from '../screens/home/home';
 import Home from '../screens/home/home';
-import Category from '../category/category';
+import Category from '../screens/category/category';
 const Tab = createBottomTabNavigator();
 type RouteName = 'home' | 'category' | 'pay' | 'cart' | 'order' | 'profile';
 const icons: Record<RouteName, ImageSourcePropType> = {

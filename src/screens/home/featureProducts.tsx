@@ -57,7 +57,11 @@ const HoldToPlayVideo = ({
   const videoRef = useRef<VideoRef>(null);
   const navigation = useNavigation<CategoryNavigationProp>();
 const [isLoading, setIsLoading] = useState(true);
+const normalizedImage = thumbnail.startsWith('/')
+      ? thumbnail.slice(1)
+      : thumbnail;
 
+    const imageUri = `${API_BASE_URL}/${normalizedImage}`;
   return (
     <TouchableOpacity
       activeOpacity={0.7}
@@ -95,7 +99,7 @@ const [isLoading, setIsLoading] = useState(true);
           />
         ) : (
 <Image 
-  source={{ uri: `${API_BASE_URL}/${thumbnail}` }}
+  source={{ uri: imageUri }}
   className="w-full h-full"
   resizeMode="cover"
 />        )}

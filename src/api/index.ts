@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@env';
 
 const api = axios.create({
     baseURL:API_BASE_URL,
-    timeout: 50000,
+    timeout: 100000,
 });
 
 export default api;

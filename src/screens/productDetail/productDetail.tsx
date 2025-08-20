@@ -10,11 +10,14 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { getOne } from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
+import { createCart } from '../../api/serviceList/cartApi';
 
 const DetailScreen = () => {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const navigation = useNavigation();
 
   type BottomTabParamsList = {
@@ -26,22 +29,30 @@ const DetailScreen = () => {
 
   const { productId = 0 } = route.params ?? {};
 
+  const handleAddToCart = async () => {
+    const response = await createCart(product.id, quantity);
+    if (response.status === 'success') {
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 1000);
+    }
+  };
+
   const getItems = async () => {
     try {
-      console.log('productId', productId);
-
       const data = await getOne(productId);
-      console.log('data', data);
       return data || null;
     } catch (err) {
       console.log(err);
+      return null;
     }
-    // const { data, error } = await supabase
-    //   .from(tableName)
-    //   .select('*')
-    //   .eq('id', productId)
-    //   .single();
   };
+
+  const normalizedImage =
+    product && product.image
+      ? product.image.startsWith('/')
+        ? product.image.slice(1)
+        : product.image
+      : null;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,18 +65,16 @@ const DetailScreen = () => {
     };
     fetchData();
   }, [productId]);
-  console.log('product===============', product);
+
   return (
     <SafeAreaView className="flex-1 bg-white">
       {loading ? (
-        <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-        >
+        <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={{ marginTop: 10 }}>Loading...</Text>
+          <Text className="mt-2">Loading...</Text>
         </View>
       ) : product ? (
-        <View style={{ flex: 1 }}>
+        <View className="flex-1">
           {/* Back Button */}
           <View className="absolute top-10 left-4 z-10">
             <TouchableOpacity
@@ -74,36 +83,39 @@ const DetailScreen = () => {
             >
               <Image
                 source={require('../../../assets/navIcons/left-arrow.png')}
-                className="w-4 h-4 tint-yellow-400"
+                style={{ width: 16, height: 16, tintColor: '#FBBF24' }}
               />
             </TouchableOpacity>
           </View>
 
           {/* Header */}
-          <View className="bg-[#3b82f6] h-52 w-full rounded-b-3xl items-center justify-center relative">
-            <Image
-              source={{ uri: `${API_BASE_URL}/${product.image}` }}
-              className="absolute top-0 left-0 w-full h-full rounded-b-3xl object-cover"
-            />
+          <View className="bg-blue-500 h-52 w-full rounded-b-[48px] items-center justify-center relative">
+            {normalizedImage && (
+              <Image
+                source={{ uri: `${API_BASE_URL}/${product.image}` }}
+                className="absolute top-0 left-0 w-full h-full rounded-b-[48px]"
+                resizeMode="cover"
+              />
+            )}
 
             {/* Right Icons */}
             <View className="absolute right-5 top-12 flex-row">
               <TouchableOpacity>
                 <Image
                   source={require('../../../assets/navIcons/heart.png')}
-                  className="w-4 h-4 tint-yellow-400"
+                  style={{ width: 16, height: 16, tintColor: '#FBBF24' }}
                 />
               </TouchableOpacity>
               <TouchableOpacity className="ml-4">
                 <Image
                   source={require('../../../assets/navIcons/send.png')}
-                  className="w-4 h-4 tint-yellow-400"
+                  style={{ width: 16, height: 16, tintColor: '#FBBF24' }}
                 />
               </TouchableOpacity>
             </View>
 
             {/* Badge */}
-            <View className="bg-[#37c563] rounded-2xl px-5 py-1 absolute -bottom-3 self-center">
+            <View className="bg-green-500 rounded-3xl px-5 py-1.5 absolute -bottom-3">
               <Text className="text-white font-medium text-base">
                 100% Organic
               </Text>
@@ -111,46 +123,84 @@ const DetailScreen = () => {
           </View>
 
           {/* Content */}
-          <View className="mt-10 mx-2 bg-white rounded-2xl p-5 shadow">
-            <Text className="text-xl font-semibold text-neutral-800 mb-2">
+          <View
+            className="mt-7 mb-4 mx-2 bg-white rounded-[48px] p-5 shadow-md flex-1"
+            style={{
+              shadowColor: '#000000', // black shadow color
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.5, // medium opacity
+              shadowRadius: 6, // blur radius
+              elevation: 8, // Android shadow elevation
+            }}
+          >
+            {' '}
+            <Text className="text-xl font-semibold text-gray-800 mb-2">
               {product.name?.trim()}
             </Text>
-
             <View className="flex-row items-center mb-2">
-              <Text className="text-lg font-bold text-[#3b82f6]">
+              <Text className="text-lg font-bold text-blue-500">
                 ${product.price ?? 0}
               </Text>
             </View>
-
             {/* Quantity Controls */}
             <View className="flex-row items-center my-3">
               <TouchableOpacity
                 onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded bg-gray-200 items-center justify-center"
+                className="w-8 h-8 rounded-md bg-gray-200 items-center justify-center"
               >
-                <Text className="text-xl text-gray-800">-</Text>
+                <Text className="text-2xl text-gray-700">-</Text>
               </TouchableOpacity>
               <Text className="mx-4 text-lg font-medium">{quantity}</Text>
               <TouchableOpacity
                 onPress={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 rounded bg-gray-200 items-center justify-center"
+                className="w-8 h-8 rounded-md bg-gray-200 items-center justify-center"
               >
-                <Text className="text-xl text-gray-800">+</Text>
+                <Text className="text-2xl text-gray-700">+</Text>
               </TouchableOpacity>
             </View>
-
             {/* Description */}
-            <Text className="font-bold mt-2 mb-1 text-base">Description</Text>
-            <Text className="text-gray-600 text-sm mb-3">
+            <Text className="font-bold mt-3 mb-1.5 text-base">Description</Text>
+            <Text className="text-gray-600 text-sm mb-5">
               {product.description || 'No description available.'}
             </Text>
           </View>
         </View>
       ) : (
-        <View
-          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-        >
+        <View className="flex-1 justify-center items-center">
           <Text>No Product Found</Text>
+        </View>
+      )}
+
+      {/* Add to Cart Button */}
+      <TouchableOpacity
+        onPress={handleAddToCart}
+        className="absolute bottom-8 right-5 bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 shadow-2xl"
+        activeOpacity={0.8}
+        style={{
+          shadowColor: '#000000', // black shadow color
+          shadowOffset: { width: 0, height: 8 }, // bigger shadow offset
+          shadowOpacity: 0.7, // stronger opacity
+          shadowRadius: 10, // blur radius
+          elevation: 10, // higher elevation for Android
+        }}
+      >
+        <Text className="text-white font-semibold text-base mr-2">
+          Add to Cart
+        </Text>
+        <Image
+          source={require('../../../assets/navIcons/cart.png')}
+          style={{ width: 20, height: 20, tintColor: 'white' }}
+        />
+      </TouchableOpacity>
+
+      {/* Success Popup */}
+      {showSuccess && (
+        <View className="absolute top-0 left-0 right-0 bottom-0 flex-1 justify-center items-center z-50">
+          <View className="bg-green-600 py-3 px-6 rounded-xl shadow-lg min-w-[150px] max-w-[250px]">
+            <Text className="text-white font-semibold text-lg text-center">
+              Added to Cart!
+            </Text>
+          </View>
         </View>
       )}
     </SafeAreaView>

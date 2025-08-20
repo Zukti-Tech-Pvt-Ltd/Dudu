@@ -11,9 +11,9 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { supabase } from '../../supabase/supabase';
+import { supabase } from '../../../supabase/supabase';
 import { useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
-import { getRandomProducts } from '../api/homeApi';
+import { getRandomProducts } from '../../api/homeApi';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_MARGIN = 8;
