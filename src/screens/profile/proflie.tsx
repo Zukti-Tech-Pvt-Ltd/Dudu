@@ -26,6 +26,7 @@ export default function ProfileScreen({ navigation }: any) {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string>('sadhubasnet@gmail.com');
   const [phone, setPhone] = useState<string>('+1 (555) 123-4567');
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -36,14 +37,37 @@ export default function ProfileScreen({ navigation }: any) {
           setUsername(decoded.username || null);
           setEmail(decoded.email || 'sadhubasnet@gmail.com');
           setPhone(decoded.phone || '+1 (555) 123-4567');
+          setIsLoggedIn(true);
+
         } catch (e) {
-          setUsername(null);
+          setIsLoggedIn(false);
         }
+      }else{
+                setIsLoggedIn(false);
+
       }
     };
     fetchToken();
   }, []);
-
+ if (!isLoggedIn) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Image
+          source={require('../../../assets/images/user.png')}
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+        />
+        <Text className="font-bold text-lg text-gray-900 mb-2">
+          Welcome, Guest
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Login')} // Navigate to your login screen
+          className="bg-blue-500 px-6 py-3 rounded-lg"
+        >
+          <Text className="text-white font-medium text-base">Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
   return (
     <ScrollView className="flex-1 bg-white px-4">
 

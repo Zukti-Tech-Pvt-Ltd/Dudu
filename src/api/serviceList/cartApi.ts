@@ -14,6 +14,15 @@ export const createCart=async(productId:number,quantity:number)=>{
 }
 
 export const getCart=async()=>{
-    const response= await apiAuth.get(`api/product/getOne}`)
-    return response.data
-}
+    try {
+            console.log("response00000")
+
+    const response = await apiAuth.get(`api/cart/getAll`);
+    console.log("response00000",response)
+    return response.data; // Return the cart data
+    
+  } catch (err) {
+    console.error(err);
+    return []; // or handle error properly
+  }
+};

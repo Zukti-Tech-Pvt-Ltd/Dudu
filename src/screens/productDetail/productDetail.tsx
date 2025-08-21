@@ -165,11 +165,13 @@ const DetailScreen = () => {
             </Text>
           </View>
         </View>
-      ) : (
+      ) : 
+      (
         <View className="flex-1 justify-center items-center">
           <Text>No Product Found</Text>
         </View>
-      )}
+      )
+      }
 
       {/* Add to Cart Button */}
       <TouchableOpacity

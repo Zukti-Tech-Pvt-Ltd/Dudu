@@ -68,11 +68,11 @@ export default function MainTabs() {
           },
         })}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="pay"
         component={PayScreen}
         options={{ title: 'Pay', headerShown: true }}
-      />
+      /> */}
       <Tab.Screen
         name="cart"
         component={CartScreen}
