@@ -1,211 +1,189 @@
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-  Dimensions,
-} from 'react-native';
-import React, { useRef, useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { supabase } from '../../../supabase/supabase';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import Header from './header';
-import { getRandomProducts, getVideo } from '../../api/homeApi';
-import { SvgUri } from 'react-native-svg';
-import { FeaturedVideo } from './video';
-import PayScreen from '../pay/pay';
-import OrdersScreen from '../order/order';
+// import React, { useState, useEffect, useRef } from 'react';
+// import { View, Text, Image, Pressable, TouchableOpacity, Dimensions } from 'react-native';
+// import Video, { VideoRef } from 'react-native-video';
+// import { getRandomProducts } from '../../api/homeApi';
+// import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+// import { useNavigation } from '@react-navigation/native';
+// import { API_BASE_URL } from '@env';
 
-export default function Home() {
-  const [servies, setServices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [featureProduct, setFeatureProduct] = useState<any[]>([]);
-  const [fetchVideo, setFetchVideo] = useState<any[]>([]);
+// type Product = {
+//    id: number;
+//   image: string;
+//   video: string;
+//   name: string;
+//   category: string;
+//   description: string;
+//   order: number;
+//   price: number;
+//   rate: number;
+//   count: number;
+//   createdAt: string;
+//   table:string
+// };
 
-  type RootStackParamList = {
-    Home: undefined;
-    SearchScreen: { query: string };
-    category: { categoryId: string; categoryName: string };
-    GoogleMaps: undefined;
-    DetailScreen: { productId: string; productName: string ; tableName:string}; 
-  };
+// type HoldToPlayVideoProps = {
+//   thumbnail: string;
+//   label: string;
+//   videoUri: string;
+//   productId: number;
+//   productName: string;
+//   tableName: string;
+// };
 
-  type HomeNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+// type RootStackParamList = {
+//   TwoByTwoGrid: { categoryId: string; categoryName: string };
+//   DetailScreen: { productId: number; productName: string; tableName: string };
+// };
 
-  const scrollRef = useRef<ScrollView>(null);
+// type CategoryNavigationProp = NativeStackNavigationProp<RootStackParamList, 'TwoByTwoGrid'>;
 
-  useFocusEffect(
-    React.useCallback(() => {
-      scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, []),
-  );
+// // const DEFAULT_VIDEO = 'https://www.w3schools.com/html/mov_bbb.mp4';
+// const DEFAULT_VIDEO = require("../../../assets/images/butterfly.mp4");
+// const windowWidth = Dimensions.get('window').width;
+// const cardMargin = 12;
+// const cardWidth = (windowWidth - cardMargin * 3) / 2; // two cards per row with margins
+// const videoHeight = cardWidth * (19 / 16); // slightly taller than 16:9
 
-  const getItems = async () => {
-    setLoading(true);
-    let { data: Services, error } = await supabase.from('Services').select('*');
-    const sortedService = Services?.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)) ?? [];
-    setLoading(false);
-    return sortedService;
-  };
 
-  const navigation = useNavigation<HomeNavigationProp>();
+// const HoldToPlayVideo = ({
+//   thumbnail,
+//   label,
+//   videoUri,
+//   productId,
+//   productName,
+//   tableName,
+// }: HoldToPlayVideoProps) => {
+//   const [isPlaying, setIsPlaying] = useState(false);
+//   const videoRef = useRef<VideoRef>(null);
+//   const navigation = useNavigation<CategoryNavigationProp>();
+// const [isLoading, setIsLoading] = useState(true);
+// const normalizedImage = thumbnail.startsWith('/')
+//       ? thumbnail.slice(1)
+//       : thumbnail;
 
-  useEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => <Header />,
-      headerRight: () => (
-        <Pressable
-          onPress={() => navigation.navigate('GoogleMaps')}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Image
-            source={require('../../../assets/navIcons/notification.png')}
-            style={{
-              width: 20,
-              height: 20,
-              resizeMode: 'contain',
-              marginRight: 12,
-            }}
-          />
-        </Pressable>
-      ),
-    });
+//     const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+//   return (
+//     <TouchableOpacity
+//       activeOpacity={0.7}
+//       onPress={() =>
+//         navigation.navigate('DetailScreen', {
+//           productId,
+//           productName,
+//           tableName,
+//         })
+//       }
+//       className="rounded-2xl mb-4 overflow-hidden items-center
+//                  bg-white dark:bg-gray-800
+//                  shadow-md dark:shadow-black/50"
+//       style={{ width: cardWidth }}
+//     >
+//       <View
+//     className="w-full rounded-t-2xl overflow-hidden bg-gray-200 relative"
+//   style={{ height: videoHeight }}
+// >
 
-    getItems().then(res => setServices(res ?? []));
-    getRandomProducts().then(res => setFeatureProduct(res ?? []));
-    const fetchVideos = async () => {
-      setLoading(true);
-      const videos = await getVideo();
-      setFetchVideo(videos);
-      setLoading(false);
-    };
-    fetchVideos();
-  }, []);
+//         {isPlaying ? (
+//           <Video
+//             ref={(ref) => {
+//               videoRef.current = ref;
+//             }}
+//             source={{ uri: videoUri }}
+//             className="w-full h-full"
+//             paused={!isPlaying}
+//             resizeMode="cover"
+//             onLoadStart={() => setIsLoading(true)}
+//   onLoad={() => setIsLoading(false)}
+//             repeat
+//             muted
+//             controls={false}
+//           />
+//         ) : (
+// <Image 
+//   source={{ uri: imageUri }}
+//   className="w-full h-full"
+//   resizeMode="cover"
+// />        )}
+//   {isPlaying && isLoading && (
+//   <View className="absolute inset-0 justify-center items-center bg-black">
+//     {/* You can put an ActivityIndicator or text here */}
+//     {/* <ActivityIndicator size="large" color="#fff" /> */}
+//     <Text className="text-white text-sm">Loading...</Text>
+//   </View>
+// )}
 
-  const windowWidth = Dimensions.get('window').width;
-  const itemWidth = (windowWidth - 40) / 2; // 20 padding each side
+//         <Pressable
+//           className="absolute top-0 left-0 right-0 bottom-0"
+//           onPressIn={() => {
+//             videoRef.current?.seek?.(0);
+//             setIsPlaying(true);
+//           }}
+//           // onPressOut={() => setIsPlaying(false)}
+//         />
+//       </View>
+//       <View className="py-2 w-full items-center">
+//         <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100 capitalize text-center mt-1">
+//           {label}
+//         </Text>
+//       </View>
+//     </TouchableOpacity>
+//   );
+// };
 
-  const renderItems = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('category', {
-          categoryId: item.id,
-          categoryName: item.name,
-        })
-      }
-    >
-      <View className="flex-col items-center justify-center p-4">
-        <View className="shadow-lg rounded-full bg-white p-1">
-          <SvgUri uri={item.image} width={50} height={50} fill="#3b82f6" />
-        </View>
-        <Text className="ml-3 font-semibold text-black dark:text-white text-center">
-          {item.name}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-  console.log("featureProduct=====",featureProduct)
-  const renderFeatureProduct = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('DetailScreen', {
-          productId: item.id,
-          productName: item.name,
-          tableName:item.table
-        })
-      }
-      activeOpacity={0.7}
-    >
-      <View
-        className="m-2 bg-white rounded-xl shadow-md items-center p-0"
-        style={{ width: itemWidth, height: 160 }}
-      >
-        <Image
-          source={{ uri: item.image_url }}
-          style={{
-            width: '100%',
-            height: 100,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            resizeMode: 'cover',
-          }}
-        />
-        <View
-          style={{
-            width: '100%',
-            height: 40,
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Text className="font-semibold text-black dark:text-white text-center">
-            {item.name}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+// export default function TwoByTwoGrid() {
+//   const [products, setProducts] = useState<Product[]>([]);
 
-  if (loading) {
-    return (
-      <SafeAreaView className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </SafeAreaView>
-    );
-  }
+//   useEffect(() => {
+//     getRandomProducts().then((res) => setProducts(res?.data?? []));
+//   }, []);
 
- return (
-  <SafeAreaView style={{ flex: 1 }}>
-    <Pressable
-      className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
-      onPress={() => navigation.navigate('SearchScreen', { query: '' })}
-    >
-      <Text className="text-gray-400">Search services...</Text>
-    </Pressable>
+//   console.log('products', products);
+//   const gridProducts = products.slice(0, 6);
 
-    <FlatList
-      ListHeaderComponent={
-        <>
-          <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3">Services</Text>
-          <FlatList
-            data={servies}
-            keyExtractor={(item, index) => item.id?.toString() ?? `index-${index}`}
+//   return (
+//     <View className="flex-1 justify-center
+//                     bg-gray-50 dark:bg-gray-900
+//                     px-4 py-6"
+//     >
+//       <View className="flex-row mb-4 justify-between">
+//         {gridProducts.slice(0, 2).map((p) => (
+//           <HoldToPlayVideo
+//             key={p.id}
+//             thumbnail= {`${p.image}` }
 
-            renderItem={renderItems}
-            numColumns={4}
-            scrollEnabled={false}
-            contentContainerStyle={{
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          />
-
-          {/* <FeaturedVideo /> */}
-          
-          {/* <OrdersScreen /> */}
-
-          <Text className="text-black dark:text-white text-lg font-bold ml-3 pl-3 mt-6">
-            Featured Products
-          </Text>
-        </>
-      }
-      data={featureProduct}
-      keyExtractor={(item, index) => 'big' + (item.id?.toString() ?? index.toString())}
-
-      renderItem={renderFeatureProduct}
-      numColumns={2}
-      contentContainerStyle={{
-        paddingHorizontal: 10,
-        paddingBottom: 40,
-      }}
-    />
-  </SafeAreaView>
-);
-
-}
+//             label={p.name}
+//             videoUri={DEFAULT_VIDEO}
+//             productId={p.id}
+//             productName={p.name}
+//             tableName={p.table}
+//           />
+//         ))}
+//       </View>
+//       <View className="flex-row mb-4 justify-between">
+//         {gridProducts.slice(2, 4).map((p) => (
+//           <HoldToPlayVideo
+//             key={p.id}
+//             thumbnail= {`${p.image}` }
+//             label={p.name}
+//             videoUri={DEFAULT_VIDEO}
+//             productId={p.id}
+//             productName={p.name}
+//             tableName={p.table}
+//           />
+//         ))}
+//       </View>
+//       <View className="flex-row justify-between">
+//         {gridProducts.slice(4, 6).map((p) => (
+//           <HoldToPlayVideo
+//             key={p.id}
+//             thumbnail= {`${p.image}` }
+//             label={p.name}
+//             videoUri={DEFAULT_VIDEO}
+//             productId={p.id}
+//             productName={p.name}
+//             tableName={p.table}
+//           />
+//         ))}
+//       </View>
+//     </View>
+//   );
+// }

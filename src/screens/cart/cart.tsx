@@ -5,6 +5,8 @@ import { styled } from 'nativewind';
 import { getCart } from '../../api/serviceList/cartApi';
 import { API_BASE_URL } from '@env';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
 
 const StyledView = styled(View);
 const StyledText = styled(Text);
@@ -99,12 +101,30 @@ type CartGroup = {
 
 export default function CartScreen() {
   const [loading, setLoading] = useState<boolean>(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [cartData, setCartData] = useState<CartGroup[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+
   useEffect(() => {
-    
+    const fetchToken = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        try {
+          const decoded = jwtDecode<JwtPayload>(token);
+
+          setIsLoggedIn(true);
+        } catch (e) {
+          setIsLoggedIn(false);
+        }
+      } else {
+        setIsLoggedIn(false);
+      }
+    };
+    fetchToken();
+  }, []);
+  useEffect(() => {
     if (cartData && cartData.length > 0) {
       const qtys = cartData.reduce((prev: Record<string, number>, group) => {
         group.items.forEach(item => {
@@ -142,9 +162,8 @@ export default function CartScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchData();
-    }, [])
+    }, []),
   );
-
 
   const handleQtyChange = (id: string, delta: number) => {
     setQuantities(qty => ({
@@ -201,130 +220,155 @@ export default function CartScreen() {
     }
     return sum;
   }, 0);
-
+  if (!isLoggedIn) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Image
+          source={require('../../../assets/images/user.png')}
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+        />
+        <Text className="font-bold text-lg text-gray-900 mb-2">
+          please login in first
+        </Text>
+      </View>
+    );
+  }
   return (
     <StyledView className="flex-1">
       {loading ? (
-  <StyledText className="text-center py-6 text-gray-500">Loading cart...</StyledText>
-) : (
-      <ScrollView className="flex-1 py-3 px-3">
-        {cartData.map((group, idx) => (
-          <StyledView
-            key={group.shop}
-            className="bg-white rounded-2xl mb-4 p-3 shadow"
-          >
-            {/* Store/Group Title */}
-            <StyledView className="flex-row items-center mb-2">
-              <Checkbox
-                value={!!selected[group.shop]}
-                onValueChange={val =>
-                  handleShopSelect(group.shop, group.items, val)
-                }
-              />
-              <StyledImage
-                source={require('../../../assets/images/shop.png')} // Replace with your icon path
-                className="ml-2 w-4 h-4"
-                style={{ marginTop: 1 }} // fine-tune vertical alignment if needed
-              />
-              <StyledText className=" px-1 font-semibold text-base">
-                {group.shop}
-              </StyledText>
-              {/* Arrow/icon can go here */}
-            </StyledView>
-            {group.items.map(item => {
-              const normalizedImage = item.img.startsWith('/')
-                ? item.img.slice(1)
-                : item.img;
+        <StyledText className="text-center py-6 text-gray-500">
+          Loading cart...
+        </StyledText>
+      ) : (
+        <ScrollView className="flex-1 py-3 px-3">
+          {cartData.map((group, idx) => (
+            <StyledView
+              key={group.shop}
+              className="bg-white rounded-2xl mb-4 p-3 shadow"
+            >
+              {/* Store/Group Title */}
+              <StyledView className="flex-row items-center mb-2">
+                <Checkbox
+                  value={!!selected[group.shop]}
+                  onValueChange={val =>
+                    handleShopSelect(group.shop, group.items, val)
+                  }
+                />
+                <StyledImage
+                  source={require('../../../assets/images/shop.png')} // Replace with your icon path
+                  className="ml-2 w-4 h-4"
+                  style={{ marginTop: 1 }} // fine-tune vertical alignment if needed
+                />
+                <StyledText className=" px-1 font-semibold text-base">
+                  {group.shop}
+                </StyledText>
+                {/* Arrow/icon can go here */}
+              </StyledView>
+              {group.items.map(item => {
+                const normalizedImage = item.img.startsWith('/')
+                  ? item.img.slice(1)
+                  : item.img;
 
-              const imageUri = `${API_BASE_URL}/${normalizedImage}`;
-              return (
-                <StyledView key={item.id} className="flex-row py-2 ">
-                  <Checkbox
-                    className="mt-4 mr-2" // Add margin-top to move it downward
-                    value={!!selected[item.id]}
-                    onValueChange={val =>
-                      handleItemSelect(group.shop, group.items, item.id, val)
-                    }
-                  />
-                  <StyledImage
-                    source={{ uri: imageUri }}
-                    className="w-14 h-14 rounded mr-3  bg-gray-200"
-                  />
-                  <StyledView className="flex-1">
-                    <StyledText className="font-medium text-gray-900">
-                      {item.name}
-                    </StyledText>
-                    <StyledText className="text-gray-500 text-xs">
-                      {item.extra}
-                    </StyledText>
-                    {item.ends && (
-                      <StyledText className="text-xs text-orange-600">
-                        {item.ends}
+                const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+                return (
+                  <StyledView key={item.id} className="flex-row py-2 ">
+                    <Checkbox
+                      className="mt-4 mr-2" // Add margin-top to move it downward
+                      value={!!selected[item.id]}
+                      onValueChange={val =>
+                        handleItemSelect(group.shop, group.items, item.id, val)
+                      }
+                    />
+                    <StyledImage
+                      source={{ uri: imageUri }}
+                      className="w-14 h-14 rounded mr-3  bg-gray-200"
+                    />
+                    <StyledView className="flex-1">
+                      <StyledText className="font-medium text-gray-900">
+                        {item.name}
                       </StyledText>
-                    )}
-                    {item.left && (
-                      <StyledText className="text-xs text-rose-500">
-                        {item.left} item(s) left
+                      <StyledText className="text-gray-500 text-xs">
+                        {item.extra}
                       </StyledText>
-                    )}
-                    <StyledView className="flex-row mt-1 items-center">
-                      <StyledText
-                        style={{ color: '#3b82f6' }}
-                        className=" text-base font-bold"
-                      >
-                        Rs. {item.price}
-                      </StyledText>
-                      {item.oldPrice && (
-                        <StyledText className="text-gray-400 text-xs line-through ml-2">
-                          Rs. {item.oldPrice}
+                      {item.ends && (
+                        <StyledText className="text-xs text-orange-600">
+                          {item.ends}
                         </StyledText>
                       )}
+                      {item.left && (
+                        <StyledText className="text-xs text-rose-500">
+                          {item.left} item(s) left
+                        </StyledText>
+                      )}
+                      <StyledView className="flex-row mt-1 items-center">
+                        <StyledText
+                          style={{ color: '#3b82f6' }}
+                          className=" text-base font-bold"
+                        >
+                          Rs. {item.price}
+                        </StyledText>
+                        {item.oldPrice && (
+                          <StyledText className="text-gray-400 text-xs line-through ml-2">
+                            Rs. {item.oldPrice}
+                          </StyledText>
+                        )}
+                      </StyledView>
+                    </StyledView>
+                    <StyledView className="flex-row items-center">
+                      <StyledTouchable
+                        onPress={() => handleQtyChange(item.id, -1)}
+                        className="w-6 h-6 items-center justify-center bg-gray-200 rounded"
+                      >
+                        <StyledText>-</StyledText>
+                      </StyledTouchable>
+                      <StyledText className="mx-2">
+                        {quantities[item.id]}
+                      </StyledText>
+                      <StyledTouchable
+                        onPress={() => handleQtyChange(item.id, 1)}
+                        className="w-6 h-6 items-center justify-center bg-gray-200 rounded"
+                      >
+                        <StyledText>+</StyledText>
+                      </StyledTouchable>
                     </StyledView>
                   </StyledView>
-                  <StyledView className="flex-row items-center">
-                    <StyledTouchable
-                      onPress={() => handleQtyChange(item.id, -1)}
-                      className="w-6 h-6 items-center justify-center bg-gray-200 rounded"
-                    >
-                      <StyledText>-</StyledText>
-                    </StyledTouchable>
-                    <StyledText className="mx-2">
-                      {quantities[item.id]}
-                    </StyledText>
-                    <StyledTouchable
-                      onPress={() => handleQtyChange(item.id, 1)}
-                      className="w-6 h-6 items-center justify-center bg-gray-200 rounded"
-                    >
-                      <StyledText>+</StyledText>
-                    </StyledTouchable>
-                  </StyledView>
-                </StyledView>
-              );
-            })}
-          </StyledView>
-        ))}
-
-        {/* Subtotal, Checkout */}
-        <StyledView className="flex-row items-center justify-between my-4">
-          <StyledText className="text-base font-bold">
-            Subtotal:{' '}
-            <StyledText style={{ color: '#3b82f6' }}>Rs. {subtotal}</StyledText>
-          </StyledText>
-          <StyledText className="text-base font-medium text-gray-600">
-            Shipping Fee:{' '}
-            <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
-          </StyledText>
-        </StyledView>
-        <StyledTouchable
-          style={{ backgroundColor: '#3b82f6' }}
-          className="w-full py-4 rounded-xl items-center mb-6"
-        >
-          <StyledText className="text-white text-lg font-bold">
-            Check Out
-          </StyledText>
-        </StyledTouchable>
-      </ScrollView>
+                );
+              })}
+            </StyledView>
+          ))}
+         
+        {cartData.length === 0 ? (
+  <StyledText className="text-center py-6 text-gray-500">
+    Your cart is empty
+  </StyledText>
+) : (
+  <>
+    {/* Subtotal, Checkout */}
+    <StyledView className="flex-row items-center justify-between my-4">
+      <StyledText className="text-base font-bold">
+        Subtotal:{' '}
+        <StyledText style={{ color: '#3b82f6' }}>
+          Rs. {subtotal}
+        </StyledText>
+      </StyledText>
+      <StyledText className="text-base font-medium text-gray-600">
+        Shipping Fee:{' '}
+        <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
+      </StyledText>
+    </StyledView>
+    <StyledTouchable
+      style={{ backgroundColor: '#3b82f6' }}
+      className="w-full py-4 rounded-xl items-center mb-6"
+    >
+      <StyledText className="text-white text-lg font-bold">
+        Check Out
+      </StyledText>
+    </StyledTouchable>
+  </>
 )}
+
+        </ScrollView>
+      )}
     </StyledView>
   );
 }

@@ -118,7 +118,9 @@ export default function Home() {
     return (
       <TouchableOpacity
         onPress={() =>
-          navigation.navigate('category', {
+          item.name === 'Home' || item.name === 'Delivery' 
+          ? navigation.navigate('GoogleMaps')
+          : navigation.navigate('category', {
             categoryId: item.id,
             categoryName: item.name,
           })

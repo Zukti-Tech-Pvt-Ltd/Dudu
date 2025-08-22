@@ -8,6 +8,14 @@
     latitude: 27.671044042129285,
     longitude: 85.28435232901992,
   };
+const carCoordinates = [
+  { latitude: 27.6823, longitude: 85.3202 },
+  { latitude: 27.6185, longitude: 85.3250 }, // additional coordinate
+    { latitude: 27.6712, longitude: 85.3250 }, // additional coordinate
+    { latitude: 27.6312, longitude: 85.3450 }, // additional coordinate
+
+  // Add more coordinates as needed
+];
 
   export default function MapsScreen() {
     const mapRef = useRef<MapView | null>(null);
@@ -151,16 +159,19 @@
           showsUserLocation={true}
           showsMyLocationButton={true}
         >
-          <Marker
-            draggable
-            coordinate={{ latitude: 27.6823, longitude: 85.3202 }}
-            image={require('../assets/icons/car.png')}
-            onDragEnd={e => console.log({ x: e.nativeEvent.coordinate })}
-          >
-            <Callout>
-              <MyCustomCallOut />
-            </Callout>
-          </Marker>
+          {carCoordinates.map((coord, index) => (
+      <Marker
+        key={index}
+        draggable
+        coordinate={{ latitude: coord.latitude, longitude: coord.longitude }}
+        image={require('../assets/icons/house.png')}
+        onDragEnd={e => console.log({ x: e.nativeEvent.coordinate })}
+      >
+        <Callout>
+          <MyCustomCallOut />
+        </Callout>
+      </Marker>
+    ))}
 
           {markersList.map((marker, index) => (
             <Marker
