@@ -10,7 +10,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { getOne } from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
-import { createCart } from '../../api/serviceList/cartApi';
+import { createCart } from '../../api/cartApi';
 
 const DetailScreen = () => {
   const [quantity, setQuantity] = useState(1);

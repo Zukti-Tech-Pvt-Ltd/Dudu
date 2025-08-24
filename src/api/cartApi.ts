@@ -1,4 +1,4 @@
-import apiAuth from "../indexAuth";
+import apiAuth from "./indexAuth";
 
 
 

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Checkbox from 'expo-checkbox'; // or your preferred checkbox
 import { styled } from 'nativewind';
-import { getCart } from '../../api/serviceList/cartApi';
+import { getCart } from '../../api/cartApi';
 import { API_BASE_URL } from '@env';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
