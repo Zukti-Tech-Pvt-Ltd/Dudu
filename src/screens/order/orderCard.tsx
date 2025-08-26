@@ -1,14 +1,33 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import OrderItemRow from './orderItemRow';
 import DeliveryStatusBar from './deliveryStatusBar';
-
+const statusIconMap: Record<string, any> = {
+  OrderPlaced: require('../../../assets/images/clock.png'),
+  Confirmed: require('../../../assets/images/check-mark.png'),
+  Shipped: require('../../../assets/images/shipped.png'),
+  Delivered: require('../../../assets/images/box.png'),
+};
 export default function OrderCard({ order }: any) {
-  return (
-    <View className="m-2 p-4 bg-white rounded-xl shadow">
-      <Text className="text-sm text-gray-500">{new Date(order.createdAt).toDateString()}</Text>
-      <Text className="text-lg font-bold my-2">{order.status}</Text>
+    const iconSource = statusIconMap[order.status] || null;
 
+  return (
+    <View className="m-2 -mt-0.5 p-4 bg-white rounded-xl shadow">
+      <Text className="text-sm  text-gray-500">{new Date(order.createdAt).toDateString()}</Text>
+  <View className="flex-row justify-end items-center  bg-green-100 rounded-lg p-2 py-1 self-end">
+        {iconSource && (
+          <Image
+            source={iconSource}
+            className="w-5 h-5 mr-2" // width and height ~20-22px (5*4=20)
+            resizeMode="contain"
+                style={{ tintColor: '#16a34a' }} // green tint
+
+          />
+        )}
+
+        <Text className="text-sm font-bold text-green-700">{order.status}</Text>
+      </View>
+      
       <DeliveryStatusBar status={order.status} />
 
       {order.__orderItems__.map((item: any) => (

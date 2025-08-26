@@ -1,9 +1,24 @@
+import { API_BASE_URL } from '@env';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 
 export default function OrderItemRow({ item }: any) {
-  return (
+    
+ 
+  const normalizedImage = item.__product__?.image?.startsWith('/')
+  ? item.__product__.image.slice(1)
+  : item.__product__?.image || '';
+
+    
+
+  const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+  return (  
     <View style={styles.row}>
+      <Image
+        source={{ uri: imageUri}}
+        style={styles.image}
+        resizeMode="contain"
+      />
       <Text style={styles.name}>Product #{item.productId}</Text>
       <Text style={styles.qty}>Qty: {item.quantity}</Text>
       <Text style={styles.price}>${item.price}</Text>
@@ -12,7 +27,17 @@ export default function OrderItemRow({ item }: any) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 3 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 3,
+  },
+  image: {
+    width: 50,
+    height: 50,
+    marginRight: 10,
+  },
   name: { flex: 2, fontSize: 15 },
   qty: { flex: 1, fontSize: 15 },
   price: { flex: 1, fontWeight: 'bold' },

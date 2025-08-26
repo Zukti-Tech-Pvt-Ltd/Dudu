@@ -1,42 +1,54 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, Text, Image } from 'react-native';
 
 const steps = [
-  { label: 'Order Placed', icon: 'clock-outline' },
-  { label: 'Confirmed', icon: 'check-circle-outline' },
-  { label: 'Shipped', icon: 'truck-outline' },
-  { label: 'Delivered', icon: 'cube-outline' },
+  { label: 'Order Placed', source: require('../../../assets/images/clock.png') },
+  { label: 'Confirmed', source: require('../../../assets/images/check-mark.png') },
+  { label: 'Shipped', source: require('../../../assets/images/shipped.png') },
+  { label: 'Delivered', source: require('../../../assets/images/box.png') },
 ];
 
 export default function DeliveryStatusBar({ status }: { status: string }) {
-  const currentStep = steps.findIndex(s => s.label.replace(' ', '') === status.replace(' ', ''));
+  const currentStep = steps.findIndex(
+    s => s.label.replace(' ', '') === status.replace(' ', '')
+  );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Delivery Status</Text>
-      <View style={styles.statusBar}>
+    <View className="m-2">
+      <Text className="font-bold text-lg mb-2">Delivery Status</Text>
+      <View className="flex-row items-center justify-between mb-1">
         {steps.map((step, idx) => {
           const isCompleted = idx <= currentStep;
           return (
-            <View style={styles.stepContainer} key={step.label}>
-              <View style={[
-                  styles.circle,
-                  { backgroundColor: isCompleted ? '#17a664' : '#e0e0e0' }
-                ]}
+            <View
+              key={step.label}
+              className="items-center flex-col flex-1 min-w-[60px] relative"
+            >
+              <View
+                className={`w-10 h-10 rounded-full mb-1 z-20 flex items-center justify-center ${
+                  isCompleted ? 'bg-green-600' : 'bg-gray-300'
+                }`}
               >
-                <Icon name={step.icon} size={22} color="#fff" />
+                <Image
+                  source={step.source}
+                  className="w-5 h-5"
+                  style={{ tintColor: '#fff' }}
+                  resizeMode="contain"
+                />
               </View>
+
               {idx < steps.length - 1 && (
-                <View style={[
-                  styles.line,
-                  { backgroundColor: isCompleted ? '#17a664' : '#e0e0e0' }
-                ]} />
+                <View
+                  className="absolute top-5 right-[-30px] w-[60px] h-1 z-10"
+                  style={{ backgroundColor: isCompleted ? '#17a664' : '#e0e0e0' }}
+                />
               )}
-              <Text style={[
-                styles.label,
-                { color: isCompleted ? '#17a664' : '#666' }
-              ]}>
+
+              <Text
+                className={`text-xs mt-1 max-w-[75px] text-center ${
+                  isCompleted ? 'text-green-600' : 'text-gray-600'
+                }`}
+              >
                 {step.label}
               </Text>
             </View>
@@ -46,46 +58,3 @@ export default function DeliveryStatusBar({ status }: { status: string }) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { margin: 10 },
-  heading: { fontWeight: 'bold', fontSize: 16, marginBottom: 10 },
-  statusBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  stepContainer: {
-    alignItems: 'center',
-    flexDirection: 'column',
-    flex: 1,
-    minWidth: 60,
-    position: 'relative',
-  },
-  circle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e0e0e0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 3,
-    zIndex: 2,
-  },
-  line: {
-    position: 'absolute',
-    top: 20,
-    right: -30,
-    width: 60,
-    height: 4,
-    zIndex: 1,
-    backgroundColor: '#e0e0e0',
-  },
-  label: {
-    fontSize: 13,
-    marginTop: 3,
-    textAlign: 'center',
-    maxWidth: 75,
-  },
-});

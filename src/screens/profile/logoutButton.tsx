@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { AuthContext } from '../../helper/authContext';
 export type RootStackParamList = {
   maintab: undefined;
   HomeScreen: undefined;
@@ -21,12 +22,14 @@ const LogoutButton = () => {
   type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
   const navigation = useNavigation<NavigationProp>();
   const [visible, setVisible] = useState(false);
+  const { setToken } = useContext(AuthContext); // get from context
 
   const handleLogoutConfirm = async () => {
     setVisible(false);
     try {
       // Replace with your token removal logic
-      await AsyncStorage.removeItem('token');
+      await setToken(null); //clears AsyncStorage + updates context
+      // await AsyncStorage.removeItem('token');
       // Replace with your navigation reset logic
       navigation.reset({
         index: 0,

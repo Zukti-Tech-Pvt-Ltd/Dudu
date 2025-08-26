@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,13 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { login } from '../../api/login/loginApi';
+import { AuthContext } from '../../helper/authContext';
 
 export default function LoginScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { setToken } = useContext(AuthContext); // 👈 get from context
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -28,7 +30,9 @@ export default function LoginScreen({ navigation }: any) {
       const response = await login(username, password);
         console.log('response-------', response);
       if (response.status === 'success' && response.token) {
-        await AsyncStorage.setItem('token', response.token);
+        await setToken(response.token); //update context + AsyncStorage
+
+        // await AsyncStorage.setItem('token', response.token);
         // Navigate to MainTabs after successful login
         navigation.reset({
           index: 0,

@@ -13,6 +13,7 @@ import SearchScreen from './src/screens/search/search';
 import DetailScreen from './src/screens/productDetail/productDetail';
 import LoginScreen from './src/screens/login/login';
 import SignupScreen from './src/screens/login/signUp';
+import { AuthProvider } from "./src/helper/authContext";
 
 const Stack = createNativeStackNavigator();
 
@@ -20,6 +21,7 @@ export default function App() {
   const scheme = useColorScheme(); // 'dark' | 'light'
 
   return (
+    <AuthProvider>
     <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack.Navigator
         screenOptions={{
@@ -65,5 +67,7 @@ export default function App() {
         />
       </Stack.Navigator>
     </NavigationContainer>
+        </AuthProvider>
+
   );
 }

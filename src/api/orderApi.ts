@@ -21,9 +21,12 @@ export const createOrder = async (
   return response.data;
 };
 
-export const getAllOrders = async () => {
+export const getAllOrders = async (status: string) => {
   try {
-    const response = await apiAuth.get(`api/order/getAll`);
+    const response = await apiAuth.get(`api/order/getAll`,{
+      params: { status }, 
+    });
+    console.log("r1111111111111112121212121212esponse00000",response)
     return response.data.data; // Return the cart data
   } catch (err) {
     console.error(err);

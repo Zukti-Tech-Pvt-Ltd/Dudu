@@ -64,6 +64,11 @@ const HoldToPlayVideo = ({
     : thumbnail;
   const imageUri = `${API_BASE_URL}/${normalizedImage}`;
 
+   const normalizedVideo = thumbnail.startsWith('/')
+    ? videoUri.slice(1)
+    : videoUri;
+  const video = `${API_BASE_URL}/${normalizedVideo}`;
+
   return (
     <TouchableOpacity
       activeOpacity={0.7}
@@ -91,7 +96,7 @@ const HoldToPlayVideo = ({
             ref={(ref) => {
               videoRef.current = ref;
             }}
-            source={{ uri: videoUri }}
+            source={{ uri: video }}
             className="w-full h-full"
             paused={!isPlaying}
             resizeMode="cover"
@@ -141,7 +146,7 @@ export default function TwoByTwoGrid() {
   }, []);
 
   const gridProducts = products.slice(0, 6);
-
+console.log('gridProducts========',gridProducts)
   const handlePlay = (id: number) => {
     // If the same video is pressed while playing, pause it, else play new one
     setPlayingId((current) => (current === id ? null : id));
@@ -159,7 +164,7 @@ export default function TwoByTwoGrid() {
             key={p.id}
             thumbnail={`${p.image}`}
             label={p.name}
-            videoUri={DEFAULT_VIDEO}
+            videoUri={p.video}
             productId={p.id}
             productName={p.name}
             tableName={p.table}
@@ -174,7 +179,7 @@ export default function TwoByTwoGrid() {
             key={p.id}
             thumbnail={`${p.image}`}
             label={p.name}
-            videoUri={DEFAULT_VIDEO}
+            videoUri={p.video}
             productId={p.id}
             productName={p.name}
             tableName={p.table}
@@ -189,7 +194,7 @@ export default function TwoByTwoGrid() {
             key={p.id}
             thumbnail={`${p.image}`}
             label={p.name}
-            videoUri={DEFAULT_VIDEO}
+            videoUri={p.video}
             productId={p.id}
             productName={p.name}
             tableName={p.table}

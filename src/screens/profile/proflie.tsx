@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
 import LogoutButton from './logoutButton'; // Adjust the import path
+import { AuthContext } from '../../helper/authContext';
 
 interface JwtPayload {
   username?: string;
@@ -26,29 +27,41 @@ export default function ProfileScreen({ navigation }: any) {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string>('sadhubasnet@gmail.com');
   const [phone, setPhone] = useState<string>('+1 (555) 123-4567');
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const { isLoggedIn,token } = useContext(AuthContext);
 
   useEffect(() => {
-    const fetchToken = async () => {
-      const token = await AsyncStorage.getItem('token');
+      const fetchToken = async () => {
       if (token) {
-        try {
+      
           const decoded = jwtDecode<JwtPayload>(token);
           setUsername(decoded.username || null);
           setEmail(decoded.email || 'sadhubasnet@gmail.com');
           setPhone(decoded.phone || '+1 (555) 123-4567');
-          setIsLoggedIn(true);
 
-        } catch (e) {
-          setIsLoggedIn(false);
-        }
-      }else{
-                setIsLoggedIn(false);
-
-      }
+        } 
     };
     fetchToken();
   }, []);
+  //   const fetchToken = async () => {
+  //     if (token) {
+  //       try {
+  //         const decoded = jwtDecode<JwtPayload>(token);
+  //         setUsername(decoded.username || null);
+  //         setEmail(decoded.email || 'sadhubasnet@gmail.com');
+  //         setPhone(decoded.phone || '+1 (555) 123-4567');
+  //         setIsLoggedIn(true);
+
+  //       } catch (e) {
+  //         setIsLoggedIn(false);
+  //       }
+  //     }else{
+  //               setIsLoggedIn(false);
+
+  //     }
+  //   };
+  //   fetchToken();
+  // }, []);
  if (!isLoggedIn) {
     return (
       <View className="flex-1 items-center justify-center bg-white">

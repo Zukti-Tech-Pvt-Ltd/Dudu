@@ -8,10 +8,32 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { getOne } from '../../api/serviceList/productApi';
+import { getByName, getOne } from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
 import { createCart } from '../../api/cartApi';
 
+interface ProductDataType {
+  id: number;
+  name: string;
+  image: string;
+  price: number;
+  // add other fields as needed
+  video?: string;
+  category?: string;
+  description?: string;
+  order?: number;
+  rate?: number;
+  count?: number;
+  type?: string;
+  createdAt?: string;
+}
+
+interface ApiResponse<T> {
+  status: string;
+  data: T;
+}
+
+let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
 const DetailScreen = () => {
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
@@ -28,6 +50,8 @@ const DetailScreen = () => {
   const route = useRoute<ProductRouteProp>();
 
   const { productId = 0 } = route.params ?? {};
+    const { productName = '' } = route.params ?? {};
+
 
   const handleAddToCart = async () => {
     const response = await createCart(product.id, quantity);
@@ -36,8 +60,10 @@ const DetailScreen = () => {
       setTimeout(() => setShowSuccess(false), 1000);
     }
   };
-
-  const getItems = async () => {
+let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
+  console.log("productId",productId)
+if (productId) {
+  getItems = async () => {
     try {
       const data = await getOne(productId);
       return data || null;
@@ -46,6 +72,25 @@ const DetailScreen = () => {
       return null;
     }
   };
+  console.log("getItems",getItems)
+
+} 
+
+else {
+  console.log("productName",productName)
+  getItems = async () => {
+    try {
+      const data = await getByName(productName);
+      console.log("dataaaaaaaaaaa",data)
+      return data || null;
+    } catch (err) {
+      console.log(err);
+      return null;
+    }
+  };
+}
+  
+
 
   const normalizedImage =
     product && product.image
@@ -58,13 +103,14 @@ const DetailScreen = () => {
     const fetchData = async () => {
       setLoading(true);
       const item = await getItems();
+      console.log("item",item)
       if (item) {
-        setProduct(item.data);
+      setProduct(item.data); // no .data here
       }
       setLoading(false);
     };
     fetchData();
-  }, [productId]);
+  }, [productId, productName]);
 
   return (
     <SafeAreaView className="flex-1 bg-white">

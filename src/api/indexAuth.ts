@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Instance with token interceptor (for authorized requests)
 export const apiAuth = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 200000,
+  timeout: 100000,
 });
 
 console.log('apiAuth', apiAuth);
