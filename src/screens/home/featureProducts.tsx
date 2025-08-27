@@ -5,6 +5,7 @@ import { getRandomProducts } from '../../api/homeApi';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '@env';
+import { createThumbnail } from 'react-native-create-thumbnail';
 
 type Product = {
    id: number;
@@ -32,6 +33,7 @@ type HoldToPlayVideoProps = {
   onPlay: (id: number) => void;
 };
 
+
 type RootStackParamList = {
   TwoByTwoGrid: { categoryId: string; categoryName: string };
   DetailScreen: { productId: number; productName: string; tableName: string };
@@ -55,20 +57,42 @@ const HoldToPlayVideo = ({
   isPlaying,
   onPlay,
 }: HoldToPlayVideoProps) => {
+  const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
+
   const videoRef = useRef<VideoRef>(null);
   const navigation = useNavigation<CategoryNavigationProp>();
   const [isLoading, setIsLoading] = useState(true);
 
-  const normalizedImage = thumbnail.startsWith('/')
-    ? thumbnail.slice(1)
-    : thumbnail;
-  const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+  // const normalizedImage = thumbnail.startsWith('/')
+  //   ? thumbnail.slice(1)
+  //   : thumbnail;
+  // const imageUri = `${API_BASE_URL}/${normalizedImage}`;
 
    const normalizedVideo = thumbnail.startsWith('/')
     ? videoUri.slice(1)
     : videoUri;
   const video = `${API_BASE_URL}/${normalizedVideo}`;
 
+  useEffect(() => {
+    const fetchThumbnail = async () => {
+      const uri = await getThumbnail(video);
+      setThumbnailUri(uri);
+    };
+    fetchThumbnail();
+  }, [video]);
+
+  const getThumbnail = async (videoUri: string) => {
+    try {
+      const response = await createThumbnail({
+        url: videoUri,
+        timeStamp: 1000,
+      });
+      return response.path;
+    } catch (e) {
+      console.error('Error creating thumbnail:', e);
+      return null;
+    }
+  };
   return (
     <TouchableOpacity
       activeOpacity={0.7}
@@ -108,7 +132,7 @@ const HoldToPlayVideo = ({
           />
         ) : (
           <Image
-            source={{ uri: imageUri }}
+            source={thumbnailUri ? { uri: thumbnailUri } : undefined}
             className="w-full h-full"
             resizeMode="cover"
           />

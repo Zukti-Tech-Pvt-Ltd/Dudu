@@ -9,6 +9,7 @@ export const apiAuth = axios.create({
   timeout: 100000,
 });
 
+
 console.log('apiAuth', apiAuth);
 
 apiAuth.interceptors.request.use(

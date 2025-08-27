@@ -26,6 +26,7 @@
     "react-intersection-observer": "^9.16.0",
     "react-native": "0.80.2",
     "react-native-config": "^1.5.5",
+    "react-native-create-thumbnail": "^2.1.1",
     "react-native-crypto": "^2.2.1",
     "react-native-dotenv": "^3.4.11",
     "react-native-get-random-values": "^1.11.0",
