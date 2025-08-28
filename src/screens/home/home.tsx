@@ -115,7 +115,6 @@ export default function Home() {
       : item.image;
 
     const imageUri = `${API_BASE_URL}/${normalizedImage}`;
-
     return (
       <TouchableOpacity
         onPress={() =>

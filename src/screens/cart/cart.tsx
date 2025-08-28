@@ -152,7 +152,29 @@ export default function CartScreen() {
       return updated;
     });
   }
+  const selectedItems = cartData.flatMap(group =>
+    group.items
+      .filter(item => selected[item.id]) // only selected items
+      .map(item => ({
+        id: item.id,
+        quantity: quantities[item.id] ?? item.qty, // get quantity from quantities state or fallback to item.qty
+      })),
+  );
+  const handleCheckout = () => {
+    if (selectedItems.length === 0) {
+      alert('Please select at least one item to checkout.');
+      return;
+    }
+    console.log('selectedItems', selectedItems);
+
+    // navigation.navigate('CheckoutScreen', {
+    //   selectedItems, // pass array of { id, quantity }
+    // });
+  };
   const navigation = useNavigation<cartNavigationProp>();
+  console.log('cartData=====', cartData);
+  console.log('selected=====', selected);
+  console.log('quantities=====', quantities);
 
   // Subtotal calculation
   const subtotal = Object.entries(quantities).reduce((sum, [id, qty]) => {
@@ -323,9 +345,10 @@ export default function CartScreen() {
               <StyledTouchable
                 style={{ backgroundColor: '#3b82f6' }}
                 className="w-full py-4 rounded-xl items-center mb-6"
+                onPress={handleCheckout}
               >
                 <StyledText className="text-white text-lg font-bold">
-                  Check Out
+                  CheckOut
                 </StyledText>
               </StyledTouchable>
             </>
@@ -334,4 +357,7 @@ export default function CartScreen() {
       )}
     </StyledView>
   );
+}
+function alert(arg0: string) {
+  throw new Error('Function not implemented.');
 }

@@ -14,6 +14,8 @@ import DetailScreen from './src/screens/productDetail/productDetail';
 import LoginScreen from './src/screens/login/login';
 import SignupScreen from './src/screens/login/signUp';
 import { AuthProvider } from "./src/helper/authContext";
+import CheckoutScreen from './src/screens/checkOut/checkOutScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -64,6 +66,12 @@ export default function App() {
           name="SearchScreen"
           component={SearchScreen}
           options={{ title: 'SearchScreen' }}
+        />
+
+        <Stack.Screen
+          name="CheckoutScreen"
+          component={CheckoutScreen}
+          options={{ title: 'CheckoutScreen' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

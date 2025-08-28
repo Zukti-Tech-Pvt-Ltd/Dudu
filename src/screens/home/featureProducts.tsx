@@ -137,6 +137,7 @@ const HoldToPlayVideo = ({
             resizeMode="cover"
           />
         )}
+        
         {isPlaying && isLoading && (
           <View className="absolute inset-0 justify-center items-center bg-black">
             <Text className="text-white text-sm">Loading...</Text>
@@ -175,7 +176,6 @@ console.log('gridProducts========',gridProducts)
     // If the same video is pressed while playing, pause it, else play new one
     setPlayingId((current) => (current === id ? null : id));
   };
-
   return (
     <View
       className="flex-1 justify-center

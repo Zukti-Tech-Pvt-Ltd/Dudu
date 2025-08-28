@@ -11,6 +11,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { getByName, getOne } from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
 import { createCart } from '../../api/cartApi';
+import BuyNowPopup from '../popUp/buyNowPop';
 
 interface ProductDataType {
   id: number;
@@ -39,6 +40,10 @@ const DetailScreen = () => {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showBuyNowPopup, setShowBuyNowPopup] = useState(false);
+
+  const handleShowPopup = () => setShowBuyNowPopup(true);
+  const handleClosePopup = () => setShowBuyNowPopup(false);
 
   const navigation = useNavigation();
 
@@ -50,8 +55,7 @@ const DetailScreen = () => {
   const route = useRoute<ProductRouteProp>();
 
   const { productId = 0 } = route.params ?? {};
-    const { productName = '' } = route.params ?? {};
-
+  const { productName = '' } = route.params ?? {};
 
   const handleAddToCart = async () => {
     const response = await createCart(product.id, quantity);
@@ -60,37 +64,32 @@ const DetailScreen = () => {
       setTimeout(() => setShowSuccess(false), 1000);
     }
   };
-let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
-  console.log("productId",productId)
-if (productId) {
-  getItems = async () => {
-    try {
-      const data = await getOne(productId);
-      return data || null;
-    } catch (err) {
-      console.log(err);
-      return null;
-    }
-  };
-  console.log("getItems",getItems)
-
-} 
-
-else {
-  console.log("productName",productName)
-  getItems = async () => {
-    try {
-      const data = await getByName(productName);
-      console.log("dataaaaaaaaaaa",data)
-      return data || null;
-    } catch (err) {
-      console.log(err);
-      return null;
-    }
-  };
-}
-  
-
+  let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
+  console.log('productId', productId);
+  if (productId) {
+    getItems = async () => {
+      try {
+        const data = await getOne(productId);
+        return data || null;
+      } catch (err) {
+        console.log(err);
+        return null;
+      }
+    };
+    console.log('getItems', getItems);
+  } else {
+    console.log('productName', productName);
+    getItems = async () => {
+      try {
+        const data = await getByName(productName);
+        console.log('dataaaaaaaaaaa', data);
+        return data || null;
+      } catch (err) {
+        console.log(err);
+        return null;
+      }
+    };
+  }
 
   const normalizedImage =
     product && product.image
@@ -103,9 +102,9 @@ else {
     const fetchData = async () => {
       setLoading(true);
       const item = await getItems();
-      console.log("item",item)
+      console.log('item', item);
       if (item) {
-      setProduct(item.data); // no .data here
+        setProduct(item.data); // no .data here
       }
       setLoading(false);
     };
@@ -179,7 +178,6 @@ else {
               elevation: 8, // Android shadow elevation
             }}
           >
-            {' '}
             <Text className="text-xl font-semibold text-gray-800 mb-2">
               {product.name?.trim()}
             </Text>
@@ -210,36 +208,45 @@ else {
               {product.description || 'No description available.'}
             </Text>
           </View>
-        </View>
-      ) : 
-      (
-        <View className="flex-1 justify-center items-center">
-          <Text>No Product Found</Text>
-        </View>
-      )
-      }
+          <View className="absolute bottom-8 right-5 flex-row">
+        <TouchableOpacity
+          onPress={handleShowPopup} // Show popup on press
+          activeOpacity={0.8}
+          className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 mr-3 shadow-2xl"
+          style={{
+            shadowOffset: { width: 0, height: 8 },
+            elevation: 10,
+          }}
+        >
+          <Text className="text-white font-semibold text-base mr-2">
+            Buy Now
+          </Text>
+          <Image
+            source={require('../../../assets/navIcons/check.png')}
+            className="w-5 h-5 tint-white"
+            style={{ tintColor: 'white' }}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleAddToCart}
+          activeOpacity={0.8}
+          className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 shadow-2xl"
+          style={{
+            shadowOffset: { width: 0, height: 8 },
 
-      {/* Add to Cart Button */}
-      <TouchableOpacity
-        onPress={handleAddToCart}
-        className="absolute bottom-8 right-5 bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 shadow-2xl"
-        activeOpacity={0.8}
-        style={{
-          shadowColor: '#000000', // black shadow color
-          shadowOffset: { width: 0, height: 8 }, // bigger shadow offset
-          shadowOpacity: 0.7, // stronger opacity
-          shadowRadius: 10, // blur radius
-          elevation: 10, // higher elevation for Android
-        }}
-      >
-        <Text className="text-white font-semibold text-base mr-2">
-          Add to Cart
-        </Text>
-        <Image
-          source={require('../../../assets/navIcons/cart.png')}
-          style={{ width: 20, height: 20, tintColor: 'white' }}
-        />
-      </TouchableOpacity>
+            elevation: 10,
+          }}
+        >
+          <Text className="text-white font-semibold text-base mr-2">
+            Add to Cart
+          </Text>
+          <Image
+            source={require('../../../assets/navIcons/cart.png')}
+            className="w-5 h-5 tint-white"
+            style={{ tintColor: 'white' }}
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Success Popup */}
       {showSuccess && (
@@ -251,6 +258,18 @@ else {
           </View>
         </View>
       )}
+
+      {/* Render BuyNowPopup conditionally */}
+      {showBuyNowPopup && <BuyNowPopup onClose={handleClosePopup}name={product.name} image={product.image} count={product.count }/>}
+        </View>
+        
+      ) : (
+        <View className="flex-1 justify-center items-center">
+          <Text>No Product Found</Text>
+        </View>
+      )}
+
+      
     </SafeAreaView>
   );
 };
