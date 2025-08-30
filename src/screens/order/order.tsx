@@ -41,7 +41,7 @@ type Order = {
 const filters = [
     { label: 'All Orders' },
         { label: 'OrderPlaced' },
-
+    { label: 'Pending' },
     { label: 'Confirmed' },
     { label: 'Shipped' },
     { label: 'Delivered' },

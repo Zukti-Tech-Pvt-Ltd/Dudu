@@ -260,7 +260,7 @@ const DetailScreen = () => {
       )}
 
       {/* Render BuyNowPopup conditionally */}
-      {showBuyNowPopup && <BuyNowPopup onClose={handleClosePopup}name={product.name} image={product.image} count={product.count }/>}
+      {showBuyNowPopup && <BuyNowPopup onClose={handleClosePopup}name={product.name} id={product.id} image={product.image} quantity={quantity}/>}
         </View>
         
       ) : (

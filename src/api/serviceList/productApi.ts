@@ -13,6 +13,16 @@ export const getOne=async(id:number)=>{
     const response= await api.get(`api/product/getOne/${id}`)
     return response.data
 }
+export const getMultiple=async(ids:string[])=>{
+    const idsParam = ids.join(',');
+    console.log('idsParam',idsParam)
+    const response= await api.get(`api/product/getMultiple`,{
+      params:{ids:idsParam}
+    })
+    return response.data
+}
+
+
 
 export const getByName=async(name:string)=>{
    try {

@@ -25,6 +25,7 @@ const StyledImage = styled(Image);
 type Item = {
   id: string;
   img: any;
+  productId:string,
   name: string;
   extra: string;
   price: number;
@@ -41,6 +42,7 @@ type CartGroup = {
 type RootStackParamList = {
   Cart: undefined;
   DetailScreen: { productId: string; productName: string; tableName: string };
+  CheckoutScreen:{selectedItems: { id: string; quantity: number }[]};
 };
 type cartNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Cart'>;
 export default function CartScreen() {
@@ -156,20 +158,21 @@ export default function CartScreen() {
     group.items
       .filter(item => selected[item.id]) // only selected items
       .map(item => ({
-        id: item.id,
+        id: item.productId,
         quantity: quantities[item.id] ?? item.qty, // get quantity from quantities state or fallback to item.qty
       })),
   );
+  
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
       alert('Please select at least one item to checkout.');
       return;
     }
-    console.log('selectedItems', selectedItems);
+    console.log('selectedItems=============', selectedItems);
 
-    // navigation.navigate('CheckoutScreen', {
-    //   selectedItems, // pass array of { id, quantity }
-    // });
+    navigation.navigate('CheckoutScreen', {
+      selectedItems,
+    });
   };
   const navigation = useNavigation<cartNavigationProp>();
   console.log('cartData=====', cartData);
@@ -323,14 +326,17 @@ export default function CartScreen() {
             </StyledView>
           ))}
 
-          {cartData.length === 0 ? (
+       
+        </ScrollView>
+      )}
+         {cartData.length === 0 ? (
             <StyledText className="text-center py-6 text-gray-500">
               Your cart is empty
             </StyledText>
           ) : (
             <>
               {/* Subtotal, Checkout */}
-              <StyledView className="flex-row items-center justify-between my-4">
+              <StyledView className="flex-row items-center justify-between my-2 mx-4">
                 <StyledText className="text-base font-bold">
                   Subtotal:{' '}
                   <StyledText style={{ color: '#3b82f6' }}>
@@ -344,7 +350,7 @@ export default function CartScreen() {
               </StyledView>
               <StyledTouchable
                 style={{ backgroundColor: '#3b82f6' }}
-                className="w-full py-4 rounded-xl items-center mb-6"
+                className="w-full py-4 rounded-xl items-center mb-1"
                 onPress={handleCheckout}
               >
                 <StyledText className="text-white text-lg font-bold">
@@ -353,8 +359,6 @@ export default function CartScreen() {
               </StyledTouchable>
             </>
           )}
-        </ScrollView>
-      )}
     </StyledView>
   );
 }

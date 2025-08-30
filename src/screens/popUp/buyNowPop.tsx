@@ -17,13 +17,15 @@ const { height } = Dimensions.get('window');
 
 type buyNowPopupProps = {
   onClose: () => void;
-  count: number;
+  quantity: number;
   name: string;
+  id:string,
   image: string;
 };
 type RootStackParamList = {
   BuyNowPopup: {};
-  CheckoutScreen: {};
+    CheckoutScreen:{selectedItems: { id: string; quantity: number }[]};
+
 };
 type checkOutNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -31,14 +33,18 @@ type checkOutNavigationProp = NativeStackNavigationProp<
 >;
 export default function BuyNowPopup({
   onClose,
-  count,
+  quantity,
   name,
+  id,
   image,
 }: buyNowPopupProps) {
+  console.log('imagesdfasdfasdfasdfasdfa');
   const slideAnim = useRef(new Animated.Value(height)).current;
   const navigation = useNavigation<checkOutNavigationProp>();
 
   useEffect(() => {
+      console.log('------------------');
+
     Animated.timing(slideAnim, {
       toValue: 0,
       duration: 150,
@@ -71,10 +77,18 @@ export default function BuyNowPopup({
         }}
       >
         <TouchableOpacity style={{ flex: 1 }} onPress={closePopup} />
-        <Animated.View
-          style={{ transform: [{ translateY: slideAnim }] }}
-          className="bg-white rounded-t-3xl p-5 items-center"
-        >
+     <Animated.View
+  style={{
+    transform: [{ translateY: slideAnim }],
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+  }}
+  className="bg-white rounded-t-3xl p-5 items-center"
+>
+
           <Image
             source={{ uri: `${API_BASE_URL}/${image}` }}
             className="w-full h-48 rounded-b-3xl mb-5"
@@ -83,13 +97,20 @@ export default function BuyNowPopup({
           <Text className="text-lg mb-2">{name}</Text>
           <View className="flex-row items-center mb-6">
             <Text className="text-lg font-bold mr-2">Quantity :</Text>
-            <Text className="text-lg">{count}</Text>
+            <Text className="text-lg">{quantity}</Text>
           </View>
 
           <TouchableOpacity
             onPress={() => {
               closePopup();
-              navigation.navigate('CheckoutScreen', {});
+              navigation.navigate('CheckoutScreen', {
+                selectedItems: [
+                  {
+                    id: id,
+                    quantity: quantity,
+                  },
+                ],
+              });
             }}
             className="bg-blue-500 px-10 py-3 rounded-full"
           >
