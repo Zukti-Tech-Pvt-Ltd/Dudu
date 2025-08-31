@@ -17,9 +17,9 @@ import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-naviga
 import PaymentMethodScreen from '../payment/paymentScreen';
 
 const address = {
-  name: 'Chris Hemsworth',
-  street: 'R-56, West street, Pennsylvania, USA.',
-  mobile: '+96-012 3445 44',
+  name: 'salma Shrestha',
+  street: 'kirtipur, kathmandu.',
+  mobile: '9846282640',
 };
 type RootStackParamList = {
   CheckoutScreen: { selectedItems: { id: string; quantity: number }[] };
