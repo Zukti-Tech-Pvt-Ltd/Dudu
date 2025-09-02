@@ -47,13 +47,13 @@ const KhaltiPayment = () => {
 
   return (
     <View style={{ flex: 1 }}>
-      {loading && (
+      {/* {loading && (
         <ActivityIndicator
           size="large"
           color="#5C2D91"
           style={{ position: 'absolute', top: '50%', left: '50%', zIndex: 1 }}
         />
-      )}
+      )} */}
       <WebView
         source={{ uri: khaltiCheckoutUrl }}
         onLoadEnd={() => setLoading(false)}
