@@ -9,7 +9,8 @@ const CardText = styled(Text);
 const CardRow = styled(View);
 type RootStackParamList = {
   PaymentMethodScreen: {};
-    ESewaTestPayment:undefined;
+    ESewaTestPayment:undefined
+    KhaltiPayment:undefined;
 
 };
 type checkOutNavigationProp = NativeStackNavigationProp<
@@ -65,7 +66,11 @@ export default function PaymentMethodScreen() {
         </Text>
 
         {/* Khalti by IME */}
-        <TouchableOpacity className="bg-white px-5 py-4 mx-4 my-1 rounded flex-row items-center border border-gray-200">
+        <TouchableOpacity 
+                  onPress={() => navigation.navigate('KhaltiPayment')}
+
+        className="bg-white px-5 py-4 mx-4 my-1 rounded flex-row items-center border border-gray-200">
+          
           <Image
             source={require('../../../assets/images/khalti.png')}
             className="w-7 h-7 mr-4"

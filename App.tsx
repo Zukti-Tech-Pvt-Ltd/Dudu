@@ -17,6 +17,8 @@ import { AuthProvider } from './src/helper/authContext';
 import CheckoutScreen from './src/screens/checkOut/checkOutScreen';
 import PaymentMethodScreen from './src/screens/payment/paymentScreen';
 import ESewaTestPayment from './src/screens/payment/esewa';
+import KhaltiPayment from './src/screens/payment/khalti';
+
 import { Linking, Alert } from 'react-native';
 
 const Stack = createNativeStackNavigator();
@@ -106,6 +108,11 @@ export default function App() {
             name="ESewaTestPayment"
             component={ESewaTestPayment}
             options={{ title: 'ESewaTestPayment' }}
+          />
+          <Stack.Screen
+            name="KhaltiPayment"
+            component={KhaltiPayment}
+            options={{ title: 'KhaltiPayment' }}
           />
         </Stack.Navigator>
       </NavigationContainer>
