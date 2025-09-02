@@ -10,4 +10,9 @@ declare module 'react-native-vector-icons/Ionicons' {
 
   const Ionicons: ComponentType<IconProps>;
   export default Ionicons;
+
+
 }
+
+declare module 'crypto-js';
+
