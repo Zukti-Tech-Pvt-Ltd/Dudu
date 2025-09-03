@@ -26,6 +26,7 @@ import OrdersScreen from '../order/order';
 import { getAllServices } from '../../api/services/serviceApi';
 import { API_BASE_URL } from '@env';
 import TwoByTwoGrid from './featureProducts';
+import {  decodeToken } from '../../api/indexAuth';
 // import TwoByTwoGrid from './featureProducts';
 
 
@@ -42,6 +43,7 @@ export default function Home() {
     SearchScreen: { query: string };
     category: { categoryId: string; categoryName: string };
     GoogleMaps: undefined;
+    TenantScreen: undefined;
     DetailScreen: { productId: string; productName: string; tableName: string };
   };
 
@@ -59,11 +61,13 @@ export default function Home() {
   );
   const getItems = async () => {
     try {
+        const claims = await decodeToken();
+      console.log('API_BASE_URL-=-=-=-===sdfsdfsdfsdfsd-=-==-=errrrrorrr==-',claims);
+
       const data = await getAllServices();
       setServices(data.data); // because your API returns { status, data }
       return data.data;
     } catch (error) {
-      console.log('API_BASE_URL-=-=-=-===-=-==-=errrrrorrr==-');
 
       console.error('Error fetching services:', error);
     } finally {
@@ -109,6 +113,7 @@ export default function Home() {
   const itemWidth = (windowWidth - 40) / 2; // 20 padding each side
   console.log('servies', servies);
 
+
   const renderItems = ({ item }: { item: any }) => {
     const normalizedImage = item.image.startsWith('/')
       ? item.image.slice(1)
@@ -118,8 +123,11 @@ export default function Home() {
     return (
       <TouchableOpacity
         onPress={() =>
-          item.name === 'Home' || item.name === 'Delivery' 
-          ? navigation.navigate('GoogleMaps')
+          item.name === 'Home' || item.name === 'Delivery'
+          
+            ? navigation.navigate('TenantScreen')
+
+          // ? navigation.navigate('GoogleMaps')
           : navigation.navigate('category', {
             categoryId: item.id,
             categoryName: item.name,

@@ -18,6 +18,7 @@ import CheckoutScreen from './src/screens/checkOut/checkOutScreen';
 import PaymentMethodScreen from './src/screens/payment/paymentScreen';
 import ESewaTestPayment from './src/screens/payment/esewa';
 import KhaltiPayment from './src/screens/payment/khalti';
+import TenantScreen from './src/screens/service/tenant';
 
 import { Linking, Alert } from 'react-native';
 
@@ -113,6 +114,11 @@ export default function App() {
             name="KhaltiPayment"
             component={KhaltiPayment}
             options={{ title: 'KhaltiPayment' }}
+          />
+          <Stack.Screen
+            name="TenantScreen"
+            component={TenantScreen}
+            options={{ title: 'TenantScreen' }}
           />
         </Stack.Navigator>
       </NavigationContainer>
