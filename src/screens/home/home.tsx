@@ -37,6 +37,7 @@ export default function Home() {
   const [fetchVideo, setFetchVideo] = useState<any[]>([]);
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const [claims, setClaims] = useState();
 
   type RootStackParamList = {
     Home: undefined;
@@ -53,6 +54,18 @@ export default function Home() {
   >;
 
   const scrollRef = useRef<ScrollView>(null);
+useEffect(() => {
+    const fetchClaims = async () => {
+      const claim = await decodeToken();
+      console.log('chfakjsdhfjksahdfkjahsdkfjhskhsdjfksajfhskdfhksjdfhkjsdlaim', claim);
+      if (claim) {
+        const usertype = claim.userType;
+        setClaims(usertype);
+      }
+    };
+    fetchClaims();
+  }, []);
+              console.log('claims-============', claims);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -61,8 +74,7 @@ export default function Home() {
   );
   const getItems = async () => {
     try {
-        const claims = await decodeToken();
-      console.log('API_BASE_URL-=-=-=-===sdfsdfsdfsdfsd-=-==-=errrrrorrr==-',claims);
+      
 
       const data = await getAllServices();
       setServices(data.data); // because your API returns { status, data }
@@ -122,17 +134,20 @@ export default function Home() {
     const imageUri = `${API_BASE_URL}/${normalizedImage}`;
     return (
       <TouchableOpacity
-        onPress={() =>
-          item.name === 'Home' || item.name === 'Delivery'
-          
-            ? navigation.navigate('TenantScreen')
-
-          // ? navigation.navigate('GoogleMaps')
-          : navigation.navigate('category', {
-            categoryId: item.id,
-            categoryName: item.name,
-          })
-        }
+        onPress={() => {
+          if (item.name === 'Home' || item.name === 'Delivery') {
+            if (claims === 'tenant') {
+              navigation.navigate('TenantScreen');
+            } else {
+              navigation.navigate('GoogleMaps');
+            }
+          } else {
+            navigation.navigate('category', {
+              categoryId: item.id,
+              categoryName: item.name,
+            });
+          }
+        }}
       >
         <View className="flex-col items-center justify-center p-3.5">
           <View className="shadow-lg rounded-full bg-gray-100 overflow-hidden p-[1px] w-[65px] h-[65px] flex items-center justify-center">

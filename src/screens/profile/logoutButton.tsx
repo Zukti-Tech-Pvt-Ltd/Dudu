@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { AuthContext } from '../../helper/authContext';
+import { resetTokenCache } from '../../api/indexAuth';
 export type RootStackParamList = {
   maintab: undefined;
   HomeScreen: undefined;
@@ -26,6 +27,7 @@ const LogoutButton = () => {
 
   const handleLogoutConfirm = async () => {
     setVisible(false);
+    resetTokenCache();
     try {
       // Replace with your token removal logic
       await setToken(null); //clears AsyncStorage + updates context

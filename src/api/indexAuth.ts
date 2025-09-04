@@ -11,6 +11,7 @@ const apiAuth = axios.create({
 
 console.log('apiAuth', apiAuth);
 
+
 apiAuth.interceptors.request.use(
   async (config) => {
     const token = await AsyncStorage.getItem('token');

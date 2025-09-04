@@ -1,6 +1,6 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,11 @@ import {
   Keyboard,
   Image,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
+import { createTenant, getTenant } from '../../api/tenantApi';
 
 type Place = {
   id: string;
@@ -23,110 +27,163 @@ type Place = {
   phoneNumber: string;
 };
 
- type RootStackParamList = {
-    
-    GoogleMaps: undefined;
-    TenantScreen: undefined;
-  };
+type RootStackParamList = {
+  GoogleMaps: undefined;
+  TenantScreen: undefined;
+};
 export default function TenantScreen() {
-    type HomeNavigationProp = NativeStackNavigationProp<
-        RootStackParamList,
-        'TenantScreen'
-      >;
-        const navigation = useNavigation<HomeNavigationProp>();
-      
+  type HomeNavigationProp = NativeStackNavigationProp<
+    RootStackParamList,
+    'TenantScreen'
+  >;
+  const navigation = useNavigation<HomeNavigationProp>();
+
   const [placeName, setPlaceName] = useState('');
   const [location, setLocation] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [places, setPlaces] = useState<Place[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const addPlace = () => {
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await getTenant();
+      const tenantArray = response.data; // Extract the array here
+
+      if (Array.isArray(tenantArray)) {
+        const mapped = tenantArray.map((item: any) => ({
+          id: item.id,
+          placeName: item.name,
+          location: item.address,
+          phoneNumber: item.phoneNumber,
+        }));
+        setPlaces(mapped);
+      } else {
+        setPlaces([]);
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Failed to fetch tenants');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchData();
+  }, []);
+  console.log('places', places);
+
+  const addPlace = async () => {
     if (placeName && location && phoneNumber) {
-      const newPlace: Place = {
-        id: Date.now().toString(),
-        placeName,
-        location,
-        phoneNumber,
-      };
-      setPlaces(currentPlaces => [newPlace, ...currentPlaces]);
-      setPlaceName('');
-      setLocation('');
-      setPhoneNumber('');
-      setModalVisible(false);
+      try {
+        setLoading(true);
+        const response = await createTenant(placeName, phoneNumber, location);
+        console.log('responsewwwwwwwwwwwwwwwwwww', response);
+        await fetchData(); // refresh data from API
+
+        // const newPlace: Place = {
+        //   id: response.id,
+        //   placeName: response.name,
+        //   location: response.address,
+        //   phoneNumber: response.phoneNumber,
+        // };
+        // setPlaces(current => [newPlace, ...current]);
+        setPlaceName('');
+        setLocation('');
+        setPhoneNumber('');
+        setModalVisible(false);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to add place');
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     } else {
-      alert('Please fill in all fields.');
+      Alert.alert('Validation', 'Please fill in all fields.');
     }
   };
 
   return (
     <View className="flex-1 bg-gradient-to-b from-blue-50 via-white to-blue-50">
-       <View
-              className="bg-white py-4 px-4  flex-row items-center"
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 5,
-                elevation: 8,
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                className="w-9 h-9 mt-4 -ml-3  items-center justify-center"
-              >
-                <Image
-                  source={require('../../../assets/navIcons/left-arrow.png')}
-                  style={{ width: 16, height: 16, tintColor: '#000000' }}
-                />
-              </TouchableOpacity>
-              <Text className="text-xl font-semibold ml-1 mt-4 text-black">
-                Add Homes
-              </Text>
-            </View>
-      
-
-      <FlatList
-  contentContainerStyle={{ paddingHorizontal: 20 }}
-  data={places}
-  keyExtractor={item => item.id}
-  renderItem={({ item }) => (
-    <View className="bg-white rounded-3xl p-5 mb-6 shadow-lg flex-row items-center justify-between">
-      <View>
-        <Text className="font-bold text-2xl text-blue-900 mb-2">
-          {item.placeName}
-        </Text>
-        <Text className="text-blue-700 mb-1">Location: {item.location}</Text>
-        <Text className="text-blue-700">Phone: {item.phoneNumber}</Text>
-      </View>
-      <Pressable
-        className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
-        onPress={() => {
-          // Add your location navigation logic here
-          // Example: navigation.navigate('GoogleMaps', { ... })
-          alert('Show on map!'); // Replace with actual logic
+      <View
+        className="bg-white py-4 px-4  flex-row items-center"
+        style={{
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 5,
+          elevation: 8,
         }}
       >
-       <Image
-                   source={require('../../../assets/navIcons/pin.png')}
-                   style={{
-                    tintColor: 'white' ,
-                     width: 30,
-                     height: 30,
-                     resizeMode: 'contain',
-                   }}
-                 />
-        {/* Or use an icon: <Icon name="map-marker" size={28} color="#3b82f6" /> */}
-      </Pressable>
-    </View>
-  )}
-  ListEmptyComponent={
-    <Text className="text-center text-blue-300 mt-20 text-lg italic">
-      No places added yet.
-    </Text>
-  }
-/>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="w-9 h-9 mt-4 -ml-3  items-center justify-center"
+        >
+          <Image
+            source={require('../../../assets/navIcons/left-arrow.png')}
+            style={{ width: 16, height: 16, tintColor: '#000000' }}
+          />
+        </TouchableOpacity>
+        <Text className="text-xl font-semibold ml-1 mt-4 text-black">
+          Add Homes
+        </Text>
+      </View>
 
+      <FlatList
+        contentContainerStyle={{ paddingHorizontal: 20 }}
+        data={places}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <View className="bg-white rounded-3xl p-5 mb-6 shadow-lg flex-row items-center justify-between">
+            <View>
+              <Text className="font-bold text-2xl text-blue-900 mb-2">
+                {item.placeName}
+              </Text>
+              <Text className="text-blue-700 mb-1">
+                Location: {item.location}
+              </Text>
+              <Text className="text-blue-700">Phone: {item.phoneNumber}</Text>
+            </View>
+            <Pressable
+              className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
+              onPress={() => {
+                // Add your location navigation logic here
+                // Example: navigation.navigate('GoogleMaps', { ... })
+              }}
+            >
+              <Image
+                source={require('../../../assets/navIcons/pin.png')}
+                style={{
+                  tintColor: 'white',
+                  width: 30,
+                  height: 30,
+                  resizeMode: 'contain',
+                }}
+              />
+              {/* Or use an icon: <Icon name="map-marker" size={28} color="#3b82f6" /> */}
+            </Pressable>
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text className="text-center text-blue-300 mt-20 text-lg italic">
+            No places added yet.
+          </Text>
+        }
+      />
+      {loading && (
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+          }}
+        >
+          <ActivityIndicator size="large" color="#3b82f6" />
+        </View>
+      )}
 
       {/* Floating Plus Button */}
       <Pressable
@@ -192,9 +249,9 @@ export default function TenantScreen() {
                 <Pressable
                   className="bg-blue-100 rounded-2xl py-3 px-4 shadow-md"
                   onPress={() => {
-                    setModalVisible(false)
-                    navigation.navigate('GoogleMaps')}
-                }
+                    setModalVisible(false);
+                    navigation.navigate('GoogleMaps');
+                  }}
                 >
                   <Text className="text-blue-700 font-semibold text-lg text-center">
                     Mark Location
@@ -216,7 +273,4 @@ export default function TenantScreen() {
       </Modal>
     </View>
   );
-}
-function alert(arg0: string) {
-  throw new Error('Function not implemented.');
 }
