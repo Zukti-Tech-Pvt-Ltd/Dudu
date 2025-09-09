@@ -193,7 +193,7 @@ const [isMapReady, setIsMapReady] = useState(false);
               latitude: coord.latitude,
               longitude: coord.longitude,
             }}
-            image={require('../assets/icons/house.png')}
+            image={require('../../assets/icons/house.png')}
             onDragEnd={e => console.log({ x: e.nativeEvent.coordinate })}
           >
             <Callout>

@@ -6,7 +6,9 @@ import {
   DefaultTheme,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import MapsScreen from './src/GoogleMaps';
+import MapsScreen from './src/screens/GoogleMaps';
+import MapsScreenTenants from './src/screens/GoogleMapTenants';
+
 import MainTabs from './src/navigations/appNavigations';
 import { useColorScheme } from 'react-native';
 import SearchScreen from './src/screens/search/search';
@@ -83,6 +85,11 @@ export default function App() {
             name="GoogleMaps"
             component={MapsScreen}
             options={{ title: 'Google Maps' }}
+          />
+          <Stack.Screen
+            name="MapsScreenTenants"
+            component={MapsScreenTenants}
+            options={{ title: 'MapsScreenTenants' }}
           />
           <Stack.Screen
             name="DetailScreen"

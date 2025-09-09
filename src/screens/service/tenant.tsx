@@ -25,10 +25,18 @@ type Place = {
   placeName: string;
   location: string;
   phoneNumber: string;
+  latitude: number;
+  longitude: number;
 };
 
 type RootStackParamList = {
-  GoogleMaps: undefined;
+  MapsScreenTenants: {
+    placeName: string;
+    location: string;
+    phoneNumber: string;
+    latitude?: number;
+    longitude?: number;
+  };
   TenantScreen: undefined;
 };
 export default function TenantScreen() {
@@ -57,6 +65,8 @@ export default function TenantScreen() {
           placeName: item.name,
           location: item.address,
           phoneNumber: item.phoneNumber,
+          latitude: item.latitude,
+          longitude: item.longitude,
         }));
         setPlaces(mapped);
       } else {
@@ -148,8 +158,14 @@ export default function TenantScreen() {
             <Pressable
               className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
               onPress={() => {
-                // Add your location navigation logic here
-                // Example: navigation.navigate('GoogleMaps', { ... })
+                    setModalVisible(false);
+                    navigation.navigate('MapsScreenTenants',{
+                      placeName: item.placeName,
+                      location: item.location,
+                      phoneNumber: item.phoneNumber,
+                      latitude:item.latitude||0,
+                      longitude:item.longitude||0
+                    });
               }}
             >
               <Image
@@ -250,7 +266,12 @@ export default function TenantScreen() {
                   className="bg-blue-100 rounded-2xl py-3 px-4 shadow-md"
                   onPress={() => {
                     setModalVisible(false);
-                    navigation.navigate('GoogleMaps');
+                    navigation.navigate('MapsScreenTenants',{
+                      placeName: placeName,
+                      location: location,
+                      phoneNumber: phoneNumber,
+                   
+                    });
                   }}
                 >
                   <Text className="text-blue-700 font-semibold text-lg text-center">

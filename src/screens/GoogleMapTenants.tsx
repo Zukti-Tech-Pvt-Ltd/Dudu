@@ -8,7 +8,9 @@ import {
 import MapView, { PROVIDER_GOOGLE, Marker, Region, MapPressEvent } from 'react-native-maps';
 import { useNavigation } from '@react-navigation/native';
 
-export default function MapsScreen() {
+
+
+export default function MapsScreenTenants() {
   const navigation = useNavigation();
   const mapRef = useRef<MapView | null>(null);
 
