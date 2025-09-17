@@ -6,10 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Instance with token interceptor (for authorized requests)
 const apiAuth = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 100000,
+  timeout: 10000,
 });
-
-console.log('apiAuth', apiAuth);
 
 
 apiAuth.interceptors.request.use(
@@ -19,6 +17,8 @@ apiAuth.interceptors.request.use(
       // Use the set method
       config.headers.set('Authorization', `Bearer ${token}`);
     }
+
+
     return config;
   },
   (error) => Promise.reject(error)

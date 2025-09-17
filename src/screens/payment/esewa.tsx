@@ -1,11 +1,16 @@
 import CryptoJS from 'crypto-js';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React from 'react';
-import { View, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Alert, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { decodeToken } from '../../api/indexAuth';
 
-function generateSignature(secretKey: string, signedFieldNames: string[], data: any) {
+function generateSignature(
+  secretKey: string,
+  signedFieldNames: string[],
+  data: any,
+) {
   const signedData = signedFieldNames
     .map(field => `${field}=${data[field]}`)
     .join(',');
@@ -14,19 +19,46 @@ function generateSignature(secretKey: string, signedFieldNames: string[], data: 
   return CryptoJS.enc.Base64.stringify(hash);
 }
 
-type RootStackParamList = { ESewaTestPayment: undefined };
-
+type RootStackParamList = {
+  ESewaTestPayment: {
+    selectedItems: { id: string; quantity: number }[];
+    totalPrice: number;
+  };
+};
+type esewaNavigationProp = RouteProp<RootStackParamList, 'ESewaTestPayment'>;
 const ESewaTestPayment = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [claim, setClaim] = useState<Record<string, any> | null>(null);
+  useEffect(() => {
+    async function fetchClaim() {
+      const decoded = await decodeToken();
+      setClaim(decoded);
+    }
+    fetchClaim();
+  }, []);
+  if (!claim) {
+    // return loading placeholder while waiting
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<esewaNavigationProp>();
+  const { selectedItems } = route.params;
+  const { totalPrice } = route.params;
+  console.log('ESewa Payment Screen - selectedItems:', selectedItems);
+  console.log('ESewa Payment Screen - totalPrice:', totalPrice);
   // Unique transaction UUID
   const transactionUuid = `txn_${Date.now()}`;
-
+  console.log('cccccccccccclaimmmmmmmmmm', claim);
   // Payment parameters
-  const amount = '10'; // base amount
-  const taxAmount = '10';
-  const productServiceCharge = '10';
-  const productDeliveryCharge = '10';
+  const amount = totalPrice; // base amount
+  const taxAmount = '0';
+  const productServiceCharge = '0';
+  const productDeliveryCharge = '100';
 
   // Calculate total amount (must match sum of all)
   const totalAmount = (
@@ -37,13 +69,21 @@ const ESewaTestPayment = () => {
   ).toString();
 
   const productCode = 'EPAYTEST';
+  const selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
 
   // URLs
-  const successUrl = 'https://developer.esewa.com.np/success';
+  // const successUrl = 'https://developer.esewa.com.np/success';
+  // const successUrl = 'http://192.168.1.87:3000/api/payment/get?userId='+claim.id&'productId='+transactionUuid;
+  const successUrl = `http://192.168.1.87:3000/api/payment/get/userId=${claim.userId}/selectedItems=${selectedItemsParam}`;
+
   const failureUrl = 'https://developer.esewa.com.np/failure';
 
   // Signed fields for signature generation (in correct order)
-  const signedFieldNamesArr = ['total_amount', 'transaction_uuid', 'product_code'];
+  const signedFieldNamesArr = [
+    'total_amount',
+    'transaction_uuid',
+    'product_code',
+  ];
 
   // Data object for signature
   const data = {
@@ -87,7 +127,7 @@ const ESewaTestPayment = () => {
     <View style={{ flex: 1 }}>
       <WebView
         source={{ html: formHtml }}
-        onNavigationStateChange={navState => {  
+        onNavigationStateChange={navState => {
           const url = navState.url;
           console.log('Navigated to:', url);
 

@@ -23,7 +23,7 @@ const address = {
 };
 type RootStackParamList = {
   CheckoutScreen: { selectedItems: { id: string; quantity: number }[] };
-  PaymentMethodScreen: undefined;
+  PaymentMethodScreen: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
   // other screens...
 };
 
@@ -41,7 +41,6 @@ export default function CheckoutScreen() {
   const [products, setProducts] = useState<any[]>([]);
   console.log('Received selectedItems:', selectedItems);
   const selectedIds = selectedItems.map(item => item.id);
-
   useEffect(() => {
     const fetchProductForCheckOut = async () => {
       try {
@@ -65,7 +64,8 @@ export default function CheckoutScreen() {
       item => Number(item.id) === Number(product.id),
     );
     const quantity = selectedItem ? selectedItem.quantity : 1;
-    return sum + product.price * quantity;
+    const totprice=sum + product.price * quantity
+    return totprice;
   }, 0);
 const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -201,7 +201,11 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
 
         <TouchableOpacity
           onPress={() => {
-          navigation.navigate('PaymentMethodScreen',);  // ✅ correct navigation
+          navigation.navigate('PaymentMethodScreen',{
+            selectedItems: selectedItems,
+            totalPrice: totalPrice
+
+          });  // ✅ correct navigation
           }}
           activeOpacity={0.8}
           className="bg-blue-500 rounded-2xl flex-row items-center justify-center px-4 py-3 shadow-2xl w-full"

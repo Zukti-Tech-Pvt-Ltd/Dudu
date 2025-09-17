@@ -1,24 +1,32 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { styled } from 'nativewind';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 
 const Card = styled(View);
 const CardText = styled(Text);
 const CardRow = styled(View);
 type RootStackParamList = {
-  PaymentMethodScreen: {};
-    ESewaTestPayment:undefined
-    KhaltiPayment:undefined;
+  PaymentMethodScreen: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
+    ESewaTestPayment: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
+    KhaltiPayment: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
 
 };
-type checkOutNavigationProp = NativeStackNavigationProp<
+type checkOutNavigationProp = RouteProp<
   RootStackParamList,
   'PaymentMethodScreen'
 >;
 export default function PaymentMethodScreen() {
-      const navigation = useNavigation<checkOutNavigationProp>();
+    const route = useRoute<checkOutNavigationProp>();
+  
+      const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+      const { selectedItems } = route.params;
+      const { totalPrice } = route.params;
+        const [loading, setLoading] = useState(false);
+        const [products, setProducts] = useState<any[]>([]);
+        console.log('Received selectedItems:', selectedItems);
+        const selectedIds = selectedItems.map(item => item.id);
     
   return (
     <View className="flex-1 bg-white">
@@ -67,7 +75,10 @@ export default function PaymentMethodScreen() {
 
         {/* Khalti by IME */}
         <TouchableOpacity 
-                  onPress={() => navigation.navigate('KhaltiPayment')}
+                  onPress={() => navigation.navigate('KhaltiPayment',{
+                    selectedItems: selectedItems,
+                    totalPrice: totalPrice
+                  })}
 
         className="bg-white px-5 py-4 mx-4 my-1 rounded flex-row items-center border border-gray-200">
           
@@ -86,7 +97,10 @@ export default function PaymentMethodScreen() {
 
         {/* eSewa */}
         <TouchableOpacity
-          onPress={() => navigation.navigate('ESewaTestPayment')}
+          onPress={() => navigation.navigate('ESewaTestPayment',{
+                    selectedItems: selectedItems,
+                    totalPrice: totalPrice
+                  })}
           className="bg-white px-5 py-4 mx-4 my-1 rounded flex-row items-center border border-gray-200"
         >
           <Image
@@ -129,11 +143,11 @@ export default function PaymentMethodScreen() {
       {/* Subtotal/Total */}
       <View className="flex-row justify-between items-center border-t border-gray-200 px-5 py-3 mt-4">
         <Text className="text-sm text-gray-400">Subtotal</Text>
-        <Text className="text-sm text-gray-400">Rs. 385</Text>
+        <Text className="text-sm text-gray-400">Rs. {totalPrice}</Text>
       </View>
       <View className="flex-row justify-between items-center px-5 pb-6">
         <Text className="font-bold text-base text-gray-800">Total Amount</Text>
-        <Text className="font-bold text-base text-orange-400">Rs. 385</Text>
+        <Text className="font-bold text-base text-orange-400">Rs.{totalPrice}</Text>
       </View>
     </View>
   );

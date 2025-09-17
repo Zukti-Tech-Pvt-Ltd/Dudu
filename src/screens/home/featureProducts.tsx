@@ -22,6 +22,7 @@ type Product = {
   table:string
 };
 
+
 type HoldToPlayVideoProps = {
   thumbnail: string;
   label: string;
@@ -57,6 +58,7 @@ const HoldToPlayVideo = ({
   isPlaying,
   onPlay,
 }: HoldToPlayVideoProps) => {
+  
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
 
   const videoRef = useRef<VideoRef>(null);
@@ -67,7 +69,7 @@ const HoldToPlayVideo = ({
   //   ? thumbnail.slice(1)
   //   : thumbnail;
   // const imageUri = `${API_BASE_URL}/${normalizedImage}`;
-
+  console.log('videoUri================', videoUri);
    const normalizedVideo = thumbnail.startsWith('/')
     ? videoUri.slice(1)
     : videoUri;

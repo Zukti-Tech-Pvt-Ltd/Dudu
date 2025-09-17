@@ -12,6 +12,7 @@ import { getByName, getOne } from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
 import { createCart } from '../../api/cartApi';
 import BuyNowPopup from '../popUp/buyNowPop';
+import { Share } from 'react-native';
 
 interface ProductDataType {
   id: number;
@@ -64,6 +65,30 @@ const DetailScreen = () => {
       setTimeout(() => setShowSuccess(false), 1000);
     }
   };
+
+  const handleShare=async()=>{
+    try{
+    const url = `https://yourdomain.com/product/${product.id}`; // Replace with your actual domain and product path
+    const message = `Check out this product: ${product.name}\n${url}`;
+    const result = await Share.share({
+      message,
+      url, 
+      title: product.name,
+    });
+    // Optional: handle different share actions
+    if (result.action === Share.sharedAction) {
+      if (result.activityType) {
+        // shared with activity type of result.activityType
+      } else {
+        // shared successfully
+      }
+    } else if (result.action === Share.dismissedAction) {
+      // dismissed
+    }
+  } catch (error) {
+    console.log('Error sharing:', error);
+  }
+};
   let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
   console.log('productId', productId);
   if (productId) {
@@ -143,21 +168,7 @@ const DetailScreen = () => {
               />
             )}
 
-            {/* Right Icons */}
-            <View className="absolute right-5 top-12 flex-row">
-              <TouchableOpacity>
-                <Image
-                  source={require('../../../assets/navIcons/heart.png')}
-                  style={{ width: 16, height: 16, tintColor: '#FBBF24' }}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity className="ml-4">
-                <Image
-                  source={require('../../../assets/navIcons/send.png')}
-                  style={{ width: 16, height: 16, tintColor: '#FBBF24' }}
-                />
-              </TouchableOpacity>
-            </View>
+       
 
             {/* Badge */}
             <View className="bg-green-500 rounded-3xl px-5 py-1.5 absolute -bottom-3">
@@ -166,6 +177,7 @@ const DetailScreen = () => {
               </Text>
             </View>
           </View>
+
 
           {/* Content */}
           <View
@@ -178,9 +190,27 @@ const DetailScreen = () => {
               elevation: 8, // Android shadow elevation
             }}
           >
+          
             <Text className="text-xl font-semibold text-gray-800 mb-2">
               {product.name?.trim()}
             </Text>
+              {/* Right Icons */}
+            <View className="absolute right-5 top-12 flex-row">
+              <TouchableOpacity>
+                <Image
+                  source={require('../../../assets/navIcons/heart.png')}
+                  style={{ width: 20, height: 20, tintColor: '#000000' }}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity 
+               onPress={handleShare}
+              className="ml-7">
+                <Image
+                  source={require('../../../assets/navIcons/send.png')}
+                  style={{ width: 20, height: 20, tintColor: '#000000' }}
+                />
+              </TouchableOpacity>
+            </View>
             <View className="flex-row items-center mb-2">
               <Text className="text-lg font-bold text-blue-500">
                 ${product.price ?? 0}
@@ -208,6 +238,8 @@ const DetailScreen = () => {
               {product.description || 'No description available.'}
             </Text>
           </View>
+             
+          
           <View className="absolute bottom-8 right-5 flex-row">
         <TouchableOpacity
           onPress={handleShowPopup} // Show popup on press
