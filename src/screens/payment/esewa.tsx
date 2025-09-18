@@ -21,7 +21,7 @@ function generateSignature(
 
 type RootStackParamList = {
   ESewaTestPayment: {
-    selectedItems: { id: string; quantity: number }[];
+    selectedItems: { id: string; quantity: number ,price: number}[];
     totalPrice: number;
   };
 };

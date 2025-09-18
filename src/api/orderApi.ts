@@ -1,7 +1,7 @@
 import apiAuth from './indexAuth';
 
 interface OrderItemPayload {
-  userId: number;
+  price: number;
   quantity: number;
   productId: number;
 }

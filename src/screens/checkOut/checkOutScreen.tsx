@@ -13,8 +13,13 @@ import { getMultiple } from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
 // import Icon from 'react-native-vector-icons/MaterialIcons'; // Or any icon library
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import {
+  NativeStackNavigationProp,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 import PaymentMethodScreen from '../payment/paymentScreen';
+import { createOrder } from '../../api/orderApi';
+import { decodeToken } from '../../api/indexAuth';
 
 const address = {
   name: 'salma Shrestha',
@@ -22,25 +27,33 @@ const address = {
   mobile: '9846282640',
 };
 type RootStackParamList = {
-  CheckoutScreen: { selectedItems: { id: string; quantity: number }[] };
-  PaymentMethodScreen: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
+  CheckoutScreen: { selectedItems: { id: string; quantity: number,price: number }[] };
+  PaymentMethodScreen: {
+    selectedItems: { id: string; quantity: number,price: number }[];
+    totalPrice: number;
+  };
   // other screens...
 };
 
-  type CheckoutScreenRouteProp = RouteProp<
-    RootStackParamList,
-    'CheckoutScreen'
-  >;
+type CheckoutScreenRouteProp = RouteProp<RootStackParamList, 'CheckoutScreen'>;
 export default function CheckoutScreen() {
-
-
   const route = useRoute<CheckoutScreenRouteProp>();
+  const [claim, setClaim] = useState<Record<string, any> | null>(null);
+  const [buttonLoading, setButtonLoading] = useState(false);
 
   const { selectedItems } = route.params;
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   console.log('Received selectedItems:', selectedItems);
   const selectedIds = selectedItems.map(item => item.id);
+  useEffect(() => {
+    async function fetchClaim() {
+      const decoded = await decodeToken();
+      setClaim(decoded);
+    }
+    fetchClaim();
+  }, []);
+
   useEffect(() => {
     const fetchProductForCheckOut = async () => {
       try {
@@ -64,10 +77,11 @@ export default function CheckoutScreen() {
       item => Number(item.id) === Number(product.id),
     );
     const quantity = selectedItem ? selectedItem.quantity : 1;
-    const totprice=sum + product.price * quantity
+    const totprice = sum + product.price * quantity;
     return totprice;
   }, 0);
-const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   if (loading)
     return (
@@ -200,20 +214,40 @@ const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>(
         </View>
 
         <TouchableOpacity
-          onPress={() => {
-          navigation.navigate('PaymentMethodScreen',{
-            selectedItems: selectedItems,
-            totalPrice: totalPrice
-
-          });  // ✅ correct navigation
+          onPress={async () => {
+            try {
+              setButtonLoading(true); // Start loading
+              await createOrder({
+                status: 'Pending',
+                price: totalPrice,
+                estimatedDeliveryDate: new Date().toISOString(),
+                orderItems: selectedItems.map(item => ({
+                  price: item.price, // Replace with actual user ID
+                  quantity: item.quantity,
+                  productId: Number(item.id),
+                })),
+              });
+              navigation.navigate('PaymentMethodScreen', {
+                selectedItems: selectedItems,
+                totalPrice: totalPrice,
+              }); // ✅ correct navigation
+            } catch (err) {
+              console.error('Failed to create order', err);
+            } finally {
+              setButtonLoading(false); // Stop loading
+            }
           }}
           activeOpacity={0.8}
           className="bg-blue-500 rounded-2xl flex-row items-center justify-center px-4 py-3 shadow-2xl w-full"
           style={{ shadowOffset: { width: 0, height: 8 }, elevation: 10 }}
         >
-          <Text className="text-white font-semibold text-base mr-2">
-            Place Order
-          </Text>
+          {buttonLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text className="text-white font-semibold text-base mr-2">
+              Place Order
+            </Text>
+          )}
           {/* <Image
       source={require('../../../assets/navIcons/check.png')}
       className="w-5 h-5 tint-white"

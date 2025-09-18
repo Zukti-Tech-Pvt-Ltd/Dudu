@@ -25,7 +25,7 @@ const StyledImage = styled(Image);
 type Item = {
   id: string;
   img: any;
-  productId:string,
+  productId: string;
   name: string;
   extra: string;
   price: number;
@@ -42,7 +42,9 @@ type CartGroup = {
 type RootStackParamList = {
   Cart: undefined;
   DetailScreen: { productId: string; productName: string; tableName: string };
-  CheckoutScreen:{selectedItems: { id: string; quantity: number }[]};
+  CheckoutScreen: {
+    selectedItems: { id: string; quantity: number; price: number }[];
+  };
 };
 type cartNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Cart'>;
 export default function CartScreen() {
@@ -160,9 +162,10 @@ export default function CartScreen() {
       .map(item => ({
         id: item.productId,
         quantity: quantities[item.id] ?? item.qty, // get quantity from quantities state or fallback to item.qty
+        price: item.price,
       })),
   );
-  
+
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
       alert('Please select at least one item to checkout.');
@@ -230,6 +233,7 @@ export default function CartScreen() {
                   onValueChange={val =>
                     handleShopSelect(group.shop, group.items, val)
                   }
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // expands clickable area
                 />
                 <StyledImage
                   source={require('../../../assets/images/shop.png')} // Replace with your icon path
@@ -250,12 +254,14 @@ export default function CartScreen() {
                 return (
                   <StyledView key={item.id} className="flex-row py-2 ">
                     <Checkbox
-                      className="mt-4 mr-2" // Add margin-top to move it downward
+                      className="mt-4 mr-2"
                       value={!!selected[item.id]}
                       onValueChange={val =>
                         handleItemSelect(group.shop, group.items, item.id, val)
                       }
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // expands clickable area
                     />
+
                     <StyledTouchable
                       onPress={() => {
                         console.log('item', item);
@@ -325,40 +331,38 @@ export default function CartScreen() {
               })}
             </StyledView>
           ))}
-
-       
         </ScrollView>
       )}
-         {cartData.length === 0 ? (
-            <StyledText className="text-center py-6 text-gray-500">
-              Your cart is empty
+      {cartData.length === 0 ? (
+        <StyledText className="text-center py-6 text-gray-500">
+          Your cart is empty
+        </StyledText>
+      ) : (
+        <>
+          {/* Subtotal, Checkout */}
+          <StyledView className="flex-row items-center justify-between my-2 mx-4">
+            <StyledText className="text-base font-bold">
+              Subtotal:{' '}
+              <StyledText style={{ color: '#3b82f6' }}>
+                Rs. {subtotal}
+              </StyledText>
             </StyledText>
-          ) : (
-            <>
-              {/* Subtotal, Checkout */}
-              <StyledView className="flex-row items-center justify-between my-2 mx-4">
-                <StyledText className="text-base font-bold">
-                  Subtotal:{' '}
-                  <StyledText style={{ color: '#3b82f6' }}>
-                    Rs. {subtotal}
-                  </StyledText>
-                </StyledText>
-                <StyledText className="text-base font-medium text-gray-600">
-                  Shipping Fee:{' '}
-                  <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
-                </StyledText>
-              </StyledView>
-              <StyledTouchable
-                style={{ backgroundColor: '#3b82f6' }}
-                className="w-full py-4 rounded-xl items-center mb-1"
-                onPress={handleCheckout}
-              >
-                <StyledText className="text-white text-lg font-bold">
-                  CheckOut
-                </StyledText>
-              </StyledTouchable>
-            </>
-          )}
+            <StyledText className="text-base font-medium text-gray-600">
+              Shipping Fee:{' '}
+              <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
+            </StyledText>
+          </StyledView>
+          <StyledTouchable
+            style={{ backgroundColor: '#3b82f6' }}
+            className="w-full py-4 rounded-xl items-center mb-1"
+            onPress={handleCheckout}
+          >
+            <StyledText className="text-white text-lg font-bold">
+              CheckOut
+            </StyledText>
+          </StyledTouchable>
+        </>
+      )}
     </StyledView>
   );
 }

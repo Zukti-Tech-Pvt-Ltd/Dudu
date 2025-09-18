@@ -8,9 +8,9 @@ const Card = styled(View);
 const CardText = styled(Text);
 const CardRow = styled(View);
 type RootStackParamList = {
-  PaymentMethodScreen: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
-    ESewaTestPayment: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
-    KhaltiPayment: { selectedItems: { id: string; quantity: number }[],totalPrice: number };
+  PaymentMethodScreen: { selectedItems: { id: string; quantity: number,price: number }[],totalPrice: number };
+    ESewaTestPayment: { selectedItems: { id: string; quantity: number,price: number }[],totalPrice: number };
+    KhaltiPayment: { selectedItems: { id: string; quantity: number,price: number }[],totalPrice: number };
 
 };
 type checkOutNavigationProp = RouteProp<
