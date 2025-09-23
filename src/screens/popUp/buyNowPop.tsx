@@ -21,10 +21,11 @@ type buyNowPopupProps = {
   name: string;
   id:string,
   image: string;
+  price:number,
 };
 type RootStackParamList = {
   BuyNowPopup: {};
-    CheckoutScreen:{selectedItems: { id: string; quantity: number }[]};
+    CheckoutScreen:{selectedItems: { id: string; quantity: number; price: number }[]};
 
 };
 type checkOutNavigationProp = NativeStackNavigationProp<
@@ -37,8 +38,9 @@ export default function BuyNowPopup({
   name,
   id,
   image,
+  price,
 }: buyNowPopupProps) {
-  console.log('imagesdfasdfasdfasdfasdfa');
+  console.log('imagesdfasdfasdfasdfasdfa',price);
   const slideAnim = useRef(new Animated.Value(height)).current;
   const navigation = useNavigation<checkOutNavigationProp>();
 
@@ -108,6 +110,7 @@ export default function BuyNowPopup({
                   {
                     id: id,
                     quantity: quantity,
+                    price:price 
                   },
                 ],
               });

@@ -11,12 +11,23 @@ interface CreateOrderPayload {
   estimatedDeliveryDate: string;
   orderItems: OrderItemPayload[];
 }
-
 export const createOrder = async (
   payload: CreateOrderPayload,
 ) => {
   const response = await apiAuth.post('api/order/create', 
     payload
+  );
+  return response.data;
+};
+
+export const editOrder = async (
+  id: number,
+  payload: CreateOrderPayload,
+) => {
+  const response = await apiAuth.post(`api/payment/edit/${id}`,{
+    payload
+  }, 
+    
   );
   return response.data;
 };

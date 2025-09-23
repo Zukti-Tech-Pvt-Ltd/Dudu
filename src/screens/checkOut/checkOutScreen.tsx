@@ -27,9 +27,11 @@ const address = {
   mobile: '9846282640',
 };
 type RootStackParamList = {
-  CheckoutScreen: { selectedItems: { id: string; quantity: number,price: number }[] };
+  CheckoutScreen: {
+    selectedItems: { id: string; quantity: number; price: number }[];
+  };
   PaymentMethodScreen: {
-    selectedItems: { id: string; quantity: number,price: number }[];
+    selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
   };
   // other screens...
@@ -60,6 +62,7 @@ export default function CheckoutScreen() {
         setLoading(true);
 
         console.log('selectedIds', selectedIds);
+        
         const productData = await getMultiple(selectedIds);
         console.log('Products fetched for checkout:', productData);
         setProducts(productData.data);
@@ -217,21 +220,33 @@ export default function CheckoutScreen() {
           onPress={async () => {
             try {
               setButtonLoading(true); // Start loading
+              console.log('Creating order with items:', selectedItems);
+              
+              const orderItemsPayload = selectedItems.map(item => {
+                // const product = products.find(
+                //   p => Number(p.id) === Number(item.id),
+                // );
+                // console.log('Matching product for item:', item, product);
+
+                return {
+                  productId: Number(item.id),
+                  price: item.price, // Fallback to 0 if product not found
+                  quantity: item.quantity,
+                };
+              });
               await createOrder({
                 status: 'Pending',
                 price: totalPrice,
                 estimatedDeliveryDate: new Date().toISOString(),
-                orderItems: selectedItems.map(item => ({
-                  price: item.price, // Replace with actual user ID
-                  quantity: item.quantity,
-                  productId: Number(item.id),
-                })),
+                orderItems: orderItemsPayload,
               });
+
               navigation.navigate('PaymentMethodScreen', {
                 selectedItems: selectedItems,
                 totalPrice: totalPrice,
               }); // ✅ correct navigation
             } catch (err) {
+              console.log(API_BASE_URL);
               console.error('Failed to create order', err);
             } finally {
               setButtonLoading(false); // Stop loading

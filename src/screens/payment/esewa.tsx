@@ -5,6 +5,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Alert, Text } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { decodeToken } from '../../api/indexAuth';
+import { editOrder } from '../../api/orderApi';
+import { API_BASE_URL } from '@env';
 
 function generateSignature(
   secretKey: string,
@@ -74,9 +76,9 @@ const ESewaTestPayment = () => {
   // URLs
   // const successUrl = 'https://developer.esewa.com.np/success';
   // const successUrl = 'http://192.168.1.87:3000/api/payment/get?userId='+claim.id&'productId='+transactionUuid;
-  const successUrl = `http://192.168.1.87:3000/api/payment/get/userId=${claim.userId}/selectedItems=${selectedItemsParam}`;
+  const successUrl = `${API_BASE_URL}/api/payment/get/userId=${claim.userId}/selectedItems=${selectedItemsParam}`;
 
-  const failureUrl = 'https://developer.esewa.com.np/failure';
+  const failureUrl = `${API_BASE_URL}/api/payment/failure/get/userId=${claim.userId}/selectedItems=${selectedItemsParam}`;
 
   // Signed fields for signature generation (in correct order)
   const signedFieldNamesArr = [
