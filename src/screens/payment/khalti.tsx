@@ -1,44 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, ActivityIndicator, Alert, Text } from 'react-native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { WebView } from 'react-native-webview';
 import { khaltiPayment } from '../../api/khaltiApi';
+import { decodeToken } from '../../api/indexAuth';
+import { API_BASE_URL } from '@env';
 
-type RootStackParamList = { KhaltiPayment: undefined };
+type RootStackParamList = {
+  KhaltiPayment: {
+    selectedItems: { id: string; quantity: number; price: number }[];
+    totalPrice: number;
+  };
+};
+type khaltiNavigationProp = RouteProp<RootStackParamList, 'KhaltiPayment'>;
 
 const KhaltiPayment = () => {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  // Always call hooks at the top, unconditionally
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<khaltiNavigationProp>();
+  const [claim, setClaim] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [khaltiCheckoutUrl, setKhaltiCheckoutUrl] = useState<string | null>(
-    null,
-  );
+  const [khaltiCheckoutUrl, setKhaltiCheckoutUrl] = useState<string | null>(null);
+
+ 
+
+  const { selectedItems } = route.params;
+  const { totalPrice } = route.params;
 
   const publicKey = '1d37c096e1694b70a779bf601c63f88e';
-  const returnUrl = 'https://example.com/payment-callback'; // Valid URL for return
+  const returnUrl = `${API_BASE_URL}/`; // Valid URL for return
 
   useEffect(() => {
+    async function fetchClaim() {
+      const decoded = await decodeToken();
+      setClaim(decoded);
+    }
+    fetchClaim();
+  }, []);
+
+  useEffect(() => {
+    if (!claim) return; // Wait for claim to be loaded
+
     async function fetchPidx() {
       try {
-        const response = await khaltiPayment();
+        
+        console.log('selectedItems', selectedItems);
+        console.log('claim', claim);
+        const response = await khaltiPayment(selectedItems, claim?.userId,totalPrice);
         const pidx = response.pidx;
-        console.log('Pidx:', pidx);
-        // payment_url: 'https://test-pay.khalti.com/?pidx=SqE2cSn7S88mLYS3ofSjZg',
         const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;
-
-        // const checkoutUrl = `https://pay.khalti.com/api/v2/epayment/page?pidx=${pidx}&public_key=${publicKey}&return_url=${encodeURIComponent(returnUrl)}`;
-        setKhaltiCheckoutUrl(checkoutUrl); // <--- This line is essential
+        setKhaltiCheckoutUrl(checkoutUrl);          
       } catch (error) {
         console.error('Error fetching Pidx:', error);
         Alert.alert('Error', 'Failed to initiate Khalti payment');
         navigation.goBack();
       }
     }
-
     fetchPidx();
-  }, []);
+  }, [claim, selectedItems, navigation]);
 
+const successUrl = `${API_BASE_URL}/api/payment/get/khalti/success/${claim?.userId}/${selectedItems}/${totalPrice}`;
+  const failureUrl = `${API_BASE_URL}/api/payment/failure/get/khalti/failure/${claim?.userId}/${selectedItems}/${totalPrice}`;
   if (!khaltiCheckoutUrl) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -67,6 +90,7 @@ const KhaltiPayment = () => {
               ? url.split('status=')[1].split('&')[0]
               : null;
             if (status === 'Completed') {
+              successUrl
               console.log('Return URL completed:', url);
 
               Alert.alert('Payment Success', 'Your payment was successful.');
