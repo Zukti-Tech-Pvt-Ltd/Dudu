@@ -8,36 +8,26 @@ import MapView, {
 } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getTenant } from '../api/tenantApi';
+import { PermissionsAndroid, Platform } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
 
 const destination = {
   latitude: 27.671044042129285,
   longitude: 85.28435232901992,
 };
-const carCoordinates = [
-  { latitude: 27.6823, longitude: 85.3202 },
-  { latitude: 27.6185, longitude: 85.325 }, // additional coordinate
-  { latitude: 27.6712, longitude: 85.325 }, // additional coordinate
-  { latitude: 27.6312, longitude: 85.345 }, // additional coordinate
-
-  // Add more coordinates as needed
-];
 
 export default function MapsScreen() {
   const mapRef = useRef<MapView | null>(null);
-  // const [markersList, setMarkersList] = useState([
-  //   {
-  //     latitude: 27.671044042129285,
-  //     longitude: 85.28435232901992,
-  //     title: 'hi',
-  //     description: 'Your chosen location',
-  //   },
-  //   {
-  //     latitude: 27.672165244467173,
-  //     longitude: 85.31119587711933,
-  //     title: 'Zoo',
-  //     description: 'Your chosen location',
-  //   },
-  // ]);
+  const [tenantArray, setTenantArray] = useState<
+    Array<{
+      latitude: number;
+      longitude: number;
+      title: string;
+      description: string;
+    }>
+  >([]);
+
   const [markersList, setMarkersList] = useState<
     Array<{
       latitude: number;
@@ -46,26 +36,77 @@ export default function MapsScreen() {
       description: string;
     }>
   >([]);
-const [isMapReady, setIsMapReady] = useState(false);
-
-  const initialCoord = carCoordinates[0]; // coordinate you want to open
+  const [isMapReady, setIsMapReady] = useState(false);
 
   // Trigger camera move when map is ready and initialCoord exists
- useEffect(() => {
-  if (isMapReady && mapRef.current && initialCoord) {
-    mapRef.current.setCamera({
-      center: {
-        latitude: initialCoord.latitude,
-        longitude: initialCoord.longitude,
-      },
-      pitch: 0,
-      heading: 0,
-      altitude: 1000,
-      zoom: 13, // Or adjust zoom as needed
-    });
-  }
-}, [isMapReady, mapRef.current, initialCoord]);
+  useEffect(() => {
+    const requestLocationPermission = async () => {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      }
+      return true; // iOS permissions handled differently at app level
+    };
 
+    const fetchDataAndLocation = async () => {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) {
+        console.warn('Location permission denied');
+        return;
+      }
+
+      Geolocation.getCurrentPosition(
+        position => {
+          const { latitude, longitude } = position.coords;
+
+          // Optionally add a marker for user's location
+          setMarkersList(prev => [
+            ...prev,
+            {
+              latitude,
+              longitude,
+              title: 'Your Location',
+              description: 'Current location',
+            },
+          ]);
+        },
+        error => {
+          console.error('Error getting location', error);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+      );
+
+      // Existing tenant data fetch
+      try {
+        const response = await getTenant();
+        const tenants = response.data;
+        const firstTenant = tenants[0];
+
+        const mappedTenants = tenants.map((item: any) => ({
+          latitude: parseFloat(item.latitude),
+          longitude: parseFloat(item.longitude),
+          title: item.name,
+          description: item.address,
+        }));
+        setTenantArray(mappedTenants);
+        //  Move map camera to user's location if map is ready
+        if (mapRef.current && isMapReady) {
+          mapRef.current.animateToRegion({
+            latitude: firstTenant.latitude,
+            longitude: firstTenant.longitude,
+            latitudeDelta: 0.11,
+            longitudeDelta: 0.11,
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchDataAndLocation();
+  }, [isMapReady]);
 
   const MyCustomCallOut = () => (
     <View>
@@ -183,9 +224,8 @@ const [isMapReady, setIsMapReady] = useState(false);
         showsUserLocation={true}
         showsMyLocationButton={true}
         onMapReady={() => setIsMapReady(true)} // <-- map is ready
-
       >
-        {carCoordinates.map((coord, index) => (
+        {tenantArray.map((coord, index) => (
           <Marker
             key={index}
             draggable
@@ -211,6 +251,11 @@ const [isMapReady, setIsMapReady] = useState(false);
             }}
             title={marker.title}
             description={marker.description}
+            image={
+      marker.title === 'Your Location'
+        ? require('../../assets/icons/map.png') // your custom icon for user location
+        : require('../../assets/icons/map.png') // default icon for other markers
+    }
           />
         ))}
       </MapView>

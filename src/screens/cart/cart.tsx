@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Checkbox from 'expo-checkbox'; // or your preferred checkbox
 import { styled } from 'nativewind';
@@ -76,7 +77,7 @@ export default function CartScreen() {
     if (cartData && cartData.length > 0) {
       const qtys = cartData.reduce((prev: Record<string, number>, group) => {
         group.items.forEach(item => {
-          prev[item.id] = item.qty;
+          prev[item.id] = 1;
         });
         return prev;
       }, {});
@@ -168,7 +169,7 @@ export default function CartScreen() {
 
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
-      alert('Please select at least one item to checkout.');
+      Alert.alert('Please select at least one item to checkout.');
       return;
     }
     console.log('selectedItems=============', selectedItems);
@@ -366,6 +367,4 @@ export default function CartScreen() {
     </StyledView>
   );
 }
-function alert(arg0: string) {
-  throw new Error('Function not implemented.');
-}
+

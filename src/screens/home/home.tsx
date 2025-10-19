@@ -43,7 +43,7 @@ export default function Home() {
     Home: undefined;
     SearchScreen: { query: string };
     category: { categoryId: string; categoryName: string };
-    GoogleMaps: undefined;
+    MapsScreen: undefined;
     TenantScreen: undefined;
     DetailScreen: { productId: string; productName: string; tableName: string };
   };
@@ -94,7 +94,7 @@ useEffect(() => {
       headerTitle: () => <Header />,
       headerRight: () => (
         <Pressable
-          onPress={() => navigation.navigate('GoogleMaps')}
+          onPress={() => navigation.navigate('MapsScreen')}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Image
@@ -139,7 +139,7 @@ useEffect(() => {
             if (claims === 'tenant') {
               navigation.navigate('TenantScreen');
             } else {
-              navigation.navigate('GoogleMaps');
+              navigation.navigate('MapsScreen');
             }
           } else {
             navigation.navigate('category', {

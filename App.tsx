@@ -82,7 +82,7 @@ export default function App() {
             options={{ headerShown: false }}
           />
           <Stack.Screen
-            name="GoogleMaps"
+            name="MapsScreen"
             component={MapsScreen}
             options={{ title: 'Google Maps' }}
           />

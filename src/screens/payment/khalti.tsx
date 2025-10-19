@@ -17,13 +17,14 @@ type khaltiNavigationProp = RouteProp<RootStackParamList, 'KhaltiPayment'>;
 
 const KhaltiPayment = () => {
   // Always call hooks at the top, unconditionally
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<khaltiNavigationProp>();
   const [claim, setClaim] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [khaltiCheckoutUrl, setKhaltiCheckoutUrl] = useState<string | null>(null);
-
- 
+  const [khaltiCheckoutUrl, setKhaltiCheckoutUrl] = useState<string | null>(
+    null,
+  );
 
   const { selectedItems } = route.params;
   const { totalPrice } = route.params;
@@ -44,13 +45,16 @@ const KhaltiPayment = () => {
 
     async function fetchPidx() {
       try {
-        
         console.log('selectedItems', selectedItems);
         console.log('claim', claim);
-        const response = await khaltiPayment(selectedItems, claim?.userId,totalPrice);
+        const response = await khaltiPayment(
+          selectedItems,
+          claim?.userId,
+          totalPrice,
+        );
         const pidx = response.pidx;
         const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;
-        setKhaltiCheckoutUrl(checkoutUrl);          
+        setKhaltiCheckoutUrl(checkoutUrl);
       } catch (error) {
         console.error('Error fetching Pidx:', error);
         Alert.alert('Error', 'Failed to initiate Khalti payment');
@@ -60,7 +64,7 @@ const KhaltiPayment = () => {
     fetchPidx();
   }, [claim, selectedItems, navigation]);
 
-const successUrl = `${API_BASE_URL}/api/payment/get/khalti/success/${claim?.userId}/${selectedItems}/${totalPrice}`;
+  const successUrl = `${API_BASE_URL}/api/payment/get/khalti/success/${claim?.userId}/${selectedItems}/${totalPrice}`;
   const failureUrl = `${API_BASE_URL}/api/payment/failure/get/khalti/failure/${claim?.userId}/${selectedItems}/${totalPrice}`;
   if (!khaltiCheckoutUrl) {
     return (
@@ -87,16 +91,18 @@ const successUrl = `${API_BASE_URL}/api/payment/get/khalti/success/${claim?.user
           if (url.startsWith(returnUrl)) {
             console.log('Return URL reached:', url);
             const status = url.includes('status=')
-              ? url.split('status=')[1].split('&')[0]
+              ? decodeURIComponent(
+                  url.split('status=')[1].split('&')[0].replace(/\+/g, '%20'),
+                )
               : null;
             if (status === 'Completed') {
-              successUrl
+              // successUrl;
               console.log('Return URL completed:', url);
 
               Alert.alert('Payment Success', 'Your payment was successful.');
             } else if (status === 'User canceled') {
               console.log('Return URL cancelled:', url);
-
+              // failureUrl;
               Alert.alert(
                 'Payment Cancelled',
                 'You have cancelled the payment.',
@@ -105,6 +111,7 @@ const successUrl = `${API_BASE_URL}/api/payment/get/khalti/success/${claim?.user
               console.log('Return URL failed:', url);
 
               Alert.alert('Payment Failed', 'Payment was not successful.');
+              // failureUrl;
             }
             navigation.goBack(); // Close payment screen or navigate elsewhere
           }

@@ -18,11 +18,11 @@ export const createTenant = async (
 };
 export const editTenant = async (
   id: string,
-  name: string,
-  phoneNumber: string,
-  address: string,
-  latitude: number,
-  longitude: number,
+  name?: string,
+  phoneNumber?: string,
+  address?: string,
+  latitude?: number,
+  longitude?: number,
 ) => {
   const response = await apiAuth.post(`api/tenant/edit/${id}`, {
     name,
@@ -42,6 +42,7 @@ export const deleteTenant = async (id: string) => {
 export const getTenant = async () => {
   try {
     const response = await apiAuth.get(`api/tenant/getAll`);
+    console.log("response in tenant api",response.data)
     return response.data; // Return the tenant data
   } catch (err) {
     console.error(err);

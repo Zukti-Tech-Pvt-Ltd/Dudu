@@ -35,7 +35,7 @@ export default function WelcomeScreen({ navigation }: any) {
 
           <Pressable
             className="bg-purple-600 dark:bg-purple-500 rounded-full py-4 shadow-md active:bg-purple-700 dark:active:bg-purple-600"
-            onPress={() => navigation.navigate('GoogleMaps')}
+            onPress={() => navigation.navigate('MapsScreen')}
             android_ripple={{ color: '#7c3aed' }}
           >
             <Text className="text-white text-xl font-semibold tracking-wide text-center">
