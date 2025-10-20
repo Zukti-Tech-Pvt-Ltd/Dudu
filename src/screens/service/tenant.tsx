@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import {
@@ -79,17 +79,20 @@ export default function TenantScreen() {
       setLoading(false);
     }
   };
+  const isFocused = useIsFocused();
+
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isFocused) {
+      fetchData(); // Reload data every time this screen comes into focus
+    }
+  }, [isFocused]);
   console.log('places', places);
 
   const addPlace = async () => {
     if (placeName && location && phoneNumber) {
       try {
         setLoading(true);
-        const response = await createTenant(placeName, phoneNumber, location);
-        console.log('responsewwwwwwwwwwwwwwwwwww', response);
+        // console.log('responsewwwwwwwwwwwwwwwwwww', response);
         await fetchData(); // refresh data from API
 
         // const newPlace: Place = {
@@ -158,14 +161,14 @@ export default function TenantScreen() {
             <Pressable
               className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
               onPress={() => {
-                    setModalVisible(false);
-                    navigation.navigate('MapsScreenTenants',{
-                      placeName: item.placeName,
-                      location: item.location,
-                      phoneNumber: item.phoneNumber,
-                      latitude:item.latitude||0,
-                      longitude:item.longitude||0
-                    });
+                setModalVisible(false);
+                navigation.navigate('MapsScreenTenants', {
+                  placeName: item.placeName,
+                  location: item.location,
+                  phoneNumber: item.phoneNumber,
+                  latitude: item.latitude || 0,
+                  longitude: item.longitude || 0,
+                });
               }}
             >
               <Image
@@ -266,11 +269,10 @@ export default function TenantScreen() {
                   className="bg-blue-100 rounded-2xl py-3 px-4 shadow-md"
                   onPress={() => {
                     setModalVisible(false);
-                    navigation.navigate('MapsScreenTenants',{
+                    navigation.navigate('MapsScreenTenants', {
                       placeName: placeName,
                       location: location,
                       phoneNumber: phoneNumber,
-                   
                     });
                   }}
                 >
