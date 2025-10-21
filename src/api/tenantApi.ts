@@ -16,6 +16,22 @@ export const createTenant = async (
   });
   return response.data;
 };
+
+export const createTenantImage = async (
+  formData: FormData
+) => {
+  try {
+    const response = await apiAuth.post("api/tenantImage/create", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error("Error creating tenant image:", error);
+    throw error.response?.data || error.message;
+  }
+};
 export const editTenant = async (
   id: string,
   name?: string,

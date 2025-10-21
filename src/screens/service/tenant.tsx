@@ -27,6 +27,7 @@ type Place = {
   phoneNumber: string;
   latitude: number;
   longitude: number;
+  image:string[];
 };
 
 type RootStackParamList = {
@@ -38,6 +39,8 @@ type RootStackParamList = {
     longitude?: number;
   };
   TenantScreen: undefined;
+      MapsScreen: { lat?: number; long?: number, name?: string, address?:string,image?:string[]};
+
 };
 export default function TenantScreen() {
   type HomeNavigationProp = NativeStackNavigationProp<
@@ -67,6 +70,7 @@ export default function TenantScreen() {
           phoneNumber: item.phoneNumber,
           latitude: item.latitude,
           longitude: item.longitude,
+          image:item.image
         }));
         setPlaces(mapped);
       } else {
@@ -162,12 +166,12 @@ export default function TenantScreen() {
               className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
               onPress={() => {
                 setModalVisible(false);
-                navigation.navigate('MapsScreenTenants', {
-                  placeName: item.placeName,
-                  location: item.location,
-                  phoneNumber: item.phoneNumber,
-                  latitude: item.latitude || 0,
-                  longitude: item.longitude || 0,
+                navigation.navigate('MapsScreen',{
+                  lat: item.latitude,
+                  long: item.longitude,
+                  name: item.placeName,
+                  address: item.location,
+                  image:item.image
                 });
               }}
             >
@@ -266,8 +270,19 @@ export default function TenantScreen() {
 
               <View className="flex-row justify-between">
                 <Pressable
-                  className="bg-blue-100 rounded-2xl py-3 px-4 shadow-md"
+                  className={`rounded-2xl py-3 px-4 shadow-md ${
+                    placeName && location && phoneNumber
+                      ? 'bg-blue-100'
+                      : 'bg-gray-300 opacity-50'
+                  }`}
                   onPress={() => {
+                    if (!placeName || !location || !phoneNumber) {
+                      Alert.alert(
+                        'Incomplete Form',
+                        'Please fill in all fields before marking the location.',
+                      );
+                      return;
+                    }
                     setModalVisible(false);
                     navigation.navigate('MapsScreenTenants', {
                       placeName: placeName,
@@ -276,7 +291,14 @@ export default function TenantScreen() {
                     });
                   }}
                 >
-                  <Text className="text-blue-700 font-semibold text-lg text-center">
+                  <Text
+                    className={`font-semibold text-lg text-center ${
+                      placeName && location && phoneNumber
+                        ? 'text-blue-700'
+                        : 'text-gray-500'
+                    }`}
+                  >
+                    {' '}
                     Mark Location
                   </Text>
                 </Pressable>

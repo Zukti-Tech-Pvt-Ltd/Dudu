@@ -48,12 +48,12 @@ const DetailScreen = () => {
 
   const navigation = useNavigation();
 
-  type BottomTabParamsList = {
+  type DetailTabParamsList = {
     product: { productId: number; productName: string; tableName: string };
   };
 
-  type ProductRouteProp = RouteProp<BottomTabParamsList, 'product'>;
-  const route = useRoute<ProductRouteProp>();
+  type DetailScreenRouteProp = RouteProp<DetailTabParamsList, 'product'>;
+  const route = useRoute<DetailScreenRouteProp>();
 
   const { productId = 0 } = route.params ?? {};
   const { productName = '' } = route.params ?? {};
