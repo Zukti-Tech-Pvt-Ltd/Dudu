@@ -1,5 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  Animated,
+  Dimensions,
+  Image,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
 import MapView, {
   PROVIDER_GOOGLE,
   Marker,
@@ -11,33 +22,110 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTenant } from '../api/tenantApi';
 import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
+import { API_BASE_URL } from '@env';
+import { RouteProp, useRoute } from '@react-navigation/native';
 
 const destination = {
   latitude: 27.671044042129285,
   longitude: 85.28435232901992,
 };
+const { width, height } = Dimensions.get('window');
 
 export default function MapsScreen() {
+  type MapsScreenParamsList = {
+    map: {
+      lat?: number;
+      long?: number;
+      name?: string;
+      address?: string;
+      image?: string[];
+    };
+  };
+
+  type MapsScreenRouteProp = RouteProp<MapsScreenParamsList, 'map'>;
+  const route = useRoute<MapsScreenRouteProp>();
+
+  const { lat = 0 } = route.params ?? {};
+  const { long = 0 } = route.params ?? {};
+  const { name = '' } = route.params ?? {};
+  const { address = '' } = route.params ?? {};
+  const { image = [] } = route.params ?? {};
   const mapRef = useRef<MapView | null>(null);
+  const activeMarkerRef = useRef<any>(null); // 👈 Add this
+
+  const slideAnim = useRef(new Animated.Value(height)).current;
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const [loadingImages, setLoadingImages] = useState<{
+    [key: string]: boolean;
+  }>({});
+  const handleLoadStart = (uri: string) => {
+    setLoadingImages(prev => ({ ...prev, [uri]: true }));
+  };
+
+  const handleLoadEnd = (uri: string) => {
+    setLoadingImages(prev => ({ ...prev, [uri]: false }));
+  };
+  console.log('latitudelongitude', lat, long, name, address, image);
+  console.log('image======', route.params);
   const [tenantArray, setTenantArray] = useState<
     Array<{
       latitude: number;
       longitude: number;
-      title: string;
-      description: string;
+      name: string;
+      address: string;
+      image: string[];
     }>
   >([]);
+  const [isMapAnimating, setIsMapAnimating] = useState(false);
 
+  const moveToTargetRegion = (targetRegion: Region) => {
+    if (mapRef.current) {
+      setIsMapAnimating(true); // start loading
+      mapRef.current.animateToRegion(targetRegion, 1500); // smooth animation (1.5s)
+
+      // Simulate end of animation (since animateToRegion has no callback)
+      setTimeout(() => {
+        setIsMapAnimating(false); // stop loading
+      }, 1500);
+    }
+  };
+  const [selectedTenant, setSelectedTenant] = useState<{
+    name: string;
+    address: string;
+    image: string[];
+  } | null>(null);
   const [markersList, setMarkersList] = useState<
     Array<{
       latitude: number;
       longitude: number;
-      title: string;
-      description: string;
+      name: string;
+      address: string;
     }>
   >([]);
   const [isMapReady, setIsMapReady] = useState(false);
 
+  const closePopup = () => {
+    if (activeMarkerRef.current && activeMarkerRef.current.hideCallout) {
+      activeMarkerRef.current.hideCallout();
+    }
+    Animated.timing(slideAnim, {
+      toValue: height,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setSelectedTenant(null);
+    });
+  };
+  useEffect(() => {
+    if (selectedTenant) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [selectedTenant]);
   // Trigger camera move when map is ready and initialCoord exists
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -67,8 +155,8 @@ export default function MapsScreen() {
             {
               latitude,
               longitude,
-              title: 'Your Location',
-              description: 'Current location',
+              name: 'Your Location',
+              address: 'Current location',
             },
           ]);
         },
@@ -82,23 +170,38 @@ export default function MapsScreen() {
       try {
         const response = await getTenant();
         const tenants = response.data;
+        console.log('tenants', tenants);
         const firstTenant = tenants[0];
 
         const mappedTenants = tenants.map((item: any) => ({
           latitude: parseFloat(item.latitude),
           longitude: parseFloat(item.longitude),
-          title: item.name,
-          description: item.address,
+          name: item.name,
+          address: item.address,
+          image:
+            item.__tenantImages__?.map(
+              (img: any) => `${API_BASE_URL}/${img.image}`,
+            ) || [],
         }));
         setTenantArray(mappedTenants);
         //  Move map camera to user's location if map is ready
-        if (mapRef.current && isMapReady) {
-          mapRef.current.animateToRegion({
-            latitude: firstTenant.latitude,
-            longitude: firstTenant.longitude,
-            latitudeDelta: 0.11,
-            longitudeDelta: 0.11,
+        if (name && address && image) {
+          setSelectedTenant({
+            name: name,
+            address: address,
+            image: image.map((imgPath: string) => `${API_BASE_URL}/${imgPath}`),
           });
+        }
+        console.log('sel0010100100110011010100100ected tenant', selectedTenant);
+
+        if (mapRef.current && isMapReady) {
+          const targetRegion = {
+            latitude: lat ? lat : firstTenant.latitude,
+            longitude: long ? long : firstTenant.longitude,
+            latitudeDelta: lat ? 0.01 : 0.11,
+            longitudeDelta: long ? 0.01 : 0.11,
+          };
+          moveToTargetRegion(targetRegion);
         }
       } catch (error) {
         console.error(error);
@@ -108,9 +211,9 @@ export default function MapsScreen() {
     fetchDataAndLocation();
   }, [isMapReady]);
 
-  const MyCustomCallOut = () => (
+  const MyCustomCallOut = (cord: { name: string; address: string }) => (
     <View>
-      <Text>Driver</Text>
+      <Text>{cord.name}</Text>
     </View>
   );
 
@@ -175,7 +278,7 @@ export default function MapsScreen() {
             const location = {
               latitude: details.geometry.location.lat,
               longitude: details.geometry.location.lng,
-              // Prefer formatted_address or name for title/description
+              // Prefer formatted_address or name for name/address
               address:
                 details.formatted_address ||
                 details.name ||
@@ -188,8 +291,8 @@ export default function MapsScreen() {
               {
                 latitude: location.latitude,
                 longitude: location.longitude,
-                title: location.address,
-                description: 'Selected location',
+                name: location.address,
+                address: 'Selected location',
               },
             ]);
 
@@ -209,11 +312,28 @@ export default function MapsScreen() {
           }}
         />
       </View>
-
+    {isMapAnimating && (
+  <View
+    style={{
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(255, 255, 255, 0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+    }}
+  >
+    <ActivityIndicator size="large" color="#3b82f6" />
+    <Text style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}>
+      Centering map...
+    </Text>
+  </View>
+)}
       {/* Map takes full space */}
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
+          onRegionChangeComplete={() => setIsMapAnimating(false)} // hides loader when map settles
+
         style={StyleSheet.absoluteFillObject} // ✅ covers full screen
         initialRegion={{
           latitude: destination.latitude,
@@ -229,15 +349,24 @@ export default function MapsScreen() {
           <Marker
             key={index}
             draggable
+            ref={ref => {
+              if (selectedTenant?.name === coord.name) {
+                activeMarkerRef.current = ref; // save reference of selected marker
+                console.log('ref', activeMarkerRef);
+              }
+            }}
             coordinate={{
               latitude: coord.latitude,
               longitude: coord.longitude,
             }}
             image={require('../../assets/icons/house.png')}
             onDragEnd={e => console.log({ x: e.nativeEvent.coordinate })}
+            onPress={e => {
+              setSelectedTenant(coord);
+            }} // 👈 opens modal
           >
             <Callout>
-              <MyCustomCallOut />
+              <MyCustomCallOut name={coord.name} address={coord.address} />
             </Callout>
           </Marker>
         ))}
@@ -249,28 +378,212 @@ export default function MapsScreen() {
               latitude: marker.latitude,
               longitude: marker.longitude,
             }}
-            title={marker.title}
-            description={marker.description}
+            title={marker.name}
+            description={marker.address}
             image={
-      marker.title === 'Your Location'
-        ? require('../../assets/icons/map.png') // your custom icon for user location
-        : require('../../assets/icons/map.png') // default icon for other markers
-    }
+              marker.name === 'Your Location'
+                ? require('../../assets/icons/map.png') // your custom icon for user location
+                : require('../../assets/icons/map.png') // default icon for other markers
+            }
           />
         ))}
+        
       </MapView>
+  
+      
+      <Modal
+        visible={!!selectedTenant}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedTenant(null)}
+      >
+        <SafeAreaView
+          edges={['top']}
+          style={{
+            flex: 1,
+            // backgroundColor: 'rgba(0,0,0,0.25)',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          <TouchableOpacity style={{ flex: 1 }} onPress={closePopup} />
+          <Animated.View
+            style={{
+              transform: [{ translateY: slideAnim }],
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              width: '100%',
+            }}
+            className="bg-white rounded-t-3xl p-5 items-center"
+          >
+            <FlatList
+              data={selectedTenant?.image || []}
+              keyExtractor={(item, index) => index.toString()}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              snapToAlignment="center"
+              decelerationRate="fast"
+              snapToInterval={Dimensions.get('window').width}
+              renderItem={({ item }) => (
+                <TouchableOpacity onPress={() => setSelectedImage(item)}>
+                  <View
+                    style={{
+                      width: Dimensions.get('window').width,
+                      height: 200,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item }}
+                      style={{ width: '100%', height: '100%' }}
+                      resizeMode="cover"
+                      onLoadStart={() => handleLoadStart(item)}
+                      onLoadEnd={() => handleLoadEnd(item)}
+                    />
+                    {loadingImages[item] && (
+                      <ActivityIndicator
+                        style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          marginLeft: -10,
+                          marginTop: -10,
+                        }}
+                        size="large"
+                        color="#0000ff"
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+            {/* Fullscreen Modal */}
+            {/* Fullscreen Modal for multiple images */}
+            <Modal
+              visible={!!selectedImage}
+              transparent
+              statusBarTranslucent={true}
+              onRequestClose={() => setSelectedImage(null)}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  backgroundColor: 'rgba(0,0,0,0.95)',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {/* Close Button */}
+                <TouchableOpacity
+                  style={{
+                    position: 'absolute',
+                    top: 50,
+                    right: 20,
+                    zIndex: 10,
+                  }}
+                  onPress={() => setSelectedImage(null)}
+                >
+                  <Image
+                    source={require('../../assets/navIcons/close.png')}
+                    style={{ width: 24, height: 24 }}
+                  />
+                </TouchableOpacity>
+
+                {/* Scrollable Image Viewer */}
+                <FlatList
+                  data={selectedTenant?.image || []}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item, index) => index.toString()}
+                  renderItem={({ item }) => (
+                    <View
+                      style={{
+                        width,
+                        height,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Image
+                        source={{ uri: item }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  )}
+                  // Start at the tapped image
+                  initialScrollIndex={(selectedTenant?.image || []).findIndex(
+                    img => img === selectedImage,
+                  )}
+                  getItemLayout={(data, index) => ({
+                    length: width,
+                    offset: width * index,
+                    index,
+                  })}
+                />
+              </View>
+            </Modal>
+
+            <Text className="text-lg mb-2">{selectedTenant?.name}</Text>
+            <View className="flex-row items-center mb-6">
+              <Text className="text-lg font-bold mr-2">Address :</Text>
+              <Text className="text-lg">{selectedTenant?.address}</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                closePopup();
+              }}
+              className="bg-blue-500 px-10 py-3 rounded-full"
+            >
+              <Text className="text-white text-center">View Detail</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  autocompleteWrapper: {
-    position: 'absolute',
-    top: 10,
-    width: '100%',
-    zIndex: 1,
+  modalContainer: {
+    width: '80%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  modalDesc: {
+    fontSize: 15,
+    color: 'gray',
+    marginBottom: 15,
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  closeButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

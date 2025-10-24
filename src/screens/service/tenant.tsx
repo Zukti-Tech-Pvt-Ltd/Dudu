@@ -27,7 +27,7 @@ type Place = {
   phoneNumber: string;
   latitude: number;
   longitude: number;
-  image:string[];
+  image: string[];
 };
 
 type RootStackParamList = {
@@ -39,8 +39,13 @@ type RootStackParamList = {
     longitude?: number;
   };
   TenantScreen: undefined;
-      MapsScreen: { lat?: number; long?: number, name?: string, address?:string,image?:string[]};
-
+  MapsScreen: {
+    lat?: number;
+    long?: number;
+    name?: string;
+    address?: string;
+    image?: string[];
+  };
 };
 export default function TenantScreen() {
   type HomeNavigationProp = NativeStackNavigationProp<
@@ -70,8 +75,9 @@ export default function TenantScreen() {
           phoneNumber: item.phoneNumber,
           latitude: item.latitude,
           longitude: item.longitude,
-          image:item.image
+          image: item.__tenantImages__?.map((img: any) => img.image) || [],
         }));
+        console.log('mapped tenants', mapped);
         setPlaces(mapped);
       } else {
         setPlaces([]);
@@ -124,7 +130,7 @@ export default function TenantScreen() {
   return (
     <View className="flex-1 bg-gradient-to-b from-blue-50 via-white to-blue-50">
       <View
-        className="bg-white py-4 px-4  flex-row items-center"
+        className="bg-white py-4 px-4 mb-5 flex-row items-center justify-between"
         style={{
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
@@ -133,18 +139,34 @@ export default function TenantScreen() {
           elevation: 8,
         }}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          className="w-9 h-9 mt-4 -ml-3  items-center justify-center"
+        {/* Left Section - Back Button and Title */}
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            className="w-9 h-9 mt-4 -ml-3 items-center justify-center"
+          >
+            <Image
+              source={require('../../../assets/navIcons/left-arrow.png')}
+              style={{ width: 16, height: 16, tintColor: '#000000' }}
+            />
+          </TouchableOpacity>
+
+          <Text className="text-xl font-semibold ml-2 mt-4 text-black">
+            Add Homes
+          </Text>
+        </View>
+
+        {/* Right Section - Add Button */}
+        <Pressable
+          className=" mt-3 w-15 h-15 rounded-full justify-center items-center shadow-md"
+          onPress={() => setModalVisible(true)}
+          android_ripple={{ color: '#1D4ED8' }}
+          accessibilityLabel="Add a new place"
         >
-          <Image
-            source={require('../../../assets/navIcons/left-arrow.png')}
-            style={{ width: 16, height: 16, tintColor: '#000000' }}
-          />
-        </TouchableOpacity>
-        <Text className="text-xl font-semibold ml-1 mt-4 text-black">
-          Add Homes
-        </Text>
+          <Text className="text-black text-3xl font-extrabold leading-none">
+            +
+          </Text>
+        </Pressable>
       </View>
 
       <FlatList
@@ -152,7 +174,7 @@ export default function TenantScreen() {
         data={places}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <View className="bg-white rounded-3xl p-5 mb-6 shadow-lg flex-row items-center justify-between">
+          <View className="bg-white rounded-3xl  p-5 mb-5 shadow-lg flex-row items-center justify-between">
             <View>
               <Text className="font-bold text-2xl text-blue-900 mb-2">
                 {item.placeName}
@@ -166,12 +188,13 @@ export default function TenantScreen() {
               className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
               onPress={() => {
                 setModalVisible(false);
-                navigation.navigate('MapsScreen',{
+                console.log('yukessssssssssss', item.image);
+                navigation.navigate('MapsScreen', {
                   lat: item.latitude,
                   long: item.longitude,
                   name: item.placeName,
                   address: item.location,
-                  image:item.image
+                  image: item.image,
                 });
               }}
             >
@@ -210,7 +233,7 @@ export default function TenantScreen() {
 
       {/* Floating Plus Button */}
       <Pressable
-        className="absolute bottom-9 right-6 bg-blue-500 rounded-full w-14 h-14  shadow-2xl justify-center items-center"
+        className="absolute bottom-4 right-2 bg-blue-500 rounded-full w-14 h-14  shadow-2xl justify-center items-center"
         onPress={() => setModalVisible(true)}
         android_ripple={{ color: '#1D4ED8' }}
         accessibilityLabel="Add a new place"
@@ -268,7 +291,7 @@ export default function TenantScreen() {
                 placeholderTextColor="#93C5FD"
               />
 
-              <View className="flex-row justify-between">
+              <View className="flex-row justify-center">
                 <Pressable
                   className={`rounded-2xl py-3 px-4 shadow-md ${
                     placeName && location && phoneNumber
@@ -303,14 +326,14 @@ export default function TenantScreen() {
                   </Text>
                 </Pressable>
 
-                <Pressable
+                {/* <Pressable
                   className="bg-blue-500 rounded-2xl py-3 px-10 shadow-md"
                   onPress={addPlace}
                 >
                   <Text className="text-white font-semibold text-lg text-center">
                     Add
                   </Text>
-                </Pressable>
+                </Pressable> */}
               </View>
             </View>
           </KeyboardAvoidingView>
