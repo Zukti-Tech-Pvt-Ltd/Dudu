@@ -17,8 +17,10 @@ import {
   Alert,
   ActivityIndicator,
   StyleSheet,
+  SafeAreaView,
 } from 'react-native';
-import { createTenant, getTenant } from '../../api/tenantApi';
+import { createTenant, deleteTenant, getTenant } from '../../api/tenantApi';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Place = {
   id: string;
@@ -48,6 +50,8 @@ type RootStackParamList = {
   };
 };
 export default function TenantScreen() {
+    const insets = useSafeAreaInsets(); // detects notch + gesture area space
+
   type HomeNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
     'TenantScreen'
@@ -60,6 +64,7 @@ export default function TenantScreen() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -126,207 +131,261 @@ export default function TenantScreen() {
       Alert.alert('Validation', 'Please fill in all fields.');
     }
   };
+  const handleDeletePlace = (id: string, name: string) => {
+    Alert.alert('Delete Place', `Are you sure you want to delete "${name}"?`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setLoading(true);
+           deleteTenant(id);
+            setPlaces(prev => prev.filter(place => place.id !== id));
+            setSelectedItemId(null);
+            Alert.alert('Success', 'Place deleted successfully');
+          } catch (error) {
+            Alert.alert('Error', 'Failed to delete place');
+            console.error(error);
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
+    <SafeAreaView
+    
+      style={{
+        flex: 1,
+        backgroundColor: '#f9fafb', // same as your gradient top color
+        paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
+      }}
+    >
     <View className="flex-1 bg-gradient-to-b from-blue-50 via-white to-blue-50">
-      <View
-        className="bg-white py-4 px-4 mb-5 flex-row items-center justify-between"
-        style={{
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 5,
-          elevation: 8,
-        }}
-      >
-        {/* Left Section - Back Button and Title */}
-        <View className="flex-row items-center">
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            className="w-9 h-9 mt-4 -ml-3 items-center justify-center"
-          >
-            <Image
-              source={require('../../../assets/navIcons/left-arrow.png')}
-              style={{ width: 16, height: 16, tintColor: '#000000' }}
-            />
-          </TouchableOpacity>
+        <View
+          className="bg-white py-4 px-4 mb-2 flex-row items-center justify-between"
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 5,
+            elevation: 1,
+          }}
+        >
+          {/* Left Section - Back Button and Title */}
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className="w-9 h-9 mt-4 -ml-3 items-center justify-center"
+            >
+              <Image
+                source={require('../../../assets/navIcons/left-arrow.png')}
+                style={{ width: 16, height: 16, tintColor: '#000000' }}
+              />
+            </TouchableOpacity>
 
-          <Text className="text-xl font-semibold ml-2 mt-4 text-black">
-            Add Homes
-          </Text>
+            <Text className="text-xl font-semibold ml-2 mt-4 text-black">
+              Add Homes
+            </Text>
+          </View>
+
+          {/* Right Section - Add Button */}
+          <Pressable
+            className=" mt-3 w-15 h-15 rounded-full justify-center items-center shadow-md"
+            onPress={() => setModalVisible(true)}
+            android_ripple={{ color: '#1D4ED8' }}
+            accessibilityLabel="Add a new place"
+          >
+            <Text className="text-black text-3xl font-extrabold leading-none">
+              +
+            </Text>
+          </Pressable>
         </View>
 
-        {/* Right Section - Add Button */}
+          <FlatList
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            data={places}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <Pressable
+                onLongPress={() => setSelectedItemId(item.id)}
+                onPress={() => {
+                  if (selectedItemId) {
+                    setSelectedItemId(null);
+                  }
+                }}
+              >
+                <View className="bg-white rounded-3xl  p-5 mb-5 shadow-lg flex-row items-center justify-between">
+                  <View>
+                    <Text className="font-bold text-2xl text-blue-900 mb-2">
+                      {item.placeName}
+                    </Text>
+                    <Text className="text-blue-700 mb-1">
+                      Location: {item.location}
+                    </Text>
+                    <Text className="text-blue-700">
+                      Phone: {item.phoneNumber}
+                    </Text>
+                  </View>
+
+                  <Pressable
+                    className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
+                    onPress={() => {
+                      setModalVisible(false);
+                      setSelectedItemId(null);
+
+                      console.log('yukessssssssssss', item.image);
+                      navigation.navigate('MapsScreen', {
+                        lat: item.latitude,
+                        long: item.longitude,
+                        name: item.placeName,
+                        address: item.location,
+                        image: item.image,
+                      });
+                    }}
+                  >
+                    <Image
+                      source={require('../../../assets/navIcons/pin.png')}
+                      style={{
+                        tintColor: 'white',
+                        width: 30,
+                        height: 30,
+                        resizeMode: 'contain',
+                      }}
+                    />
+                    {/* Or use an icon: <Icon name="map-marker" size={28} color="#3b82f6" /> */}
+                  </Pressable>
+                </View>
+                {/* Close/Delete Button - Shows on top-right when item is selected */}
+                {selectedItemId === item.id && (
+                  <TouchableOpacity
+                    className="absolute -top--2 -right-1 bg-red-500 rounded-full w-8 h-8 justify-center items-center shadow-lg z-10"
+                    onPress={() => handleDeletePlace(item.id, item.placeName)}
+                  >
+                    <Text className="text-white text-lg font-bold">×</Text>
+                  </TouchableOpacity>
+                )}
+              </Pressable>
+            )}
+            ListEmptyComponent={
+              <Text className="text-center text-blue-300 mt-20 text-lg italic">
+                No places added yet.
+              </Text>
+            }
+          />
+        {loading && (
+          <View
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+            }}
+          >
+            <ActivityIndicator size="large" color="#3b82f6" />
+          </View>
+        )}
+
+        {/* Floating Plus Button */}
         <Pressable
-          className=" mt-3 w-15 h-15 rounded-full justify-center items-center shadow-md"
+          className="absolute bottom-4 right-2 bg-blue-500 rounded-full w-14 h-14  shadow-2xl justify-center items-center"
           onPress={() => setModalVisible(true)}
           android_ripple={{ color: '#1D4ED8' }}
           accessibilityLabel="Add a new place"
         >
-          <Text className="text-black text-3xl font-extrabold leading-none">
+          <Text className="text-white text-5xl font-extrabold leading-none">
             +
           </Text>
         </Pressable>
-      </View>
 
-      <FlatList
-        contentContainerStyle={{ paddingHorizontal: 20 }}
-        data={places}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <View className="bg-white rounded-3xl  p-5 mb-5 shadow-lg flex-row items-center justify-between">
-            <View>
-              <Text className="font-bold text-2xl text-blue-900 mb-2">
-                {item.placeName}
-              </Text>
-              <Text className="text-blue-700 mb-1">
-                Location: {item.location}
-              </Text>
-              <Text className="text-blue-700">Phone: {item.phoneNumber}</Text>
-            </View>
-            <Pressable
-              className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
-              onPress={() => {
-                setModalVisible(false);
-                console.log('yukessssssssssss', item.image);
-                navigation.navigate('MapsScreen', {
-                  lat: item.latitude,
-                  long: item.longitude,
-                  name: item.placeName,
-                  address: item.location,
-                  image: item.image,
-                });
-              }}
-            >
-              <Image
-                source={require('../../../assets/navIcons/pin.png')}
-                style={{
-                  tintColor: 'white',
-                  width: 30,
-                  height: 30,
-                  resizeMode: 'contain',
-                }}
-              />
-              {/* Or use an icon: <Icon name="map-marker" size={28} color="#3b82f6" /> */}
-            </Pressable>
-          </View>
-        )}
-        ListEmptyComponent={
-          <Text className="text-center text-blue-300 mt-20 text-lg italic">
-            No places added yet.
-          </Text>
-        }
-      />
-      {loading && (
-        <View
-          style={{
-            ...StyleSheet.absoluteFillObject,
-            backgroundColor: 'rgba(255, 255, 255, 0.7)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-          }}
+        {/* Modal for Add Place Form */}
+        <Modal
+          animationType="slide" // Changed from "fade" to "slide" for bottom-up animation
+          transparent={true} // Keep transparent true to avoid default white background overlay
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
         >
-          <ActivityIndicator size="large" color="#3b82f6" />
-        </View>
-      )}
-
-      {/* Floating Plus Button */}
-      <Pressable
-        className="absolute bottom-4 right-2 bg-blue-500 rounded-full w-14 h-14  shadow-2xl justify-center items-center"
-        onPress={() => setModalVisible(true)}
-        android_ripple={{ color: '#1D4ED8' }}
-        accessibilityLabel="Add a new place"
-      >
-        <Text className="text-white text-5xl font-extrabold leading-none">
-          +
-        </Text>
-      </Pressable>
-
-      {/* Modal for Add Place Form */}
-      <Modal
-        animationType="slide" // Changed from "fade" to "slide" for bottom-up animation
-        transparent={true} // Keep transparent true to avoid default white background overlay
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <TouchableWithoutFeedback
-          onPress={() => {
-            Keyboard.dismiss(); // Optional: dismiss keyboard on touch outside
-            setModalVisible(false);
-          }}
-        >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            className="flex-1 justify-end px-6" // Align modal content at bottom, no bg color here
+          <TouchableWithoutFeedback
+            onPress={() => {
+              Keyboard.dismiss(); // Optional: dismiss keyboard on touch outside
+              setModalVisible(false);
+            }}
           >
-            <View className="bg-white rounded-t-3xl p-8 shadow-xl">
-              <Text className="text-3xl font-extrabold mb-6 text-blue-900 text-center">
-                Add a Place
-              </Text>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              className="flex-1 justify-end px-6" // Align modal content at bottom, no bg color here
+            >
+              <View className="bg-white rounded-t-3xl p-8 shadow-xl">
+                <Text className="text-3xl font-extrabold mb-6 text-blue-900 text-center">
+                  Add a Place
+                </Text>
 
-              <TextInput
-                className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-5 text-lg text-blue-900"
-                placeholder="Place Name"
-                value={placeName}
-                onChangeText={setPlaceName}
-                keyboardType="default"
-                placeholderTextColor="#93C5FD"
-                autoFocus
-              />
-              <TextInput
-                className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-5 text-lg text-blue-900"
-                placeholder="Location"
-                value={location}
-                onChangeText={setLocation}
-                keyboardType="default"
-                placeholderTextColor="#93C5FD"
-              />
-              <TextInput
-                className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-8 text-lg text-blue-900"
-                placeholder="Phone Number"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
-                placeholderTextColor="#93C5FD"
-              />
+                <TextInput
+                  className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-5 text-lg text-blue-900"
+                  placeholder="Place Name"
+                  value={placeName}
+                  onChangeText={setPlaceName}
+                  keyboardType="default"
+                  placeholderTextColor="#93C5FD"
+                  autoFocus
+                />
+                <TextInput
+                  className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-5 text-lg text-blue-900"
+                  placeholder="Location"
+                  value={location}
+                  onChangeText={setLocation}
+                  keyboardType="default"
+                  placeholderTextColor="#93C5FD"
+                />
+                <TextInput
+                  className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-8 text-lg text-blue-900"
+                  placeholder="Phone Number"
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  keyboardType="phone-pad"
+                  placeholderTextColor="#93C5FD"
+                />
 
-              <View className="flex-row justify-center">
-                <Pressable
-                  className={`rounded-2xl py-3 px-4 shadow-md ${
-                    placeName && location && phoneNumber
-                      ? 'bg-blue-100'
-                      : 'bg-gray-300 opacity-50'
-                  }`}
-                  onPress={() => {
-                    if (!placeName || !location || !phoneNumber) {
-                      Alert.alert(
-                        'Incomplete Form',
-                        'Please fill in all fields before marking the location.',
-                      );
-                      return;
-                    }
-                    setModalVisible(false);
-                    navigation.navigate('MapsScreenTenants', {
-                      placeName: placeName,
-                      location: location,
-                      phoneNumber: phoneNumber,
-                    });
-                  }}
-                >
-                  <Text
-                    className={`font-semibold text-lg text-center ${
+                <View className="flex-row justify-center">
+                  <Pressable
+                    className={`rounded-2xl py-3 px-4 shadow-md ${
                       placeName && location && phoneNumber
-                        ? 'text-blue-700'
-                        : 'text-gray-500'
+                        ? 'bg-blue-100'
+                        : 'bg-gray-300 opacity-50'
                     }`}
+                    onPress={() => {
+                      if (!placeName || !location || !phoneNumber) {
+                        Alert.alert(
+                          'Incomplete Form',
+                          'Please fill in all fields before marking the location.',
+                        );
+                        return;
+                      }
+                      setModalVisible(false);
+                      navigation.navigate('MapsScreenTenants', {
+                        placeName: placeName,
+                        location: location,
+                        phoneNumber: phoneNumber,
+                      });
+                    }}
                   >
-                    {' '}
-                    Mark Location
-                  </Text>
-                </Pressable>
+                    <Text
+                      className={`font-semibold text-lg text-center ${
+                        placeName && location && phoneNumber
+                          ? 'text-blue-700'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      {' '}
+                      Mark Location
+                    </Text>
+                  </Pressable>
 
-                {/* <Pressable
+                  {/* <Pressable
                   className="bg-blue-500 rounded-2xl py-3 px-10 shadow-md"
                   onPress={addPlace}
                 >
@@ -334,11 +393,12 @@ export default function TenantScreen() {
                     Add
                   </Text>
                 </Pressable> */}
+                </View>
               </View>
-            </View>
-          </KeyboardAvoidingView>
-        </TouchableWithoutFeedback>
-      </Modal>
+            </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        </Modal>
     </View>
+    </SafeAreaView>
   );
 }

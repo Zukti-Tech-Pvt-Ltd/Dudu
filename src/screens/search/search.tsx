@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type RootStackParamList = {
   search: { query: string };
@@ -18,6 +20,8 @@ type SearchRouteProp = RouteProp<RootStackParamList, 'search'>;
 type SearchNavigationProp = NativeStackNavigationProp<RootStackParamList, 'search'>;
 
 export default function SearchScreen() {
+      const insets = useSafeAreaInsets();
+
   const route = useRoute<SearchRouteProp>();
   const navigation = useNavigation<SearchNavigationProp>();
 
@@ -53,6 +57,15 @@ export default function SearchScreen() {
   };
 
   return (
+    <SafeAreaView
+       edges={['top', 'bottom']}      
+
+      style={{
+        flex: 1,
+        backgroundColor: '#f9fafb', 
+        paddingBottom: insets.bottom || 10, 
+      }}
+    >
     <View style={{ flex: 1, padding: 16 }}>
       <TextInput
         ref={inputRef}
@@ -78,6 +91,7 @@ export default function SearchScreen() {
         )}
       />
     </View>
+    </SafeAreaView>
   );
 }
 

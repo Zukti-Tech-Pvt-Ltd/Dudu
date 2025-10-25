@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ImageSourcePropType } from 'react-native';
+import { ImageSourcePropType, Platform } from 'react-native';
 
 // import HomeScreen from '../screens/home/test';
 import SearchScreen from '../screens/search/search';
@@ -11,6 +11,7 @@ import { Image } from 'react-native';
 import home from '../screens/home/home';
 import Home from '../screens/home/home';
 import Category from '../screens/category/category';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const Tab = createBottomTabNavigator();
 type RouteName = 'home' | 'category' | 'pay' | 'cart' | 'order' | 'profile';
 const icons: Record<RouteName, ImageSourcePropType> = {
@@ -23,12 +24,17 @@ const icons: Record<RouteName, ImageSourcePropType> = {
 };
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
-        tabBarStyle: { height: 65 },
+        tabBarStyle: {
+          height: 50 + (Platform.OS === 'android' ? insets.bottom : 0),
+          backgroundColor: '#fff',
+        },
         tabBarIcon: ({ focused, size }) => {
           const imageSource = icons[route.name as RouteName];
           return (
@@ -59,12 +65,11 @@ export default function MainTabs() {
         listeners={({ navigation }) => ({
           tabPress: e => {
             e.preventDefault();
-            navigation.navigate('category',
-              {
-                categoryId: '12',
+            navigation.navigate('category', {
+              categoryId: '12',
 
-                categoryName: 'All',
-              });
+              categoryName: 'All',
+            });
           },
         })}
       />

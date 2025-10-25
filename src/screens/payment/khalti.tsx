@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, Alert, Text } from 'react-native';
+import { View, ActivityIndicator, Alert, Text, SafeAreaView } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { WebView } from 'react-native-webview';
 import { khaltiPayment } from '../../api/khaltiApi';
 import { decodeToken } from '../../api/indexAuth';
 import { API_BASE_URL } from '@env';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RootStackParamList = {
   KhaltiPayment: {
@@ -16,6 +17,8 @@ type RootStackParamList = {
 type khaltiNavigationProp = RouteProp<RootStackParamList, 'KhaltiPayment'>;
 
 const KhaltiPayment = () => {
+      const insets = useSafeAreaInsets();
+  
   // Always call hooks at the top, unconditionally
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -75,6 +78,14 @@ const KhaltiPayment = () => {
   }
 
   return (
+    <SafeAreaView
+        
+          style={{
+            flex: 1,
+            backgroundColor: '#f9fafb', 
+            paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
+          }}
+        > 
     <View style={{ flex: 1 }}>
       {/* {loading && (
         <ActivityIndicator
@@ -119,6 +130,7 @@ const KhaltiPayment = () => {
         startInLoadingState
       />
     </View>
+    </SafeAreaView>
   );
 };
 

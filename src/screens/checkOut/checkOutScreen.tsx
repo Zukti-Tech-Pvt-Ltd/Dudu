@@ -20,6 +20,7 @@ import {
 import PaymentMethodScreen from '../payment/paymentScreen';
 import { createOrder } from '../../api/orderApi';
 import { decodeToken } from '../../api/indexAuth';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const address = {
   name: 'salma Shrestha',
@@ -39,6 +40,8 @@ type RootStackParamList = {
 
 type CheckoutScreenRouteProp = RouteProp<RootStackParamList, 'CheckoutScreen'>;
 export default function CheckoutScreen() {
+      const insets = useSafeAreaInsets();
+
   const route = useRoute<CheckoutScreenRouteProp>();
   const [claim, setClaim] = useState<Record<string, any> | null>(null);
   const [buttonLoading, setButtonLoading] = useState(false);
@@ -93,7 +96,13 @@ export default function CheckoutScreen() {
       </View>
     );
   return (
-    <SafeAreaView className="bg-white flex-1 ">
+    <SafeAreaView className="bg-white flex-1 "
+    style={{
+        flex: 1,
+        backgroundColor: '#f9fafb', 
+        paddingBottom: insets.bottom  || 10, 
+      }}
+    >
       {/* Header */}
       <View
         className="bg-white py-4 px-4  flex-row items-center"

@@ -51,7 +51,9 @@ export const editTenant = async (
 };
 
 export const deleteTenant = async (id: string) => {
-  const response = await apiAuth.post(`api/tenant/delete/${id}`);
+  console.log('deleting tenant with id:', id);
+  const response = await apiAuth.delete(`api/tenant/delete/${Number(id)}`);
+  console.log('delete response-------------------------:', response.data);
   return response.data;
 };
 

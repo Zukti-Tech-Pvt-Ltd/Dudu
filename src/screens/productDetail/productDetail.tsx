@@ -13,6 +13,7 @@ import { API_BASE_URL } from '@env';
 import { createCart } from '../../api/cartApi';
 import BuyNowPopup from '../popUp/buyNowPop';
 import { Share } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface ProductDataType {
   id: number;
@@ -37,6 +38,8 @@ interface ApiResponse<T> {
 
 let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
 const DetailScreen = () => {
+      const insets = useSafeAreaInsets(); 
+  
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -137,7 +140,12 @@ const DetailScreen = () => {
   }, [productId, productName]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white -mb-2"
+    style={{
+        flex: 1,
+        backgroundColor: '#f9fafb', 
+        paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
+      }}>
       {loading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#007AFF" />
@@ -186,8 +194,7 @@ const DetailScreen = () => {
               shadowColor: '#000000', // black shadow color
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.5, // medium opacity
-              shadowRadius: 6, // blur radius
-              elevation: 8, // Android shadow elevation
+              elevation: 3, // Android shadow elevation
             }}
           >
           

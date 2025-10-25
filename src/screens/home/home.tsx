@@ -216,17 +216,20 @@ useEffect(() => {
 
   return (
     <SafeAreaView
-      className={`${isDarkMode ? 'bg-gray-900' : 'bg-white'} flex-1`}
+      className={`${isDarkMode ? 'bg-gray-900' : 'bg-white'} flex-1 -mb-1`}
+      edges={['top', 'left', 'right']}
     >
       <Pressable
-        className="mx-2 -mt-5 mb-3 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
+        className="mx-5 mb-2 p-2 rounded-lg border border-gray-300 bg-white flex-row items-center"
         onPress={() => navigation.navigate('SearchScreen', { query: '' })}
       >
         <Text className={`${isDarkMode ? 'text-gray-400' : 'text-gray-400'}`}>
           Search services...
         </Text>
       </Pressable>
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView 
+ contentContainerStyle={{  paddingBottom: 0 }}
+      >
         <Text
           className={`text-lg font-bold ml-3 pl-3 ${
             isDarkMode ? 'text-gray-100' : 'text-gray-900'

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, SafeAreaView } from 'react-native';
 import { styled } from 'nativewind';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Card = styled(View);
 const CardText = styled(Text);
@@ -18,6 +19,8 @@ type checkOutNavigationProp = RouteProp<
   'PaymentMethodScreen'
 >;
 export default function PaymentMethodScreen() {
+      const insets = useSafeAreaInsets();
+
     const route = useRoute<checkOutNavigationProp>();
   
       const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -29,6 +32,14 @@ export default function PaymentMethodScreen() {
         const selectedIds = selectedItems.map(item => item.id);
     
   return (
+    <SafeAreaView
+    
+      style={{
+        flex: 1,
+        backgroundColor: '#f9fafb', 
+        paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
+      }}
+    >
     <View className="flex-1 bg-white">
       {/* Header */}
       <View className="flex-row justify-between items-center px-5 pt-6 pb-4 border-b border-gray-200 bg-white">
@@ -150,5 +161,6 @@ export default function PaymentMethodScreen() {
         <Text className="font-bold text-base text-orange-400">Rs.{totalPrice}</Text>
       </View>
     </View>
+    </SafeAreaView>
   );
 }

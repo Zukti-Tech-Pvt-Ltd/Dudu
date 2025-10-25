@@ -21,7 +21,7 @@ import PaymentMethodScreen from './src/screens/payment/paymentScreen';
 import ESewaTestPayment from './src/screens/payment/esewa';
 import KhaltiPayment from './src/screens/payment/khalti';
 import TenantScreen from './src/screens/service/tenant';
-
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
 
 const Stack = createNativeStackNavigator();
@@ -54,6 +54,8 @@ export default function App() {
 
   return (
     <AuthProvider>
+            <SafeAreaProvider>
+
       <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack.Navigator
           screenOptions={{
@@ -129,6 +131,8 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
+            </SafeAreaProvider>
+
     </AuthProvider>
   );
 }

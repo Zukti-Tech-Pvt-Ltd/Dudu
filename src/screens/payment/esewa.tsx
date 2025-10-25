@@ -2,11 +2,12 @@ import CryptoJS from 'crypto-js';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
-import { View, Alert, Text } from 'react-native';
+import { View, Alert, Text, SafeAreaView } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { decodeToken } from '../../api/indexAuth';
 import { editOrder } from '../../api/orderApi';
 import { API_BASE_URL } from '@env';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function generateSignature(
   secretKey: string,
@@ -29,6 +30,8 @@ type RootStackParamList = {
 };
 type esewaNavigationProp = RouteProp<RootStackParamList, 'ESewaTestPayment'>;
 const ESewaTestPayment = () => {
+      const insets = useSafeAreaInsets();
+
   const [claim, setClaim] = useState<Record<string, any> | null>(null);
   useEffect(() => {
     async function fetchClaim() {
@@ -126,6 +129,14 @@ const ESewaTestPayment = () => {
   `;
 
   return (
+    <SafeAreaView
+    
+      style={{
+        flex: 1,
+        backgroundColor: '#f9fafb', 
+        paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
+      }}
+    >
     <View style={{ flex: 1 }}>
       <WebView
         source={{ html: formHtml }}
@@ -145,6 +156,7 @@ const ESewaTestPayment = () => {
         startInLoadingState
       />
     </View>
+    </SafeAreaView>
   );
 };
 
