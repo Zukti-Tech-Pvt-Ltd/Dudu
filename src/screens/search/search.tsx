@@ -6,6 +6,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Pressable,
+  Image,
 } from 'react-native';
 import {
   useRoute,
@@ -68,42 +70,74 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+  edges={['top', 'bottom']}
+  style={{
+    flex: 1,
+    backgroundColor: '#f9fafb',
+    paddingBottom: insets.bottom || 10,
+  }}
+>
+  {/* Search bar */}
+  <View style={{ flexDirection: 'row', padding: 16, alignItems: 'center' }}>
+<Pressable onPress={() => navigation.goBack()}>
+      <Image
+        source={require('../../../assets/navIcons/left-arrow.png')}
+        style={{
+          width: 25,
+          height: 25,
+          resizeMode: 'contain',
+          marginRight: 12,
+        }}
+      />
+    </Pressable>
+    <TextInput
+      ref={inputRef}
       style={{
         flex: 1,
-        backgroundColor: '#f9fafb',
-        paddingBottom: insets.bottom || 10,
+        height: 40,
+        backgroundColor: '#e5e7eb',
+        borderRadius: 8,
+        paddingHorizontal: 10,
       }}
-    >
-      <View style={{ flex: 1, padding: 16 }}>
-        <TextInput
-          ref={inputRef}
-          style={styles.input}
-          placeholder="Search here..."
-          value={searchText}
-          onChangeText={setSearchText}
-          autoFocus={false}
-        />
+      placeholder="Search for products..."
+      value={searchText}
+      onChangeText={setSearchText}
+      autoFocus={true}
+    />
+  </View>
 
-        <FlatList
-          data={results}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => handleSelect(item)}
-              style={styles.resultItem}
-            >
-              <Text>{item.name}</Text>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={() => (
-            <Text style={{ textAlign: 'center', marginTop: 20, color: 'gray' }}>
-              No results found
-            </Text>
-          )}
-        />
-      </View>
-    </SafeAreaView>
+  {/* Results */}
+  <FlatList
+    data={results}
+    keyExtractor={item => item.id.toString()}
+    renderItem={({ item }) => (
+      <TouchableOpacity
+        onPress={() => handleSelect(item)}
+        style={{
+          padding: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: '#e5e7eb',
+        }}
+      >
+        <Text>{item.name}</Text>
+      </TouchableOpacity>
+    )}
+    ListEmptyComponent={() => (
+      <Text
+        style={{
+          textAlign: 'center',
+          marginTop: 20,
+          color: 'gray',
+        }}
+      >
+        No results found
+      </Text>
+    )}
+    style={{ flex: 1 }}
+    contentContainerStyle={{ paddingHorizontal: 16 }}
+  />
+</SafeAreaView>
+
   );
 }
 
@@ -113,8 +147,6 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 16,
   },
   resultItem: {
     paddingVertical: 12,

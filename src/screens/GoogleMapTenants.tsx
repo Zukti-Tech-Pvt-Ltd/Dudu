@@ -10,8 +10,10 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  Keyboard,
   Image,
   Platform,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import MapView, {
   PROVIDER_GOOGLE,
@@ -23,6 +25,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { createTenant, createTenantImage, editTenant } from '../api/tenantApi';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { PermissionsAndroid } from 'react-native';
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 
 export default function MapsScreenTenants() {
   type MapTabParamsList = {
@@ -40,6 +43,8 @@ export default function MapsScreenTenants() {
     route.params;
   console.log('routeparams', route.params);
   const navigation = useNavigation();
+    const searchRef = useRef<any>(null);
+  
   const mapRef = useRef<MapView | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const requestStoragePermission = async () => {
@@ -194,7 +199,99 @@ export default function MapsScreenTenants() {
     setMarkingMode(true); // allow user to mark again
   };
   return (
+    <TouchableWithoutFeedback
+          onPress={() => {
+            Keyboard.dismiss();
+            setTimeout(() => searchRef.current?.blur(), 100); // 👈 delay helps
+          }}
+        >
     <View style={styles.container}>
+      <View className="absolute top-8 w-full z-10 px-5">
+                <GooglePlacesAutocomplete
+                  ref={searchRef}
+                  placeholder="Where to?"
+                  fetchDetails={true}
+                  debounce={200}
+                  enablePoweredByContainer={true}
+                  nearbyPlacesAPI="GooglePlacesSearch"
+                  minLength={2}
+                  timeout={10000}
+                  keyboardShouldPersistTaps="handled"
+                  listViewDisplayed="auto"
+                  keepResultsAfterBlur={false}
+                  currentLocation={true}
+                  currentLocationLabel="Current location"
+                  enableHighAccuracyLocation={true}
+                  onFail={() => console.warn('Google Places Autocomplete failed')}
+                  onNotFound={() => console.log('No results found')}
+                  onTimeout={() => console.warn('Google Places request timeout')}
+                  predefinedPlaces={[]}
+                  predefinedPlacesAlwaysVisible={false}
+                  styles={{
+                    textInputContainer: {
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 20,
+                      marginHorizontal: 20,
+                      shadowColor: '#d4d4d4',
+                    },
+                    textInput: {
+                      backgroundColor: 'white',
+                      fontWeight: '600',
+                      fontSize: 16,
+                      marginTop: 5,
+                      width: '100%',
+                      color: '#000',
+                      paddingHorizontal: 10,
+                    },
+      
+                    listView: {
+                      backgroundColor: 'white',
+                      borderRadius: 10,
+                      shadowColor: '#d4d4d4',
+                    },
+                  }}
+                  query={{
+                    key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
+                    language: 'en',
+                    types: 'geocode',
+                    components: 'country:np',
+                  }}
+                  onPress={(data, details = null) => {
+                    if (!details?.geometry?.location) {
+                      console.warn('Missing geometry details!');
+                      return;
+                    }
+      
+                    const location = {
+                      latitude: details.geometry.location.lat,
+                      longitude: details.geometry.location.lng,
+                      // Prefer formatted_address or name for name/address
+                      address:
+                        details.formatted_address ||
+                        details.name ||
+                        data.description ||
+                        'Unknown location',
+                    };
+      
+                    
+      
+                    mapRef.current?.animateToRegion({
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                      latitudeDelta: 0.01,
+                      longitudeDelta: 0.01,
+                    });
+                  }}
+                  GooglePlacesSearchQuery={{
+                    rankby: 'distance',
+                    radius: 1000,
+                  }}
+                  textInputProps={{
+                    placeholderTextColor: 'gray',
+                  }}
+                />
+              </View>
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
@@ -331,6 +428,7 @@ export default function MapsScreenTenants() {
         </SafeAreaView>
       </Modal>
     </View>
+    </TouchableWithoutFeedback>
   );
 }
 

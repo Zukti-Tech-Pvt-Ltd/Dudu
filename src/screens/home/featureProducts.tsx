@@ -114,52 +114,75 @@ const HoldToPlayVideo = ({
       style={{ width: cardWidth }}
     >
       <View
-        className="w-full rounded-t-2xl overflow-hidden bg-gray-200 relative"
-        style={{ height: videoHeight }}
-      >
-        {isPlaying ? (
-          <Video
-            ref={(ref) => {
-              videoRef.current = ref;
-            }}
-            source={{ uri: video }}
-            className="w-full h-full"
-            paused={!isPlaying}
-            resizeMode="cover"
-            onLoadStart={() => setIsLoading(true)}
-            onLoad={() => setIsLoading(false)}
-            repeat
-            muted
-            controls={false}
-          />
-        ) : (
-          <Image
-            source={thumbnailUri ? { uri: thumbnailUri } : undefined}
-            className="w-full h-full"
-            resizeMode="cover"
-          />
-        )}
-        
-        {isPlaying && isLoading && (
-          <View className="absolute inset-0 justify-center items-center bg-black">
-            <Text className="text-white text-sm">Loading...</Text>
-          </View>
-        )}
+  className="w-full rounded-t-2xl overflow-hidden bg-gray-200 relative"
+  style={{ height: videoHeight }}
+>
+  {/* Step 1: Always show thumbnail */}
+  <Image
+    source={thumbnailUri ? { uri: thumbnailUri } : undefined}
+    className="w-full h-full absolute top-0 left-0 right-0 bottom-0"
+    resizeMode="cover"
+    style={{
+        opacity: isPlaying && !isLoading ? 0 : 1, // hide only after video is ready
+      }}
+  />
 
-        <Pressable
-          className="absolute top-0 left-0 right-0 bottom-0"
-          onPressIn={() => {
-            onPlay(productId);
-            videoRef.current?.seek?.(0);
-          }}
-          // onPressOut={() => onPlay(null)} // optional: stop video on press out
-        />
-      </View>
-      <View className="py-2 w-full items-center">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100 capitalize text-center mt-1">
-          {label}
-        </Text>
-      </View>
+  {/* Step 2: Render video only after it has loaded */}
+  {isPlaying && (
+    <Video
+      ref={(ref) => {
+        videoRef.current = ref;
+      }}
+      source={{ uri: video }}
+      className="w-full h-full"
+      paused={!isPlaying}
+      resizeMode="cover"
+      onLoadStart={() => setIsLoading(true)}
+      onLoad={() => setIsLoading(false)}
+      repeat
+      muted
+      controls={false}
+      style={[
+        {
+          opacity: isLoading ? 0 : 1, // hide video while loading
+        },
+      ]}
+    />
+  )}
+
+  {/* Step 3: Optional “Loading…” overlay */}
+  {isPlaying && isLoading && (
+    <View className="absolute inset-0 ml-2 justify-center items-center">
+      <Text className="text-white text-sm">Loading...</Text>
+    </View>
+  )}
+
+  <Pressable
+    className="absolute top-0 left-0 right-0 bottom-0"
+    onPressIn={() => {
+      onPlay(productId);
+      videoRef.current?.seek?.(0);
+    }}
+     onPress={() => {
+    navigation.navigate('DetailScreen', {
+      productId,
+      productName,
+      tableName,
+    });
+  }}
+  />
+</View>
+
+      <View className="absolute bottom-0 left-0 right-0 items-center px-2">
+  <View className="px-3 py-1 rounded-full">
+    <Text
+      className="text-white text-lg font-semibold capitalize text-center"
+      numberOfLines={1}
+    >
+      {label}
+    </Text>
+  </View>
+</View>
     </TouchableOpacity>
   );
 };

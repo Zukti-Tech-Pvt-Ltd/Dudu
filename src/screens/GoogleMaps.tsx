@@ -7,9 +7,12 @@ import {
   Modal,
   Animated,
   Dimensions,
+  Keyboard,
   Image,
+  TouchableWithoutFeedback,
   FlatList,
   ActivityIndicator,
+  KeyboardAvoidingViewBase,
 } from 'react-native';
 import MapView, {
   PROVIDER_GOOGLE,
@@ -44,6 +47,7 @@ export default function MapsScreen() {
 
   type MapsScreenRouteProp = RouteProp<MapsScreenParamsList, 'map'>;
   const route = useRoute<MapsScreenRouteProp>();
+  const searchRef = useRef<any>(null);
 
   const { lat = 0 } = route.params ?? {};
   const { long = 0 } = route.params ?? {};
@@ -218,336 +222,347 @@ export default function MapsScreen() {
   );
 
   return (
-    <View className="flex-1  bg-transparent ">
-      {/* Autocomplete positioned absolutely on top */}
-      <View className="absolute top-8 w-full z-10 px-5">
-        <GooglePlacesAutocomplete
-          placeholder="Where to?"
-          fetchDetails={true}
-          debounce={200}
-          enablePoweredByContainer={true}
-          nearbyPlacesAPI="GooglePlacesSearch"
-          minLength={2}
-          timeout={10000}
-          keyboardShouldPersistTaps="handled"
-          listViewDisplayed="auto"
-          keepResultsAfterBlur={false}
-          currentLocation={false}
-          currentLocationLabel="Current location"
-          enableHighAccuracyLocation={true}
-          onFail={() => console.warn('Google Places Autocomplete failed')}
-          onNotFound={() => console.log('No results found')}
-          onTimeout={() => console.warn('Google Places request timeout')}
-          predefinedPlaces={[]}
-          predefinedPlacesAlwaysVisible={false}
-          styles={{
-            textInputContainer: {
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 20,
-              marginHorizontal: 20,
-              shadowColor: '#d4d4d4',
-            },
-            textInput: {
-              backgroundColor: 'white',
-              fontWeight: '600',
-              fontSize: 16,
-              marginTop: 5,
-              width: '100%',
-              color: '#000',
-              paddingHorizontal: 10,
-            },
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+        setTimeout(() => searchRef.current?.blur(), 100); // 👈 delay helps
+      }}
+    >
+      <View className="flex-1  bg-transparent ">
+        {/* Autocomplete positioned absolutely on top */}
+        <View className="absolute top-8 w-full z-10 px-5">
+          <GooglePlacesAutocomplete
+            ref={searchRef}
+            placeholder="Where to?"
+            fetchDetails={true}
+            debounce={200}
+            enablePoweredByContainer={true}
+            nearbyPlacesAPI="GooglePlacesSearch"
+            minLength={2}
+            timeout={10000}
+            keyboardShouldPersistTaps="handled"
+            listViewDisplayed="auto"
+            keepResultsAfterBlur={false}
+            currentLocation={false}
+            currentLocationLabel="Current location"
+            enableHighAccuracyLocation={true}
+            onFail={() => console.warn('Google Places Autocomplete failed')}
+            onNotFound={() => console.log('No results found')}
+            onTimeout={() => console.warn('Google Places request timeout')}
+            predefinedPlaces={[]}
+            predefinedPlacesAlwaysVisible={false}
+            styles={{
+              textInputContainer: {
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 20,
+                marginHorizontal: 20,
+                shadowColor: '#d4d4d4',
+              },
+              textInput: {
+                backgroundColor: 'white',
+                fontWeight: '600',
+                fontSize: 16,
+                marginTop: 5,
+                width: '100%',
+                color: '#000',
+                paddingHorizontal: 10,
+              },
 
-            listView: {
-              backgroundColor: 'white',
-              borderRadius: 10,
-              shadowColor: '#d4d4d4',
-            },
-          }}
-          query={{
-            key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
-            language: 'en',
-            types: 'geocode',
-          }}
-          onPress={(data, details = null) => {
-            if (!details?.geometry?.location) {
-              console.warn('Missing geometry details!');
-              return;
-            }
+              listView: {
+                backgroundColor: 'white',
+                borderRadius: 10,
+                shadowColor: '#d4d4d4',
+              },
+            }}
+            query={{
+              key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
+              language: 'en',
+              types: 'geocode',
+              components: 'country:np',
+            }}
+            onPress={(data, details = null) => {
+              if (!details?.geometry?.location) {
+                console.warn('Missing geometry details!');
+                return;
+              }
 
-            const location = {
-              latitude: details.geometry.location.lat,
-              longitude: details.geometry.location.lng,
-              // Prefer formatted_address or name for name/address
-              address:
-                details.formatted_address ||
-                details.name ||
-                data.description ||
-                'Unknown location',
-            };
+              const location = {
+                latitude: details.geometry.location.lat,
+                longitude: details.geometry.location.lng,
+                // Prefer formatted_address or name for name/address
+                address:
+                  details.formatted_address ||
+                  details.name ||
+                  data.description ||
+                  'Unknown location',
+              };
 
-            setMarkersList(prev => [
-              ...prev,
-              {
+              setMarkersList(prev => [
+                ...prev,
+                {
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  name: location.address,
+                  address: 'Selected location',
+                },
+              ]);
+
+              mapRef.current?.animateToRegion({
                 latitude: location.latitude,
                 longitude: location.longitude,
-                name: location.address,
-                address: 'Selected location',
-              },
-            ]);
-
-            mapRef.current?.animateToRegion({
-              latitude: location.latitude,
-              longitude: location.longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            });
-          }}
-          GooglePlacesSearchQuery={{
-            rankby: 'distance',
-            radius: 1000,
-          }}
-          textInputProps={{
-            placeholderTextColor: 'gray',
-          }}
-        />
-      </View>
-    {isMapAnimating && (
-  <View
-    style={{
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(255, 255, 255, 0.7)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-    }}
-  >
-    <ActivityIndicator size="large" color="#3b82f6" />
-    <Text style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}>
-      Centering map...
-    </Text>
-  </View>
-)}
-      {/* Map takes full space */}
-      <MapView
-        ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-          onRegionChangeComplete={() => setIsMapAnimating(false)} // hides loader when map settles
-
-        style={StyleSheet.absoluteFillObject} // ✅ covers full screen
-        initialRegion={{
-          latitude: destination.latitude,
-          longitude: destination.longitude,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        onMapReady={() => setIsMapReady(true)} // <-- map is ready
-      >
-        {tenantArray.map((coord, index) => (
-          <Marker
-            key={index}
-            draggable
-            ref={ref => {
-              if (selectedTenant?.name === coord.name) {
-                activeMarkerRef.current = ref; // save reference of selected marker
-                console.log('ref', activeMarkerRef);
-              }
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              });
             }}
-            coordinate={{
-              latitude: coord.latitude,
-              longitude: coord.longitude,
+            GooglePlacesSearchQuery={{
+              rankby: 'distance',
+              radius: 1000,
             }}
-            image={require('../../assets/icons/house.png')}
-            onDragEnd={e => console.log({ x: e.nativeEvent.coordinate })}
-            onPress={e => {
-              setSelectedTenant(coord);
-            }} // 👈 opens modal
-          >
-            <Callout>
-              <MyCustomCallOut name={coord.name} address={coord.address} />
-            </Callout>
-          </Marker>
-        ))}
-
-        {markersList.map((marker, index) => (
-          <Marker
-            key={index}
-            coordinate={{
-              latitude: marker.latitude,
-              longitude: marker.longitude,
+            textInputProps={{
+              placeholderTextColor: 'gray',
             }}
-            title={marker.name}
-            description={marker.address}
-            image={
-              marker.name === 'Your Location'
-                ? require('../../assets/icons/map.png') // your custom icon for user location
-                : require('../../assets/icons/map.png') // default icon for other markers
-            }
           />
-        ))}
-        
-      </MapView>
-  
-      
-      <Modal
-        visible={!!selectedTenant}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedTenant(null)}
-      >
-        <SafeAreaView
-          edges={['top']}
-          style={{
-            flex: 1,
-            // backgroundColor: 'rgba(0,0,0,0.25)',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          }}
-        >
-          <TouchableOpacity style={{ flex: 1 }} onPress={closePopup} />
-          <Animated.View
+        </View>
+        {isMapAnimating && (
+          <View
             style={{
-              transform: [{ translateY: slideAnim }],
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              zIndex: 1000,
+            }}
+          >
+            <ActivityIndicator size="large" color="#3b82f6" />
+            <Text
+              style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}
+            >
+              Centering map...
+            </Text>
+          </View>
+        )}
+        {/* Map takes full space */}
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_GOOGLE}
+          onRegionChangeComplete={() => setIsMapAnimating(false)} // hides loader when map settles
+          style={StyleSheet.absoluteFillObject} // ✅ covers full screen
+          initialRegion={{
+            latitude: destination.latitude,
+            longitude: destination.longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421,
+          }}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          onMapReady={() => setIsMapReady(true)} // <-- map is ready
+        >
+          {tenantArray.map((coord, index) => (
+            <Marker
+              key={index}
+              draggable
+              ref={ref => {
+                if (selectedTenant?.name === coord.name) {
+                  activeMarkerRef.current = ref; // save reference of selected marker
+                  console.log('ref', activeMarkerRef);
+                }
+              }}
+              coordinate={{
+                latitude: coord.latitude,
+                longitude: coord.longitude,
+              }}
+              image={require('../../assets/icons/house.png')}
+              onDragEnd={e => console.log({ x: e.nativeEvent.coordinate })}
+              onPress={e => {
+                setSelectedTenant(coord);
+              }} // 👈 opens modal
+            >
+              <Callout>
+                <MyCustomCallOut name={coord.name} address={coord.address} />
+              </Callout>
+            </Marker>
+          ))}
+
+          {markersList.map((marker, index) => (
+            <Marker
+              key={index}
+              coordinate={{
+                latitude: marker.latitude,
+                longitude: marker.longitude,
+              }}
+              title={marker.name}
+              description={marker.address}
+              {...(marker.name === 'Your Location' && {
+    image: require('../../assets/icons/map.png'),
+  })}
+            />
+          ))}
+        </MapView>
+
+        <Modal
+          visible={!!selectedTenant}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSelectedTenant(null)}
+        >
+          <SafeAreaView
+            edges={['top']}
+            style={{
+              flex: 1,
+              // backgroundColor: 'rgba(0,0,0,0.25)',
               position: 'absolute',
-              bottom: 0,
+              top: 0,
               left: 0,
               right: 0,
-              width: '100%',
+              bottom: 0,
             }}
-            className="bg-white rounded-t-3xl p-5 items-center"
           >
-            <FlatList
-              data={selectedTenant?.image || []}
-              keyExtractor={(item, index) => index.toString()}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              snapToAlignment="center"
-              decelerationRate="fast"
-              snapToInterval={Dimensions.get('window').width}
-              renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => setSelectedImage(item)}>
-                  <View
-                    style={{
-                      width: Dimensions.get('window').width,
-                      height: 200,
-                    }}
-                  >
-                    <Image
-                      source={{ uri: item }}
-                      style={{ width: '100%', height: '100%' }}
-                      resizeMode="cover"
-                      onLoadStart={() => handleLoadStart(item)}
-                      onLoadEnd={() => handleLoadEnd(item)}
-                    />
-                    {loadingImages[item] && (
-                      <ActivityIndicator
-                        style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          marginLeft: -10,
-                          marginTop: -10,
-                        }}
-                        size="large"
-                        color="#0000ff"
-                      />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              )}
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => {
+                closePopup();
+              }}
             />
-            {/* Fullscreen Modal */}
-            {/* Fullscreen Modal for multiple images */}
-            <Modal
-              visible={!!selectedImage}
-              transparent
-              statusBarTranslucent={true}
-              onRequestClose={() => setSelectedImage(null)}
+            <Animated.View
+              style={{
+                transform: [{ translateY: slideAnim }],
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                width: '100%',
+              }}
+              className="bg-white rounded-t-3xl p-5 items-center"
             >
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: 'rgba(0,0,0,0.95)',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                {/* Close Button */}
-                <TouchableOpacity
-                  style={{
-                    position: 'absolute',
-                    top: 50,
-                    right: 20,
-                    zIndex: 10,
-                  }}
-                  onPress={() => setSelectedImage(null)}
-                >
-                  <Image
-                    source={require('../../assets/navIcons/close.png')}
-                    style={{ width: 24, height: 24 }}
-                  />
-                </TouchableOpacity>
-
-                {/* Scrollable Image Viewer */}
-                <FlatList
-                  data={selectedTenant?.image || []}
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  keyExtractor={(item, index) => index.toString()}
-                  renderItem={({ item }) => (
+              <FlatList
+                data={selectedTenant?.image || []}
+                keyExtractor={(item, index) => index.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                snapToAlignment="center"
+                decelerationRate="fast"
+                snapToInterval={Dimensions.get('window').width}
+                renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => setSelectedImage(item)}>
                     <View
                       style={{
-                        width,
-                        height,
-                        justifyContent: 'center',
-                        alignItems: 'center',
+                        width: Dimensions.get('window').width,
+                        height: 200,
                       }}
                     >
                       <Image
                         source={{ uri: item }}
                         style={{ width: '100%', height: '100%' }}
-                        resizeMode="contain"
+                        resizeMode="cover"
+                        onLoadStart={() => handleLoadStart(item)}
+                        onLoadEnd={() => handleLoadEnd(item)}
                       />
+                      {loadingImages[item] && (
+                        <ActivityIndicator
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            marginLeft: -10,
+                            marginTop: -10,
+                          }}
+                          size="large"
+                          color="#0000ff"
+                        />
+                      )}
                     </View>
-                  )}
-                  // Start at the tapped image
-                  initialScrollIndex={(selectedTenant?.image || []).findIndex(
-                    img => img === selectedImage,
-                  )}
-                  getItemLayout={(data, index) => ({
-                    length: width,
-                    offset: width * index,
-                    index,
-                  })}
-                />
+                  </TouchableOpacity>
+                )}
+              />
+              {/* Fullscreen Modal */}
+              {/* Fullscreen Modal for multiple images */}
+              <Modal
+                visible={!!selectedImage}
+                transparent
+                statusBarTranslucent={true}
+                onRequestClose={() => setSelectedImage(null)}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: 'rgba(0,0,0,0.95)',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  {/* Close Button */}
+                  <TouchableOpacity
+                    style={{
+                      position: 'absolute',
+                      top: 50,
+                      right: 20,
+                      zIndex: 10,
+                    }}
+                    onPress={() => setSelectedImage(null)}
+                  >
+                    <Image
+                      source={require('../../assets/navIcons/close.png')}
+                      style={{ width: 24, height: 24 }}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Scrollable Image Viewer */}
+                  <FlatList
+                    data={selectedTenant?.image || []}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({ item }) => (
+                      <View
+                        style={{
+                          width,
+                          height,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Image
+                          source={{ uri: item }}
+                          style={{ width: '100%', height: '100%' }}
+                          resizeMode="contain"
+                        />
+                      </View>
+                    )}
+                    // Start at the tapped image
+                    initialScrollIndex={(selectedTenant?.image || []).findIndex(
+                      img => img === selectedImage,
+                    )}
+                    getItemLayout={(data, index) => ({
+                      length: width,
+                      offset: width * index,
+                      index,
+                    })}
+                  />
+                </View>
+              </Modal>
+
+              <Text className="text-lg mb-2">{selectedTenant?.name}</Text>
+              <View className="flex-row items-center mb-6">
+                <Text className="text-lg font-bold mr-2">Address :</Text>
+                <Text className="text-lg">{selectedTenant?.address}</Text>
               </View>
-            </Modal>
 
-            <Text className="text-lg mb-2">{selectedTenant?.name}</Text>
-            <View className="flex-row items-center mb-6">
-              <Text className="text-lg font-bold mr-2">Address :</Text>
-              <Text className="text-lg">{selectedTenant?.address}</Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => {
-                closePopup();
-              }}
-              className="bg-blue-500 px-10 py-3 rounded-full"
-            >
-              <Text className="text-white text-center">View Detail</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </SafeAreaView>
-      </Modal>
-    </View>
+              <TouchableOpacity
+                onPress={() => {
+                  closePopup();
+                }}
+                className="bg-blue-500 px-10 py-3 rounded-full"
+              >
+                <Text className="text-white text-center">View Detail</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </SafeAreaView>
+        </Modal>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
