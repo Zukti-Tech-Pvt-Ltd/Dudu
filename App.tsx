@@ -20,7 +20,7 @@ import CheckoutScreen from './src/screens/checkOut/checkOutScreen';
 import PaymentMethodScreen from './src/screens/payment/paymentScreen';
 import ESewaTestPayment from './src/screens/payment/esewa';
 import KhaltiPayment from './src/screens/payment/khalti';
-import TenantScreen from './src/screens/service/tenant';
+import TenantScreen from './src/screens/tenant/tenant';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
 

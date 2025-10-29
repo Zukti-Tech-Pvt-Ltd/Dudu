@@ -73,6 +73,20 @@ export default function CartScreen() {
   //   };
   //   fetchToken();
   // }, []);
+
+    if (!isLoggedIn) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Image
+          source={require('../../../assets/images/user.png')}
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+        />
+        <Text className="font-bold text-lg text-gray-900 mb-2">
+          please login in first
+        </Text>
+      </View>
+    );
+  }
   useEffect(() => {
     if (cartData && cartData.length > 0) {
       const qtys = cartData.reduce((prev: Record<string, number>, group) => {
@@ -91,8 +105,7 @@ export default function CartScreen() {
   //     return prev;
   //   }, {}),
   // );
-  if (!isLoggedIn) {
-  }
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -195,19 +208,7 @@ export default function CartScreen() {
     }
     return sum;
   }, 0);
-  if (!isLoggedIn) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Image
-          source={require('../../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
-        />
-        <Text className="font-bold text-lg text-gray-900 mb-2">
-          please login in first
-        </Text>
-      </View>
-    );
-  }
+
   if (loading)
     return (
       <View className="flex-1 justify-center items-center">

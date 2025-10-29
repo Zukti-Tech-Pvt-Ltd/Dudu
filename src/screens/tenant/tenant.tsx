@@ -18,9 +18,11 @@ import {
   ActivityIndicator,
   StyleSheet,
   SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import { createTenant, deleteTenant, getTenant } from '../../api/tenantApi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { API_BASE_URL } from '@env';
 
 type Place = {
   id: string;
@@ -50,7 +52,7 @@ type RootStackParamList = {
   };
 };
 export default function TenantScreen() {
-    const insets = useSafeAreaInsets(); // detects notch + gesture area space
+  const insets = useSafeAreaInsets(); // detects notch + gesture area space
 
   type HomeNavigationProp = NativeStackNavigationProp<
     RootStackParamList,
@@ -63,9 +65,29 @@ export default function TenantScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [places, setPlaces] = useState<Place[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<any | null>(null);
+  const [isFocusedName, setIsFocusedName] = useState(false);
+  const [isFocusedLocation, setIsFocusedLocation] = useState(false);
+  const [isFocusedPhone, setIsFocusedPhone] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () =>
+      setKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardVisible(false),
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -103,34 +125,6 @@ export default function TenantScreen() {
   }, [isFocused]);
   console.log('places', places);
 
-  const addPlace = async () => {
-    if (placeName && location && phoneNumber) {
-      try {
-        setLoading(true);
-        // console.log('responsewwwwwwwwwwwwwwwwwww', response);
-        await fetchData(); // refresh data from API
-
-        // const newPlace: Place = {
-        //   id: response.id,
-        //   placeName: response.name,
-        //   location: response.address,
-        //   phoneNumber: response.phoneNumber,
-        // };
-        // setPlaces(current => [newPlace, ...current]);
-        setPlaceName('');
-        setLocation('');
-        setPhoneNumber('');
-        setModalVisible(false);
-      } catch (error) {
-        Alert.alert('Error', 'Failed to add place');
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      Alert.alert('Validation', 'Please fill in all fields.');
-    }
-  };
   const handleDeletePlace = (id: string, name: string) => {
     Alert.alert('Delete Place', `Are you sure you want to delete "${name}"?`, [
       { text: 'Cancel', style: 'cancel' },
@@ -140,7 +134,7 @@ export default function TenantScreen() {
         onPress: async () => {
           try {
             setLoading(true);
-           deleteTenant(id);
+            deleteTenant(id);
             setPlaces(prev => prev.filter(place => place.id !== id));
             setSelectedItemId(null);
             Alert.alert('Success', 'Place deleted successfully');
@@ -157,14 +151,13 @@ export default function TenantScreen() {
 
   return (
     <SafeAreaView
-    
       style={{
         flex: 1,
         backgroundColor: '#f9fafb', // same as your gradient top color
         paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
       }}
     >
-    <View className="flex-1 bg-gradient-to-b from-blue-50 via-white to-blue-50">
+      <View className="flex-1 bg-gradient-to-b from-blue-50 via-white to-blue-50">
         <View
           className="bg-white py-4 px-4 mb-2 flex-row items-center justify-between"
           style={{
@@ -205,77 +198,80 @@ export default function TenantScreen() {
           </Pressable>
         </View>
 
-          <FlatList
-            contentContainerStyle={{ paddingHorizontal: 20 }}
-            data={places}
-            keyExtractor={item => item.id}
-            renderItem={({ item }) => (
-              <Pressable
-                onLongPress={() => setSelectedItemId(item.id)}
-                onPress={() => {
-                  if (selectedItemId) {
-                    setSelectedItemId(null);
-                  }
-                }}
-              >
-                <View className="bg-white rounded-3xl  p-5 mb-5 shadow-lg flex-row items-center justify-between">
-                  <View>
-                    <Text className="font-bold text-2xl text-blue-900 mb-2">
-                      {item.placeName}
-                    </Text>
-                    <Text className="text-blue-700 mb-1">
-                      Location: {item.location}
-                    </Text>
-                    <Text className="text-blue-700">
-                      Phone: {item.phoneNumber}
-                    </Text>
-                  </View>
-
-                  <Pressable
-                    className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
-                    onPress={() => {
-                      setModalVisible(false);
-                      setSelectedItemId(null);
-
-                      console.log('yukessssssssssss', item.image);
-                      navigation.navigate('MapsScreen', {
-                        lat: item.latitude,
-                        long: item.longitude,
-                        name: item.placeName,
-                        address: item.location,
-                        image: item.image,
-                      });
-                    }}
-                  >
-                    <Image
-                      source={require('../../../assets/navIcons/pin.png')}
-                      style={{
-                        tintColor: 'white',
-                        width: 30,
-                        height: 30,
-                        resizeMode: 'contain',
-                      }}
-                    />
-                    {/* Or use an icon: <Icon name="map-marker" size={28} color="#3b82f6" /> */}
-                  </Pressable>
+        <FlatList
+          contentContainerStyle={{ paddingHorizontal: 20 }}
+          data={places}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => (
+            <Pressable
+              onLongPress={() => setSelectedItemId(item.id)}
+              onPress={() => {
+                if (selectedItemId) {
+                  setSelectedItemId(null);
+                } else {
+                  setSelectedPlace(item);
+                  setEditModalVisible(true);
+                }
+              }}
+            >
+              <View className="bg-white rounded-3xl  p-5 mb-5 shadow-lg flex-row items-center justify-between">
+                <View>
+                  <Text className="font-bold text-2xl text-blue-900 mb-2">
+                    {item.placeName}
+                  </Text>
+                  <Text className="text-blue-700 mb-1">
+                    Location: {item.location}
+                  </Text>
+                  <Text className="text-blue-700">
+                    Phone: {item.phoneNumber}
+                  </Text>
                 </View>
-                {/* Close/Delete Button - Shows on top-right when item is selected */}
-                {selectedItemId === item.id && (
-                  <TouchableOpacity
-                    className="absolute -top--2 -right-1 bg-red-500 rounded-full w-8 h-8 justify-center items-center shadow-lg z-10"
-                    onPress={() => handleDeletePlace(item.id, item.placeName)}
-                  >
-                    <Text className="text-white text-lg font-bold">×</Text>
-                  </TouchableOpacity>
-                )}
-              </Pressable>
-            )}
-            ListEmptyComponent={
-              <Text className="text-center text-blue-300 mt-20 text-lg italic">
-                No places added yet.
-              </Text>
-            }
-          />
+
+                <Pressable
+                  className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
+                  onPress={() => {
+                    setModalVisible(false);
+                    setSelectedItemId(null);
+
+                    console.log('yukessssssssssss', item.image);
+                    navigation.navigate('MapsScreen', {
+                      lat: item.latitude,
+                      long: item.longitude,
+                      name: item.placeName,
+                      address: item.location,
+                      image: item.image,
+                    });
+                  }}
+                >
+                  <Image
+                    source={require('../../../assets/navIcons/pin.png')}
+                    style={{
+                      tintColor: 'white',
+                      width: 30,
+                      height: 30,
+                      resizeMode: 'contain',
+                    }}
+                  />
+                  {/* Or use an icon: <Icon name="map-marker" size={28} color="#3b82f6" /> */}
+                </Pressable>
+              </View>
+              {/* Close/Delete Button - Shows on top-right when item is selected */}
+              {selectedItemId === item.id && (
+                <TouchableOpacity
+                  className="absolute -top--2 -right-1 bg-red-500 rounded-full w-8 h-8 justify-center items-center shadow-lg z-10"
+                  onPress={() => handleDeletePlace(item.id, item.placeName)}
+                >
+                  <Text className="text-white text-lg font-bold">×</Text>
+                </TouchableOpacity>
+              )}
+            </Pressable>
+          )}
+          ListEmptyComponent={
+            <Text className="text-center text-blue-300 mt-20 text-lg italic">
+              No places added yet.
+            </Text>
+          }
+        />
         {loading && (
           <View
             style={{
@@ -301,7 +297,141 @@ export default function TenantScreen() {
             +
           </Text>
         </Pressable>
+        <Modal
+          animationType="slide" // Changed from "fade" to "slide" for bottom-up animation
+          transparent={true} // Keep transparent true to avoid default white background overlay
+          visible={editModalVisible}
+          onRequestClose={() => setEditModalVisible(false)}
+        >
+          <TouchableWithoutFeedback
+            onPress={() => {
+              if (keyboardVisible) {
+                Keyboard.dismiss(); // only dismiss keyboard
+              } else {
+                setEditModalVisible(false); // only close modal
+              }
+            }}
+          >
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              className="flex-1 justify-end px-6" // Align modal content at bottom, no bg color here
+            >
+              <View className="bg-white rounded-t-3xl p-2 shadow-xl">
+                <Text className="text-3xl font-extrabold mb-6 text-blue-900 text-center">
+                  Edit Place
+                </Text>
+                {selectedPlace?.image && selectedPlace.image.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 10 }}
+                    className="mb-6"
+                  >
+                    {selectedPlace.image.map(
+                      (imgPath: string, index: number) => (
+                        <Image
+                          key={index}
+                          source={{ uri: `${API_BASE_URL}/${imgPath}` }} // adjust base URL
+                          className="w-28 h-28 rounded-2xl mr-3 border border-blue-300"
+                          resizeMode="cover"
+                        />
+                      ),
+                    )}
+                  </ScrollView>
+                )}
+                <View className="mb-6">
+                  {
+                    <Text className="absolute -ml-4 -top-5 left-5 bg-white px-2 text-blue-500 text-md font-semibold z-10">
+                      Place Name:
+                    </Text>
+                  }
 
+                  <TextInput
+                    className={`bg-blue-50 border ${
+                      isFocusedName ? 'border-blue-500' : 'border-blue-300'
+                    } rounded-2xl px-5 py-4 text-lg text-blue-900`}
+                    placeholder={selectedPlace?.placeName}
+                    placeholderTextColor="#93C5FD"
+                    value={placeName}
+                    onChangeText={setPlaceName}
+                    onFocus={() => setIsFocusedName(true)}
+                    onBlur={() => setIsFocusedName(false)}
+                  />
+                </View>
+                <View className="mb-6">
+                  {
+                    <Text className="absolute -ml-4 -top-5 left-5 bg-white px-2 text-blue-500 text-md font-semibold z-10">
+                      Location:
+                    </Text>
+                  }
+                  <TextInput
+                    className={`bg-blue-50 border ${
+                      isFocusedLocation ? 'border-blue-500' : 'border-blue-300'
+                    } rounded-2xl px-5 py-4 text-lg text-blue-900`}
+                    placeholder={selectedPlace?.location}
+                    value={location}
+                    onChangeText={setLocation}
+                    keyboardType="default"
+                    placeholderTextColor="#93C5FD"
+                    onFocus={() => setIsFocusedLocation(true)}
+                    onBlur={() => setIsFocusedLocation(false)}
+                  />
+                </View>
+                <View className="mb-4">
+                  {/* Floating label */}
+                  {
+                    <Text className="absolute -ml-4 -top-5 left-5 bg-white px-2 text-blue-500 text-md font-semibold z-10">
+                      Phone Number:
+                    </Text>
+                  }
+                  <TextInput
+                    className={`bg-blue-50 border ${
+                      isFocusedPhone ? 'border-blue-500' : 'border-blue-300'
+                    } rounded-2xl px-5 py-4 text-lg text-blue-900`}
+                    placeholder={selectedPlace?.phoneNumber}
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    keyboardType="phone-pad"
+                    placeholderTextColor="#93C5FD"
+                    onFocus={() => setIsFocusedPhone(true)}
+                    onBlur={() => setIsFocusedPhone(false)}
+                  />
+                </View>
+
+                <View className="flex-row justify-center">
+                  <Pressable
+                    className={`rounded-2xl py-3 px-4 shadow-md
+                      bg-blue-400
+                    `}
+                    onPress={() => {
+                      console.log('selectedPlace', selectedPlace);
+
+                      setEditModalVisible(false);
+                    }}
+                  >
+                    <Text
+                      className={`font-semibold text-lg text-center
+                      text-black
+                      `}
+                    >
+                      {' '}
+                      Done
+                    </Text>
+                  </Pressable>
+
+                  {/* <Pressable
+                  className="bg-blue-500 rounded-2xl py-3 px-10 shadow-md"
+                  onPress={addPlace}
+                >
+                  <Text className="text-white font-semibold text-lg text-center">
+                    Add
+                  </Text>
+                </Pressable> */}
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+          </TouchableWithoutFeedback>
+        </Modal>
         {/* Modal for Add Place Form */}
         <Modal
           animationType="slide" // Changed from "fade" to "slide" for bottom-up animation
@@ -311,8 +441,11 @@ export default function TenantScreen() {
         >
           <TouchableWithoutFeedback
             onPress={() => {
-              Keyboard.dismiss(); // Optional: dismiss keyboard on touch outside
-              setModalVisible(false);
+              if (keyboardVisible) {
+                Keyboard.dismiss(); // only dismiss keyboard
+              } else {
+                setModalVisible(false); // only close modal
+              }
             }}
           >
             <KeyboardAvoidingView
@@ -398,7 +531,7 @@ export default function TenantScreen() {
             </KeyboardAvoidingView>
           </TouchableWithoutFeedback>
         </Modal>
-    </View>
+      </View>
     </SafeAreaView>
   );
 }

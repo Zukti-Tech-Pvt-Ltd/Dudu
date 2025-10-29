@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { API_BASE_URL } from '@env';
 import { RouteProp, useRoute } from '@react-navigation/native';
+import { AuthContext } from '../helper/authContext';
 
 const destination = {
   latitude: 27.671044042129285,
@@ -108,6 +109,7 @@ export default function MapsScreen() {
     }>
   >([]);
   const [isMapReady, setIsMapReady] = useState(false);
+  const { isLoggedIn, token, setToken } = useContext(AuthContext);
 
   const closePopup = () => {
     if (activeMarkerRef.current && activeMarkerRef.current.hideCallout) {
@@ -121,6 +123,19 @@ export default function MapsScreen() {
       setSelectedTenant(null);
     });
   };
+  if (!isLoggedIn) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Image
+          source={require('../../assets/images/user.png')}
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+        />
+        <Text className="font-bold text-lg text-gray-900 mb-2">
+          please login in first
+        </Text>
+      </View>
+    );
+  }
   useEffect(() => {
     if (selectedTenant) {
       Animated.timing(slideAnim, {
@@ -171,6 +186,7 @@ export default function MapsScreen() {
       );
 
       // Existing tenant data fetch
+
       try {
         const response = await getTenant();
         const tenants = response.data;
@@ -334,7 +350,7 @@ export default function MapsScreen() {
               zIndex: 1000,
             }}
           >
-            <ActivityIndicator size="large" color="#3b82f6" />
+            <ActivityIndicator size={20} color="#3B82F6" />
             <Text
               style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}
             >
@@ -394,8 +410,8 @@ export default function MapsScreen() {
               title={marker.name}
               description={marker.address}
               {...(marker.name === 'Your Location' && {
-    image: require('../../assets/icons/map.png'),
-  })}
+                image: require('../../assets/icons/map.png'),
+              })}
             />
           ))}
         </MapView>
@@ -450,6 +466,8 @@ export default function MapsScreen() {
                       style={{
                         width: Dimensions.get('window').width,
                         height: 200,
+                        justifyContent: 'center',
+                        alignItems: 'center',
                       }}
                     >
                       <Image
@@ -460,17 +478,21 @@ export default function MapsScreen() {
                         onLoadEnd={() => handleLoadEnd(item)}
                       />
                       {loadingImages[item] && (
-                        <ActivityIndicator
+                        <View
                           style={{
                             position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            marginLeft: -10,
-                            marginTop: -10,
+                            top: 0,
+                            left: 0,
+                            right: 45,
+                            bottom: 0,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            backgroundColor: 'rgba(255,255,255,0.3)', // optional overlay
                           }}
-                          size="large"
-                          color="#0000ff"
-                        />
+                          pointerEvents="none"
+                        >
+                          <ActivityIndicator size={30} color="#3B82F6" />
+                        </View>
                       )}
                     </View>
                   </TouchableOpacity>

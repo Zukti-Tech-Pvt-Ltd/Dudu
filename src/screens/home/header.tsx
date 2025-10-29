@@ -3,7 +3,7 @@ import React from 'react';
 
 export default function Header() {
   return (
-    <View className="flex-row items-center w-full justify-start pl-0 -ml-3">
+    <View className="flex-row items-center w-full justify-start pl-0 ml-0">
  
      <Image
         source={require('../../../assets/images/dudu.png')}

@@ -14,6 +14,7 @@ import {
   Image,
   Platform,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import MapView, {
   PROVIDER_GOOGLE,
@@ -43,8 +44,8 @@ export default function MapsScreenTenants() {
     route.params;
   console.log('routeparams', route.params);
   const navigation = useNavigation();
-    const searchRef = useRef<any>(null);
-  
+  const searchRef = useRef<any>(null);
+
   const mapRef = useRef<MapView | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const requestStoragePermission = async () => {
@@ -120,10 +121,11 @@ export default function MapsScreenTenants() {
     longitudeDelta: 0.01,
   });
   const [isDone, SetIsDone] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   const [markingMode, setMarkingMode] = useState(false); // Are we marking?
   const uploadImages = async () => {
     try {
+      setLoading(true);
       const tenantResponse = await createTenant(
         placeName,
         phoneNumber,
@@ -145,6 +147,7 @@ export default function MapsScreenTenants() {
       });
       const imageResponse = await createTenantImage(formData);
       console.log('Tenant images uploaded:', imageResponse);
+      setLoading(false);
 
       navigation.goBack();
     } catch (err) {
@@ -200,234 +203,244 @@ export default function MapsScreenTenants() {
   };
   return (
     <TouchableWithoutFeedback
-          onPress={() => {
-            Keyboard.dismiss();
-            setTimeout(() => searchRef.current?.blur(), 100); // 👈 delay helps
-          }}
-        >
-    <View style={styles.container}>
-      <View className="absolute top-8 w-full z-10 px-5">
-                <GooglePlacesAutocomplete
-                  ref={searchRef}
-                  placeholder="Where to?"
-                  fetchDetails={true}
-                  debounce={200}
-                  enablePoweredByContainer={true}
-                  nearbyPlacesAPI="GooglePlacesSearch"
-                  minLength={2}
-                  timeout={10000}
-                  keyboardShouldPersistTaps="handled"
-                  listViewDisplayed="auto"
-                  keepResultsAfterBlur={false}
-                  currentLocation={true}
-                  currentLocationLabel="Current location"
-                  enableHighAccuracyLocation={true}
-                  onFail={() => console.warn('Google Places Autocomplete failed')}
-                  onNotFound={() => console.log('No results found')}
-                  onTimeout={() => console.warn('Google Places request timeout')}
-                  predefinedPlaces={[]}
-                  predefinedPlacesAlwaysVisible={false}
-                  styles={{
-                    textInputContainer: {
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: 20,
-                      marginHorizontal: 20,
-                      shadowColor: '#d4d4d4',
-                    },
-                    textInput: {
-                      backgroundColor: 'white',
-                      fontWeight: '600',
-                      fontSize: 16,
-                      marginTop: 5,
-                      width: '100%',
-                      color: '#000',
-                      paddingHorizontal: 10,
-                    },
-      
-                    listView: {
-                      backgroundColor: 'white',
-                      borderRadius: 10,
-                      shadowColor: '#d4d4d4',
-                    },
-                  }}
-                  query={{
-                    key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
-                    language: 'en',
-                    types: 'geocode',
-                    components: 'country:np',
-                  }}
-                  onPress={(data, details = null) => {
-                    if (!details?.geometry?.location) {
-                      console.warn('Missing geometry details!');
-                      return;
-                    }
-      
-                    const location = {
-                      latitude: details.geometry.location.lat,
-                      longitude: details.geometry.location.lng,
-                      // Prefer formatted_address or name for name/address
-                      address:
-                        details.formatted_address ||
-                        details.name ||
-                        data.description ||
-                        'Unknown location',
-                    };
-      
-                    
-      
-                    mapRef.current?.animateToRegion({
-                      latitude: location.latitude,
-                      longitude: location.longitude,
-                      latitudeDelta: 0.01,
-                      longitudeDelta: 0.01,
-                    });
-                  }}
-                  GooglePlacesSearchQuery={{
-                    rankby: 'distance',
-                    radius: 1000,
-                  }}
-                  textInputProps={{
-                    placeholderTextColor: 'gray',
-                  }}
-                />
-              </View>
-      <MapView
-        ref={mapRef}
-        provider={PROVIDER_GOOGLE}
-        style={StyleSheet.absoluteFillObject}
-        initialRegion={region}
-        onRegionChangeComplete={r => setRegion(r)}
-        onPress={handleMapPress}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-      >
-        {marker && (
-          <Marker
-            coordinate={{
-              latitude: marker.latitude,
-              longitude: marker.longitude,
+      onPress={() => {
+        Keyboard.dismiss();
+        setTimeout(() => searchRef.current?.blur(), 100); // 👈 delay helps
+      }}
+    >
+      <View style={styles.container}>
+        <View className="absolute top-8 w-full z-10 px-5">
+          <GooglePlacesAutocomplete
+            ref={searchRef}
+            placeholder="Where to?"
+            fetchDetails={true}
+            debounce={200}
+            enablePoweredByContainer={true}
+            nearbyPlacesAPI="GooglePlacesSearch"
+            minLength={2}
+            timeout={10000}
+            keyboardShouldPersistTaps="handled"
+            listViewDisplayed="auto"
+            keepResultsAfterBlur={false}
+            currentLocation={true}
+            currentLocationLabel="Current location"
+            enableHighAccuracyLocation={true}
+            onFail={() => console.warn('Google Places Autocomplete failed')}
+            onNotFound={() => console.log('No results found')}
+            onTimeout={() => console.warn('Google Places request timeout')}
+            predefinedPlaces={[]}
+            predefinedPlacesAlwaysVisible={false}
+            styles={{
+              textInputContainer: {
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 20,
+                marginHorizontal: 20,
+                shadowColor: '#d4d4d4',
+              },
+              textInput: {
+                backgroundColor: 'white',
+                fontWeight: '600',
+                fontSize: 16,
+                marginTop: 5,
+                width: '100%',
+                color: '#000',
+                paddingHorizontal: 10,
+              },
+
+              listView: {
+                backgroundColor: 'white',
+                borderRadius: 10,
+                shadowColor: '#d4d4d4',
+              },
             }}
-            title={'Selected Location'}
-            description={'Your marked place'}
+            query={{
+              key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
+              language: 'en',
+              types: 'geocode',
+              components: 'country:np',
+            }}
+            onPress={(data, details = null) => {
+              if (!details?.geometry?.location) {
+                console.warn('Missing geometry details!');
+                return;
+              }
+
+              const location = {
+                latitude: details.geometry.location.lat,
+                longitude: details.geometry.location.lng,
+                // Prefer formatted_address or name for name/address
+                address:
+                  details.formatted_address ||
+                  details.name ||
+                  data.description ||
+                  'Unknown location',
+              };
+
+              mapRef.current?.animateToRegion({
+                latitude: location.latitude,
+                longitude: location.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              });
+            }}
+            GooglePlacesSearchQuery={{
+              rankby: 'distance',
+              radius: 1000,
+            }}
+            textInputProps={{
+              placeholderTextColor: 'gray',
+            }}
           />
-        )}
-      </MapView>
-
-      {/* Floating Bottom Button for mark/done */}
-      {!marker && !markingMode && (
-        <View style={styles.buttonContainer}>
-          <Pressable
-            style={styles.markButton}
-            onPress={() => setMarkingMode(true)}
-          >
-            <Text style={styles.buttonText}>Mark Location</Text>
-          </Pressable>
         </View>
-      )}
-      {markingMode && (
-        <View style={styles.buttonContainer}>
-          <Text style={styles.infoText}>
-            Tap on the map to select your location
-          </Text>
-        </View>
-      )}
-      {marker && !markingMode && (
-        <View style={styles.doubleButtonContainer}>
-          <Pressable style={styles.cancelButton} onPress={handleCancelPress}>
-            <Text style={styles.buttonText}>Cancel</Text>
-          </Pressable>
-          <Pressable style={styles.doneButton} onPress={handleDonePress}>
-            <Text style={styles.buttonText}>Done</Text>
-          </Pressable>
-        </View>
-      )}
-      <Modal visible={isDone} transparent animationType="slide">
-        <SafeAreaView
-          style={{
-            flex: 1,
-            position: 'absolute',
-            top: 0,
-            left: 3,
-            right: 3,
-            bottom: 0,
-          }}
+        <MapView
+          ref={mapRef}
+          provider={PROVIDER_GOOGLE}
+          style={StyleSheet.absoluteFillObject}
+          initialRegion={region}
+          onRegionChangeComplete={r => setRegion(r)}
+          onPress={handleMapPress}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
         >
-          <TouchableOpacity style={{ flex: 1 }} onPress={closePopup} />
-          <Animated.View
+          {marker && (
+            <Marker
+              coordinate={{
+                latitude: marker.latitude,
+                longitude: marker.longitude,
+              }}
+              title={'Selected Location'}
+              description={'Your marked place'}
+            />
+          )}
+        </MapView>
+
+        {/* Floating Bottom Button for mark/done */}
+        {!marker && !markingMode && (
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={styles.markButton}
+              onPress={() => setMarkingMode(true)}
+            >
+              <Text style={styles.buttonText}>Mark Location</Text>
+            </Pressable>
+          </View>
+        )}
+        {markingMode && (
+          <View style={styles.buttonContainer}>
+            <Text style={styles.infoText}>
+              Tap on the map to select your location
+            </Text>
+          </View>
+        )}
+        {marker && !markingMode && (
+          <View style={styles.doubleButtonContainer}>
+            <Pressable style={styles.cancelButton} onPress={handleCancelPress}>
+              <Text style={styles.buttonText}>Cancel</Text>
+            </Pressable>
+            <Pressable style={styles.doneButton} onPress={handleDonePress}>
+              <Text style={styles.buttonText}>Done</Text>
+            </Pressable>
+          </View>
+        )}
+        <Modal visible={isDone} transparent animationType="slide">
+          <SafeAreaView
             style={{
-              transform: [{ translateY: slideAnim }],
+              flex: 1,
               position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              width: '100%',
-              backgroundColor: 'white',
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-              padding: 20,
-              alignItems: 'center',
+              top: 0,
+              left: 10,
+              right: 10,
+              bottom: 10,
             }}
           >
-            {/* Display selected images */}
-            <FlatList
-              data={selectedImages}
-              keyExtractor={(item, index) => index.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginVertical: 10 }}
-              renderItem={({ item }) => (
-                <Image
-                  source={{ uri: item }}
+            <TouchableOpacity style={{ flex: 1 }} onPress={closePopup} />
+            <Animated.View
+              style={{
+                transform: [{ translateY: slideAnim }],
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                width: '100%',
+                backgroundColor: 'white',
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+                padding: 20,
+                alignItems: 'center',
+              }}
+            >
+              {/* Display selected images */}
+              <FlatList
+                data={selectedImages}
+                keyExtractor={(item, index) => index.toString()}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginVertical: 10 }}
+                renderItem={({ item }) => (
+                  <Image
+                    source={{ uri: item }}
+                    style={{
+                      width: 100,
+                      height: 100,
+                      borderRadius: 10,
+                      marginRight: 10,
+                    }}
+                    resizeMode="cover"
+                  />
+                )}
+              />
+              {selectedImages.length > 0 ? (
+                <TouchableOpacity
                   style={{
-                    width: 100,
-                    height: 100,
+                    backgroundColor: '#3b82f6',
+                    padding: 10,
                     borderRadius: 10,
-                    marginRight: 10,
+                    marginTop: 10, // Add this for gap
+
+                    marginBottom: 10,
+                    width: '100%',
                   }}
-                  resizeMode="cover"
-                />
+                  onPress={uploadImages}
+                >
+                  {loading ? (
+                   <ActivityIndicator size={20} color="#fff" />
+
+                  ):(
+                  <Text style={{ color: 'white', textAlign: 'center' }}>
+                    Upload
+                  </Text>
+                  )
+                }
+                </TouchableOpacity>
+              ) : (
+                <View>
+                  <Image
+                    source={require('../../assets/images/addImage.png')}
+                    className="w-20 h-20  mb-4"
+                  />
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#3b82f6',
+                      padding: 10,
+                      borderRadius: 10,
+                      marginTop: 10, // Add this for gap
+
+                      marginBottom: 10,
+                      width: '100%',
+                    }}
+                    onPress={pickImageFromGallery}
+                  >
+                    <Text style={{ color: 'white', textAlign: 'center' }}>
+                      Add Image
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
-            />
-            {selectedImages.length > 0 ? (
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#3b82f6',
-                  padding: 10,
-                  borderRadius: 10,
-                  marginTop: 10, // Add this for gap
-
-                  marginBottom: 10,
-                  width: '100%',
-                }}
-                onPress={uploadImages}
-              >
-                <Text style={{ color: 'white', textAlign: 'center' }}>
-                  Upload
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#3b82f6',
-                  padding: 10,
-                  borderRadius: 10,
-                  marginTop: 10, // Add this for gap
-
-                  marginBottom: 10,
-                  width: '100%',
-                }}
-                onPress={pickImageFromGallery}
-              >
-                <Text style={{ color: 'white', textAlign: 'center' }}>
-                  Add Idmage
-                </Text>
-              </TouchableOpacity>
-            )}
-          </Animated.View>
-        </SafeAreaView>
-      </Modal>
-    </View>
+            </Animated.View>
+          </SafeAreaView>
+        </Modal>
+      </View>
     </TouchableWithoutFeedback>
   );
 }
