@@ -1,10 +1,10 @@
 import { API_BASE_URL } from '@env';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 
 export default function OrderItemRow({ item }: any) {
     
- 
+
   const normalizedImage = item.__product__?.image?.startsWith('/')
   ? item.__product__.image.slice(1)
   : item.__product__?.image || '';
@@ -12,8 +12,9 @@ export default function OrderItemRow({ item }: any) {
     
 
   const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+  
   return (  
-    <View style={styles.row}>
+    <View style={styles.row} className='-mb-2'>
       <Image
         source={{ uri: imageUri}}
         style={styles.image}

@@ -26,3 +26,8 @@ export const getCart=async()=>{
     return []; // or handle error properly
   }
 };
+
+export const deleteCart = async (id: string) => {
+  const response = await apiAuth.delete(`api/cart/delete/${Number(id)}`);
+  return response.data;
+};

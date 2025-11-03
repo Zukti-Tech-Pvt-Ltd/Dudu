@@ -204,7 +204,7 @@ console.log('gridProducts========',gridProducts)
   return (
     <View
       className="flex-1 justify-center
-                    bg-gray-50 dark:bg-gray-900
+                    bg-white dark:bg-gray-900
                     px-4 py-6"
     >
       <View className="flex-row mb-4 justify-between">

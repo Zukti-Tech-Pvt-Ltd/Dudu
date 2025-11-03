@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Alert, Text, SafeAreaView } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { decodeToken } from '../../api/indexAuth';
-import { editOrder } from '../../api/orderApi';
 import { API_BASE_URL } from '@env';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

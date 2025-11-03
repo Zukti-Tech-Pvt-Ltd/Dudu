@@ -37,6 +37,7 @@ export default function Home() {
     SearchScreen: { query: string };
     category: { categoryId: string; categoryName: string };
     MapsScreen: undefined;
+    DeliveryMapsScreen: undefined;
     TenantScreen: undefined;
     DetailScreen: { productId: string; productName: string; tableName: string };
   };
@@ -94,8 +95,8 @@ export default function Home() {
           }}
         >
           <Pressable
-          className='mr-2'
-        onPress={() => navigation.navigate('SearchScreen', { query: '' })}
+            className="mr-2"
+            onPress={() => navigation.navigate('SearchScreen', { query: '' })}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Image
@@ -150,12 +151,14 @@ export default function Home() {
     return (
       <TouchableOpacity
         onPress={() => {
-          if (item.name === 'Home' || item.name === 'Delivery') {
+          if (item.name === 'Home') {
             if (claims === 'tenant') {
               navigation.navigate('TenantScreen');
             } else {
               navigation.navigate('MapsScreen');
             }
+          } else if (item.name === 'Delivery') {
+            navigation.navigate('DeliveryMapsScreen');
           } else {
             navigation.navigate('category', {
               categoryId: item.id,
@@ -180,7 +183,6 @@ export default function Home() {
       </TouchableOpacity>
     );
   };
- 
 
   if (loading) {
     return (
@@ -192,13 +194,11 @@ export default function Home() {
 
   return (
     <SafeAreaView
-    
       className={`${isDarkMode ? 'bg-gray-900' : 'bg-white'} flex-1 -mb-1`}
-      edges={[ 'left', 'right']}
+      edges={['left', 'right']}
     >
-  
       <ScrollView
-
+        className="bg-white"
         contentContainerStyle={{ paddingBottom: 0 }}
         refreshControl={
           <RefreshControl
@@ -207,7 +207,6 @@ export default function Home() {
             colors={['#3b82f6']} // Android
             tintColor="#3b82f6" // iOS
           />
-          
         }
       >
         <Text

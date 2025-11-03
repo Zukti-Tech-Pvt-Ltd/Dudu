@@ -134,7 +134,7 @@ export default function TenantScreen() {
         onPress: async () => {
           try {
             setLoading(true);
-            deleteTenant(id);
+            await deleteTenant(id);
             setPlaces(prev => prev.filter(place => place.id !== id));
             setSelectedItemId(null);
             Alert.alert('Success', 'Place deleted successfully');

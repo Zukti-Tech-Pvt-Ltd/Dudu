@@ -8,6 +8,8 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MapsScreen from './src/screens/GoogleMaps';
 import MapsScreenTenants from './src/screens/GoogleMapTenants';
+import DeliveryMapsScreen from './src/screens/deliveryGoogleMap';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import MainTabs from './src/navigations/appNavigations';
 import { useColorScheme } from 'react-native';
@@ -54,85 +56,92 @@ export default function App() {
 
   return (
     <AuthProvider>
-            <SafeAreaProvider>
-
-      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false, // Hides the header on all screens
-          }}
-        >
-          {/* <Stack.Screen
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <NavigationContainer
+            theme={scheme === 'dark' ? DarkTheme : DefaultTheme}
+          >
+            <Stack.Navigator
+              screenOptions={{
+                headerShown: false, // Hides the header on all screens
+              }}
+            >
+              {/* <Stack.Screen
           name="Welcome"
           component={HomeScreen}
           options={{ headerShown: false }}
           
         /> */}
-          <Stack.Screen
-            name="maintab"
-            component={MainTabs}
-            options={{ headerTitle: () => null }}
-          />
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Signup"
-            component={SignupScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="MapsScreen"
-            component={MapsScreen}
-            options={{ title: 'Google Maps' }}
-          />
-          <Stack.Screen
-            name="MapsScreenTenants"
-            component={MapsScreenTenants}
-            options={{ title: 'MapsScreenTenants' }}
-          />
-          <Stack.Screen
-            name="DetailScreen"
-            component={DetailScreen}
-            options={{ title: 'Product Detail' }}
-          />
+              <Stack.Screen
+                name="maintab"
+                component={MainTabs}
+                options={{ headerTitle: () => null }}
+              />
+              <Stack.Screen
+                name="Login"
+                component={LoginScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Signup"
+                component={SignupScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="MapsScreen"
+                component={MapsScreen}
+                options={{ title: 'Google Maps' }}
+              />
+              <Stack.Screen
+                name="DeliveryMapsScreen"
+                component={DeliveryMapsScreen}
+                options={{ title: 'Google Maps' }}
+              />
+              <Stack.Screen
+                name="MapsScreenTenants"
+                component={MapsScreenTenants}
+                options={{ title: 'MapsScreenTenants' }}
+              />
+              <Stack.Screen
+                name="DetailScreen"
+                component={DetailScreen}
+                options={{ title: 'Product Detail' }}
+              />
 
-          <Stack.Screen
-            name="SearchScreen"
-            component={SearchScreen}
-            options={{ title: 'SearchScreen' }}
-          />
-          <Stack.Screen
-            name="CheckoutScreen"
-            component={CheckoutScreen}
-            options={{ title: 'CheckoutScreen' }}
-          />
-          <Stack.Screen
-            name="PaymentMethodScreen"
-            component={PaymentMethodScreen}
-            options={{ title: 'PaymentMethodScreen' }}
-          />
-          <Stack.Screen
-            name="ESewaTestPayment"
-            component={ESewaTestPayment}
-            options={{ title: 'ESewaTestPayment' }}
-          />
-          <Stack.Screen
-            name="KhaltiPayment"
-            component={KhaltiPayment}
-            options={{ title: 'KhaltiPayment' }}
-          />
-          <Stack.Screen
-            name="TenantScreen"
-            component={TenantScreen}
-            options={{ title: 'TenantScreen' }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
-            </SafeAreaProvider>
-
+              <Stack.Screen
+                name="SearchScreen"
+                component={SearchScreen}
+                options={{ title: 'SearchScreen' }}
+              />
+              <Stack.Screen
+                name="CheckoutScreen"
+                component={CheckoutScreen}
+                options={{ title: 'CheckoutScreen' }}
+              />
+              <Stack.Screen
+                name="PaymentMethodScreen"
+                component={PaymentMethodScreen}
+                options={{ title: 'PaymentMethodScreen' }}
+              />
+              <Stack.Screen
+                name="ESewaTestPayment"
+                component={ESewaTestPayment}
+                options={{ title: 'ESewaTestPayment' }}
+              />
+              <Stack.Screen
+                name="KhaltiPayment"
+                component={KhaltiPayment}
+                options={{ title: 'KhaltiPayment' }}
+              />
+              <Stack.Screen
+                name="TenantScreen"
+                component={TenantScreen}
+                options={{ title: 'TenantScreen' }}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     </AuthProvider>
   );
 }

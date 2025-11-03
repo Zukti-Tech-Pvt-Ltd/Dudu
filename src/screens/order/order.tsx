@@ -87,15 +87,12 @@ export default function OrdersScreen() {
 
   console.log('........');
 
-  if (loading)
-    return (
-      <View className="flex-1 justify-center items-center">
-        <ActivityIndicator size="large" />
-      </View>
-    );
 
-  return (
+return (
+  <View className="flex-1">
+    {/* Main ScrollView for filters and orders */}
     <ScrollView>
+      {/* Filter bar */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -105,10 +102,8 @@ export default function OrdersScreen() {
           {filters.map((filter, idx) => (
             <TouchableOpacity
               key={idx}
-              onPress={() => {
-                setSelected(filter.label);
-              }}
-              className={`px-[10px] h-9 mr-2 rounded-full items-center justify-center `}
+              onPress={() => setSelected(filter.label)}
+              className="px-[10px] h-9 mr-2 rounded-full items-center justify-center"
               style={{
                 backgroundColor:
                   selected === filter.label ? '#2563eb' : '#e0e7ef',
@@ -127,11 +122,21 @@ export default function OrdersScreen() {
         </View>
       </ScrollView>
 
-      {orders.length === 0 ? (
+      {/* Order list or empty state */}
+      {orders.length === 0 && !loading ? (
         <Text className="text-center text-gray-500">No orders found.</Text>
       ) : (
         orders.map(order => <OrderCard key={order.id} order={order} />)
       )}
     </ScrollView>
-  );
+
+    {/* ✅ Centered loading overlay */}
+    {loading && (
+      <View className="absolute top-0 left-0 right-0 bottom-0 bg-white/60 justify-center items-center">
+        <ActivityIndicator size="large" color="#2563eb" />
+      </View>
+    )}
+  </View>
+);
+
 }

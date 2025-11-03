@@ -14,7 +14,7 @@ export default function DeliveryStatusBar({ status }: { status: string }) {
   );
 
   return (
-    <View className="m-2">
+    <View className="">
       <Text className="font-bold text-lg mb-2">Delivery Status</Text>
       <View className="flex-row items-center justify-between mb-1">
         {steps.map((step, idx) => {
