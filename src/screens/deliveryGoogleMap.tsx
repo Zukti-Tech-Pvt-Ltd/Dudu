@@ -3,35 +3,19 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  Modal,
-  Animated,
-  Dimensions,
+  TouchableWithoutFeedback,
   Keyboard,
   Image,
-  TouchableWithoutFeedback,
-  FlatList,
   ActivityIndicator,
-  KeyboardAvoidingViewBase,
 } from 'react-native';
-import MapView, {
-  PROVIDER_GOOGLE,
-  Marker,
-  Callout,
-  Region,
-} from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import haversine from 'haversine-distance';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { AuthContext } from '../helper/authContext';
-
-const destination = {
-  latitude: 27.671044042129285,
-  longitude: 85.28435232901992,
-};
-const { width, height } = Dimensions.get('window');
+import { GOOGLE_API_KEY } from '@env';
 
 export default function DeliveryMapsScreen() {
   type DeliveryMapsScreenParamsList = {
@@ -44,374 +28,192 @@ export default function DeliveryMapsScreen() {
     };
   };
 
-  type DeliveryMapsScreenRouteProp = RouteProp<DeliveryMapsScreenParamsList, 'map'>;
-  const route = useRoute<DeliveryMapsScreenRouteProp>();
+  const route = useRoute<RouteProp<DeliveryMapsScreenParamsList, 'map'>>();
+
+  const { lat = 27.671044042129285 } = route.params ?? {};
+  const { long = 85.28435232901992 } = route.params ?? {};
+  const { name = 'Destination' } = route.params ?? {};
+  const { address = 'Destination address' } = route.params ?? {};
+  const { image = [] } = route.params ?? {};
+
+  const { isLoggedIn } = useContext(AuthContext) || { isLoggedIn: false };
+
+  const mapRef = useRef<MapView | null>(null);
   const searchRef = useRef<any>(null);
 
-  const { lat = 0 } = route.params ?? {};
-  const { long = 0 } = route.params ?? {};
-  const { name = '' } = route.params ?? {};
-  const { address = '' } = route.params ?? {};
-  const { image = [] } = route.params ?? {};
-  const mapRef = useRef<MapView | null>(null);
-  const activeMarkerRef = useRef<any>(null); // 👈 Add this
+  const [markerA, setMarkerA] = useState({
+    latitude: lat,
+    longitude: long,
+    name,
+  });
 
-  const slideAnim = useRef(new Animated.Value(height)).current;
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
-  const [loadingImages, setLoadingImages] = useState<{
-    [key: string]: boolean;
-  }>({});
-  const handleLoadStart = (uri: string) => {
-    setLoadingImages(prev => ({ ...prev, [uri]: true }));
-  };
-
-  const handleLoadEnd = (uri: string) => {
-    setLoadingImages(prev => ({ ...prev, [uri]: false }));
-  };
-  console.log('latitudelongitude', lat, long, name, address, image);
-  console.log('image======', route.params);
-  const [tenantArray, setTenantArray] = useState<
-    Array<{
-      latitude: number;
-      longitude: number;
-      name: string;
-      address: string;
-      image: string[];
-    }>
-  >([]);
+  const [markerB, setMarkerB] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
   const [isMapAnimating, setIsMapAnimating] = useState(false);
 
-  const moveToTargetRegion = (targetRegion: Region) => {
-    if (mapRef.current) {
-      setIsMapAnimating(true); // start loading
-      mapRef.current.animateToRegion(targetRegion, 1500); // smooth animation (1.5s)
-
-      // Simulate end of animation (since animateToRegion has no callback)
-      setTimeout(() => {
-        setIsMapAnimating(false); // stop loading
-      }, 1500);
+  const requestLocationPermission = async () => {
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
+    return true;
   };
-  const [selectedTenant, setSelectedTenant] = useState<{
-    name: string;
-    address: string;
-    image: string[];
-  } | null>(null);
-  const [markersList, setMarkersList] = useState<
-    Array<{
-      latitude: number;
-      longitude: number;
-      name: string;
-      address: string;
-    }>
-  >([]);
-  const [isMapReady, setIsMapReady] = useState(false);
-  const { isLoggedIn, token, setToken } = useContext(AuthContext);
 
-  const closePopup = () => {
-    if (activeMarkerRef.current && activeMarkerRef.current.hideCallout) {
-      activeMarkerRef.current.hideCallout();
-    }
-    Animated.timing(slideAnim, {
-      toValue: height,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setSelectedTenant(null);
-    });
-  };
-  if (!isLoggedIn) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Image
-          source={require('../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
-        />
-        <Text className="font-bold text-lg text-gray-900 mb-2">
-          please login in first
-        </Text>
-      </View>
-    );
-  }
   useEffect(() => {
-    if (selectedTenant) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [selectedTenant]);
-  // Trigger camera move when map is ready and initialCoord exists
-  useEffect(() => {
-    const requestLocationPermission = async () => {
-      if (Platform.OS === 'android') {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        );
-        return granted === PermissionsAndroid.RESULTS.GRANTED;
-      }
-      return true; // iOS permissions handled differently at app level
-    };
-
-    const fetchDataAndLocation = async () => {
+    const getCurrentLocation = async () => {
       const hasPermission = await requestLocationPermission();
-      if (!hasPermission) {
-        console.warn('Location permission denied');
-        return;
-      }
+      if (!hasPermission) return;
 
       Geolocation.getCurrentPosition(
         position => {
           const { latitude, longitude } = position.coords;
+          setMarkerB({ latitude, longitude, name: 'Your Location' });
 
-          // Optionally add a marker for user's location
-          setMarkersList(prev => [
-            ...prev,
-            {
-              latitude,
-              longitude,
-              name: 'Your Location',
-              address: 'Current location',
-            },
-          ]);
+          if (mapRef.current) {
+            const region = {
+              latitude: (markerA.latitude + latitude) / 2,
+              longitude: (markerA.longitude + longitude) / 2,
+              latitudeDelta: Math.abs(markerA.latitude - latitude) * 2 || 0.05,
+              longitudeDelta: Math.abs(markerA.longitude - longitude) * 2 || 0.05,
+            };
+            mapRef.current.animateToRegion(region, 1000);
+          }
         },
-        error => {
-          console.error('Error getting location', error);
-        },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+        error => console.error('Error getting location', error),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
+    };
 
-  
-
-    fetchDataAndLocation()
-    }
+    getCurrentLocation();
   }, []);
 
-  const MyCustomCallOut = (cord: { name: string; address: string }) => (
-    <View>
-      <Text>{cord.name}</Text>
-    </View>
-  );
+  useEffect(() => {
+    if (markerA && markerB) {
+      const dist = haversine(markerA, markerB) / 1000;
+      setDistance(dist);
+    }
+  }, [markerA, markerB]);
+
+  if (!isLoggedIn) {
+    return (
+      <View style={styles.centered}>
+        <Image source={require('../../assets/images/user.png')} style={styles.userImg} />
+        <Text style={styles.loginText}>Please login first</Text>
+      </View>
+    );
+  }
 
   return (
-    <TouchableWithoutFeedback
-      onPress={() => {
-        Keyboard.dismiss();
-        setTimeout(() => searchRef.current?.blur(), 100); // 👈 delay helps
-      }}
-    >
-      <View className="flex-1  bg-transparent ">
-        {/* Autocomplete positioned absolutely on top */}
-        <View className="absolute top-8 w-full z-10 px-5">
-          <GooglePlacesAutocomplete
-            ref={searchRef}
-            placeholder="Where to?"
-            fetchDetails={true}
-            debounce={200}
-            enablePoweredByContainer={true}
-            nearbyPlacesAPI="GooglePlacesSearch"
-            minLength={2}
-            timeout={10000}
-            keyboardShouldPersistTaps="handled"
-            listViewDisplayed="auto"
-            keepResultsAfterBlur={false}
-            currentLocation={false}
-            currentLocationLabel="Current location"
-            enableHighAccuracyLocation={true}
-            onFail={() => console.warn('Google Places Autocomplete failed')}
-            onNotFound={() => console.log('No results found')}
-            onTimeout={() => console.warn('Google Places request timeout')}
-            predefinedPlaces={[]}
-            predefinedPlacesAlwaysVisible={false}
-            styles={{
-              textInputContainer: {
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 20,
-                marginHorizontal: 20,
-                shadowColor: '#d4d4d4',
-              },
-              textInput: {
-                backgroundColor: 'white',
-                fontWeight: '600',
-                fontSize: 16,
-                marginTop: 5,
-                width: '100%',
-                color: '#000',
-                paddingHorizontal: 10,
-              },
+    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+      <View style={{ flex: 1 }}>
+        {/* Google Search */}
+        <View style={styles.searchContainer}>
+       <GooglePlacesAutocomplete
+  ref={searchRef}
+  placeholder="Search location..."
+  fetchDetails
+  debounce={200}
+  enablePoweredByContainer={false}
+  styles={{
+    textInput: styles.searchInput,
+    listView: styles.listView,
+  }}
+  query={{
+    key: GOOGLE_API_KEY,
+    language: 'en',
+    components: 'country:np',
+  }}
+  onFail={(error) => {
+    console.warn('Places API error:', error);
+  }}
+  onNotFound={() => {
+    console.warn('No results found');
+  }}
+  onPress={(data, details = null) => {
+    if (!details?.geometry?.location) return;
+    const { lat, lng } = details.geometry.location;
+    setMarkerA({
+      latitude: lat,
+      longitude: lng,
+      name: details.formatted_address || 'Selected Location',
+    });
+    mapRef.current?.animateToRegion({
+      latitude: lat,
+      longitude: lng,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+  }}
+/>
 
-              listView: {
-                backgroundColor: 'white',
-                borderRadius: 10,
-                shadowColor: '#d4d4d4',
-              },
-            }}
-            query={{
-              key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
-              language: 'en',
-              types: 'geocode',
-              components: 'country:np',
-            }}
-            onPress={(data, details = null) => {
-              if (!details?.geometry?.location) {
-                console.warn('Missing geometry details!');
-                return;
-              }
-
-              const location = {
-                latitude: details.geometry.location.lat,
-                longitude: details.geometry.location.lng,
-                // Prefer formatted_address or name for name/address
-                address:
-                  details.formatted_address ||
-                  details.name ||
-                  data.description ||
-                  'Unknown location',
-              };
-
-              setMarkersList(prev => [
-                ...prev,
-                {
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  name: location.address,
-                  address: 'Selected location',
-                },
-              ]);
-
-              mapRef.current?.animateToRegion({
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              });
-            }}
-            GooglePlacesSearchQuery={{
-              rankby: 'distance',
-              radius: 1000,
-            }}
-            textInputProps={{
-              placeholderTextColor: 'gray',
-            }}
-          />
         </View>
+
         {isMapAnimating && (
-          <View
-            style={{
-              ...StyleSheet.absoluteFillObject,
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 1000,
-            }}
-          >
+          <View style={styles.loadingOverlay}>
             <ActivityIndicator size={20} color="#3B82F6" />
-            <Text
-              style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}
-            >
-              Centering map...
-            </Text>
+            <Text style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}>Centering map...</Text>
           </View>
         )}
-        {/* Map takes full space */}
+
+        {/* Map */}
         <MapView
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
-          onRegionChangeComplete={() => setIsMapAnimating(false)}
-          style={StyleSheet.absoluteFillObject} 
+          style={StyleSheet.absoluteFillObject}
           initialRegion={{
-            latitude: destination.latitude,
-            longitude: destination.longitude,
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
+            latitude: markerA.latitude,
+            longitude: markerA.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
           }}
-          showsUserLocation={true}
-          showsMyLocationButton={true}
-          onMapReady={() => setIsMapReady(true)} 
+          showsUserLocation
+          showsMyLocationButton
         >
-          {tenantArray.map((coord, index) => (
-            <Marker
-              key={index}
-              draggable
-              ref={ref => {
-                if (selectedTenant?.name === coord.name) {
-                  activeMarkerRef.current = ref; // save reference of selected marker
-                  console.log('ref', activeMarkerRef);
-                }
-              }}
-              coordinate={{
-                latitude: coord.latitude,
-                longitude: coord.longitude,
-              }}
-              image={require('../../assets/icons/house.png')}
-              onDragEnd={e => console.log({ x: e.nativeEvent.coordinate })}
-              onPress={e => {
-                setSelectedTenant(coord);
-              }} // 👈 opens modal
-            >
-              <Callout>
-                <MyCustomCallOut name={coord.name} address={coord.address} />
-              </Callout>
-            </Marker>
-          ))}
-
-          {markersList.map((marker, index) => (
-            <Marker
-              key={index}
-              coordinate={{
-                latitude: marker.latitude,
-                longitude: marker.longitude,
-              }}
-              title={marker.name}
-              description={marker.address}
-              {...(marker.name === 'Your Location' && {
-                image: require('../../assets/icons/map.png'),
-              })}
-            />
-          ))}
+          {markerA && <Marker coordinate={markerA} title={markerA.name} pinColor="red" />}
+          {markerB && <Marker coordinate={markerB} title={markerB.name} pinColor="blue" />}
+          {markerA && markerB && (
+            <Polyline coordinates={[markerA, markerB]} strokeColor="#007AFF" strokeWidth={3} />
+          )}
         </MapView>
 
+        {distance !== null && (
+          <View style={styles.distanceBox}>
+            <Text style={styles.distanceText}>Distance: {distance.toFixed(2)} km</Text>
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' },
+  userImg: { width: 80, height: 80, borderRadius: 40, marginBottom: 16 },
+  loginText: { fontWeight: 'bold', fontSize: 18, color: '#333' },
+  searchContainer: { position: 'absolute', top: 50, zIndex: 10, width: '100%', paddingHorizontal: 16 },
+  searchInput: { backgroundColor: 'white', borderRadius: 10, fontSize: 16, paddingHorizontal: 10, color: '#000' },
+  listView: { backgroundColor: 'white', borderRadius: 10 },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   },
-  modalContainer: {
-    width: '80%',
+  distanceBox: {
+    position: 'absolute',
+    bottom: 40,
+    alignSelf: 'center',
     backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
     elevation: 5,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  modalDesc: {
-    fontSize: 15,
-    color: 'gray',
-    marginBottom: 15,
-  },
-  closeButton: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  closeButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
+  distanceText: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
 });
