@@ -73,6 +73,7 @@ const DetailScreen = () => {
     try{
     const url = `https://yourdomain.com/product/${product.id}`; // Replace with your actual domain and product path
     const message = `Check out this product: ${product.name}\n${url}`;
+    console.log('message',message)
     const result = await Share.share({
       message,
       url, 
@@ -202,13 +203,13 @@ const DetailScreen = () => {
               {product.name?.trim()}
             </Text>
               {/* Right Icons */}
-            <View className="absolute right-5 top-12 flex-row">
-              <TouchableOpacity>
+            <View className="absolute right-8 top-12 flex-row">
+              {/* <TouchableOpacity>
                 <Image
                   source={require('../../../assets/navIcons/heart.png')}
                   style={{ width: 20, height: 20, tintColor: '#000000' }}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
               <TouchableOpacity 
                onPress={handleShare}
               className="ml-7">

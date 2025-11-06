@@ -50,10 +50,11 @@ const KhaltiPayment = () => {
       try {
         console.log('selectedItems', selectedItems);
         console.log('claim', claim);
+        const priceInRs=totalPrice*100
         const response = await khaltiPayment(
           selectedItems,
           claim?.userId,
-          totalPrice,
+          priceInRs,
         );
         const pidx = response.pidx;
         const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;

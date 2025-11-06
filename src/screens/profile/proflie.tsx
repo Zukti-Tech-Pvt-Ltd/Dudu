@@ -10,6 +10,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {jwtDecode} from 'jwt-decode';
 import LogoutButton from './logoutButton'; // Adjust the import path
 import { AuthContext } from '../../helper/authContext';
+import { decodeToken } from '../../api/indexAuth';
+import { getUser } from '../../api/userApi';
 
 interface JwtPayload {
   username?: string;
@@ -33,11 +35,17 @@ export default function ProfileScreen({ navigation }: any) {
   useEffect(() => {
       const fetchToken = async () => {
       if (token) {
-      
-          const decoded = jwtDecode<JwtPayload>(token);
-          setUsername(decoded.username || null);
-          setEmail(decoded.email || 'sadhubasnet@gmail.com');
-          setPhone(decoded.phone || '+1 (555) 123-4567');
+        
+          const decoded = await decodeToken();
+          console.log('decoded=============',decoded)
+          const userData=await getUser(decoded!.userId)
+                    console.log('userData',userData)
+
+          console.log('userData',userData)
+          setUsername(userData.data.username );
+          setEmail(userData.data.email );
+          setPhone(userData.data.phoneNumber );
+
 
         } 
     };

@@ -11,7 +11,6 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { supabase } from '../../../supabase/supabase';
 import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { getRandomProducts } from '../../api/homeApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -175,7 +174,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
             <Text className="text-[#2563eb] font-bold text-[15px]">
               ${item.price ?? 'N/A'}
             </Text>
-            <TouchableOpacity
+            {/* <TouchableOpacity
               className="rounded-full items-center justify-center"
               style={{
                 backgroundColor: '#2563eb',
@@ -186,7 +185,7 @@ const navigation = useNavigation<CategoryNavigationProp>();
                 source={require('../../../assets/navIcons/plus.png')}
                 style={{ width: 16, height: 16, tintColor: '#fff' }}
               />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
       </View>
@@ -196,26 +195,14 @@ const navigation = useNavigation<CategoryNavigationProp>();
 
   return (
     <SafeAreaView className="flex-1 bg-[#f3f4f6]">
-      {/* Search + Filter */}
-      <View className="m-1.5">
-        {/* Search Bar */}
-        <View className="flex-row items-center bg-white rounded-2xl px-4 h-11">
-          <Image
-            source={require('../../../assets/navIcons/search.png')}
-            style={{ width: 16, height: 16, tintColor: '#fcc419' }}
-          />
-          <TextInput
-            className="flex-1 h-10 pl-2 text-[15px]"
-            placeholder="Search for products..."
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
+      <View className="m-1">
+  
 
         {/* Filter Row */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="mt-4 mb-2 px-0.5"
+          className="mt-2 mb-2 px-0.5"
           contentContainerStyle={{ flexDirection: 'row', alignItems: 'center' }}
         >
           {filters.map((filter, idx) => (

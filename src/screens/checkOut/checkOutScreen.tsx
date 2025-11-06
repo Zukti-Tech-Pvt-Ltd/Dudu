@@ -21,12 +21,8 @@ import PaymentMethodScreen from '../payment/paymentScreen';
 import { createOrder } from '../../api/orderApi';
 import { decodeToken } from '../../api/indexAuth';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getUser } from '../../api/userApi';
 
-const address = {
-  name: 'salma Shrestha',
-  street: 'kirtipur, kathmandu.',
-  mobile: '9846282640',
-};
 type RootStackParamList = {
   CheckoutScreen: {
     selectedItems: { id: string; quantity: number; price: number }[];
@@ -40,11 +36,15 @@ type RootStackParamList = {
 
 type CheckoutScreenRouteProp = RouteProp<RootStackParamList, 'CheckoutScreen'>;
 export default function CheckoutScreen() {
-      const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
 
   const route = useRoute<CheckoutScreenRouteProp>();
   const [claim, setClaim] = useState<Record<string, any> | null>(null);
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
 
   const { selectedItems } = route.params;
   const [loading, setLoading] = useState(false);
@@ -52,11 +52,19 @@ export default function CheckoutScreen() {
   console.log('Received selectedItems:', selectedItems);
   const selectedIds = selectedItems.map(item => item.id);
   useEffect(() => {
-    async function fetchClaim() {
+    const fetchToken = async () => {
       const decoded = await decodeToken();
-      setClaim(decoded);
-    }
-    fetchClaim();
+      console.log('decoded=============', decoded);
+      const userData = await getUser(decoded!.userId);
+      console.log('userData', userData);
+
+      console.log('userData', userData);
+      setUsername(userData.data.username);
+      setEmail(userData.data.email);
+      setPhone(userData.data.phoneNumber);
+      setAddress(userData.data.address);
+    };
+    fetchToken();
   }, []);
 
   useEffect(() => {
@@ -65,7 +73,7 @@ export default function CheckoutScreen() {
         setLoading(true);
 
         console.log('selectedIds', selectedIds);
-        
+
         const productData = await getMultiple(selectedIds);
         console.log('Products fetched for checkout:', productData);
         setProducts(productData.data);
@@ -96,11 +104,12 @@ export default function CheckoutScreen() {
       </View>
     );
   return (
-    <SafeAreaView className="bg-white flex-1 "
-    style={{
+    <SafeAreaView
+      className="bg-white flex-1 "
+      style={{
         flex: 1,
-        backgroundColor: '#f9fafb', 
-        paddingBottom: insets.bottom  || 10, 
+        backgroundColor: '#f9fafb',
+        paddingBottom: insets.bottom || 10,
       }}
     >
       {/* Header */}
@@ -129,20 +138,42 @@ export default function CheckoutScreen() {
       </View>
 
       {/* Delivery Address */}
-      <View className="flex-row items-center mb-3 mt-2 px-3">
-        {/* <Icon name="location-on" size={22} color="#222" style={{ marginRight: 8 }} /> */}
-        <Text className="text-lg font-semibold">Delivery Address</Text>
-      </View>
-      <View className="flex-row mb-5 px-3">
-        <View className="flex-1 bg-white rounded-lg border border-blue-300 p-3 mr-3">
-          <Text className="text-base font-semibold mb-1">Address</Text>
-          <Text className="text-sm text-gray-700">{address.name}</Text>
-          <Text className="text-sm text-gray-700">{address.street}</Text>
-          <Text className="text-sm text-gray-700">{address.mobile}</Text>
+      <View className="px-4 mt-3">
+        <Text className="text-lg font-bold text-gray-800 mb-3">
+          Delivery Address
+        </Text>
+
+        <View className="bg-white rounded-2xl border border-blue-300 shadow-sm p-4">
+          <View className="flex-row items-center mb-3">
+            <View className="w-10 h-10 rounded-full bg-blue-100 justify-center items-center mr-3">
+              <Image
+                source={require('../../../assets/navIcons/profile.png')}
+                style={{
+                  tintColor: 'white',
+                  width: 30,
+                  height: 30,
+                  resizeMode: 'contain',
+                }}
+              />{' '}
+            </View>
+            <Text className="text-base font-semibold text-gray-900">
+              {username || 'Customer'}
+            </Text>
+          </View>
+
+          <View className="border-t border-gray-200" />
+
+          <View className="mt-1">
+            <Text className="text-sm text-gray-600 mb-1">
+              <Text className="font-medium text-gray-700">Address: </Text>
+              {address || 'Not provided'}
+            </Text>
+            <Text className="text-sm text-gray-600">
+              <Text className="font-medium text-gray-700">Phone: </Text>
+              {phone || 'N/A'}
+            </Text>
+          </View>
         </View>
-        <TouchableOpacity className="w-12 h-12 bg-white rounded-lg border border-gray-300 items-center justify-center">
-          {/* <Icon name="add" size={28} color="#888" /> */}
-        </TouchableOpacity>
       </View>
 
       {/* Shopping List */}
@@ -230,7 +261,7 @@ export default function CheckoutScreen() {
             try {
               setButtonLoading(true); // Start loading
               console.log('Creating order with items:', selectedItems);
-              
+
               const orderItemsPayload = selectedItems.map(item => {
                 // const product = products.find(
                 //   p => Number(p.id) === Number(item.id),
