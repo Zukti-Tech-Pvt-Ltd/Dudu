@@ -12,7 +12,7 @@ import DeliveryMapsScreen from './src/screens/deliveryGoogleMap';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import MainTabs from './src/navigations/appNavigations';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, PermissionsAndroid } from 'react-native';
 import SearchScreen from './src/screens/search/search';
 import DetailScreen from './src/screens/productDetail/productDetail';
 import LoginScreen from './src/screens/login/login';
@@ -25,11 +25,38 @@ import KhaltiPayment from './src/screens/payment/khalti';
 import TenantScreen from './src/screens/tenant/tenant';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
-// import { useNotification } from './src/notification/useNotification';
+import messaging from '@react-native-firebase/messaging';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  // useNotification();
+  const requestPermission = async () => {
+    try {
+      const results = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+      if (results === PermissionsAndroid.RESULTS.GRANTED) {
+        getToken();
+        console.log('You can use the location');
+      } else {
+        console.log('location permission denied');
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const getToken = async () => {
+    try {
+      await messaging().registerDeviceForRemoteMessages();
+      const token = await messaging().getToken();
+      console.log('token===', token);
+    } catch (error) {
+      console.log('error in fetching token', error);
+    }
+  };
+  useEffect(() => {
+    requestPermission();
+  });
   useEffect(() => {
     const handleUrl = event => {
       const url = event.url;

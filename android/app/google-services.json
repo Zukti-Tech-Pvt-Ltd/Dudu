@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "932442576940",
+    "project_id": "dudu-b036f",
+    "storage_bucket": "dudu-b036f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:932442576940:android:12b303e8e7c1ceb3c01989",
+        "android_client_info": {
+          "package_name": "com.dudu.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXk1q6eOHFQ2Y6Kw9Zgi2QmkUVGvp-IUY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
