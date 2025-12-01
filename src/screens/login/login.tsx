@@ -18,17 +18,21 @@ export default function LoginScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setToken } = useContext(AuthContext); // 👈 get from context
-
+  const { setToken, fcmToken } = useContext(AuthContext);
+  console.log(
+    'fcmToken!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+    fcmToken,
+  );
   const handleLogin = async () => {
     if (!username || !password) {
       Alert.alert('Error', 'Username and password are required.');
       return;
     }
+
     setLoading(true);
     try {
-      const response = await login(username, password);
-        console.log('response-------', response);
+      const response = await login(username, password, fcmToken!);
+      console.log('response-------', response);
       if (response.status === 'success' && response.token) {
         await setToken(response.token); //update context + AsyncStorage
 

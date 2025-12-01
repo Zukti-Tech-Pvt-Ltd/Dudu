@@ -125,6 +125,8 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

@@ -26,121 +26,127 @@ import TenantScreen from './src/screens/tenant/tenant';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
 import { useNotification } from './src/notification/useNotification';
+import useFCM from './src/hooks/useFCM';
 const Stack = createNativeStackNavigator();
 
-export default function App() {
+function AppInner() {
+  useFCM();
   useNotification();
-  // useEffect(() => {
-  //   const handleUrl = event => {
-  //     const url = event.url;
-  //     if (url.startsWith('myapp://payment-success')) {
-  //       Alert.alert('Payment Success', `URL: ${url}`);
-  //       // Parse and navigate or update state accordingly
-  //     } else if (url.startsWith('myapp://payment-failure')) {
-  //       Alert.alert('Payment Failed', `URL: ${url}`);
-  //     }
-  //   };
-
-  //   // Listen for deep link events
-  //   // Linking.addEventListener('url', handleUrl);
-
-  //   // Handle app launch from deep link
-  //   Linking.getInitialURL().then(url => {
-  //     if (url) handleUrl({ url });
-  //   });
-  //   const subscription = Linking.addListener('url', handleUrl);
-  //   return () => {
-  //     subscription.remove();
-  //   };
-  // }, []);
   const scheme = useColorScheme(); // 'dark' | 'light'
 
   return (
-    <AuthProvider>
-      <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <NavigationContainer
-            theme={scheme === 'dark' ? DarkTheme : DefaultTheme}
-          >
-            <Stack.Navigator
-              screenOptions={{
-                headerShown: false, // Hides the header on all screens
-              }}
-            >
-              {/* <Stack.Screen
+    <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false, // Hides the header on all screens
+        }}
+      >
+        {/* <Stack.Screen
           name="Welcome"
           component={HomeScreen}
           options={{ headerShown: false }}
           
         /> */}
-              <Stack.Screen
-                name="maintab"
-                component={MainTabs}
-                options={{ headerTitle: () => null }}
-              />
-              <Stack.Screen
-                name="Login"
-                component={LoginScreen}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="Signup"
-                component={SignupScreen}
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="MapsScreen"
-                component={MapsScreen}
-                options={{ title: 'Google Maps' }}
-              />
-              <Stack.Screen
-                name="DeliveryMapsScreen"
-                component={DeliveryMapsScreen}
-                options={{ title: 'Google Maps' }}
-              />
-              <Stack.Screen
-                name="MapsScreenTenants"
-                component={MapsScreenTenants}
-                options={{ title: 'MapsScreenTenants' }}
-              />
-              <Stack.Screen
-                name="DetailScreen"
-                component={DetailScreen}
-                options={{ title: 'Product Detail' }}
-              />
+        <Stack.Screen
+          name="maintab"
+          component={MainTabs}
+          options={{ headerTitle: () => null }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Signup"
+          component={SignupScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MapsScreen"
+          component={MapsScreen}
+          options={{ title: 'Google Maps' }}
+        />
+        <Stack.Screen
+          name="DeliveryMapsScreen"
+          component={DeliveryMapsScreen}
+          options={{ title: 'Google Maps' }}
+        />
+        <Stack.Screen
+          name="MapsScreenTenants"
+          component={MapsScreenTenants}
+          options={{ title: 'MapsScreenTenants' }}
+        />
+        <Stack.Screen
+          name="DetailScreen"
+          component={DetailScreen}
+          options={{ title: 'Product Detail' }}
+        />
 
-              <Stack.Screen
-                name="SearchScreen"
-                component={SearchScreen}
-                options={{ title: 'SearchScreen' }}
-              />
-              <Stack.Screen
-                name="CheckoutScreen"
-                component={CheckoutScreen}
-                options={{ title: 'CheckoutScreen' }}
-              />
-              <Stack.Screen
-                name="PaymentMethodScreen"
-                component={PaymentMethodScreen}
-                options={{ title: 'PaymentMethodScreen' }}
-              />
-              <Stack.Screen
-                name="ESewaTestPayment"
-                component={ESewaTestPayment}
-                options={{ title: 'ESewaTestPayment' }}
-              />
-              <Stack.Screen
-                name="KhaltiPayment"
-                component={KhaltiPayment}
-                options={{ title: 'KhaltiPayment' }}
-              />
-              <Stack.Screen
-                name="TenantScreen"
-                component={TenantScreen}
-                options={{ title: 'TenantScreen' }}
-              />
-            </Stack.Navigator>
-          </NavigationContainer>
+        <Stack.Screen
+          name="SearchScreen"
+          component={SearchScreen}
+          options={{ title: 'SearchScreen' }}
+        />
+        <Stack.Screen
+          name="CheckoutScreen"
+          component={CheckoutScreen}
+          options={{ title: 'CheckoutScreen' }}
+        />
+        <Stack.Screen
+          name="PaymentMethodScreen"
+          component={PaymentMethodScreen}
+          options={{ title: 'PaymentMethodScreen' }}
+        />
+        <Stack.Screen
+          name="ESewaTestPayment"
+          component={ESewaTestPayment}
+          options={{ title: 'ESewaTestPayment' }}
+        />
+        <Stack.Screen
+          name="KhaltiPayment"
+          component={KhaltiPayment}
+          options={{ title: 'KhaltiPayment' }}
+        />
+        <Stack.Screen
+          name="TenantScreen"
+          component={TenantScreen}
+          options={{ title: 'TenantScreen' }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+// useEffect(() => {
+//   const handleUrl = event => {
+//     const url = event.url;
+//     if (url.startsWith('myapp://payment-success')) {
+//       Alert.alert('Payment Success', `URL: ${url}`);
+//       // Parse and navigate or update state accordingly
+//     } else if (url.startsWith('myapp://payment-failure')) {
+//       Alert.alert('Payment Failed', `URL: ${url}`);
+//     }
+//   };
+
+//   // Listen for deep link events
+//   // Linking.addEventListener('url', handleUrl);
+
+//   // Handle app launch from deep link
+//   Linking.getInitialURL().then(url => {
+//     if (url) handleUrl({ url });
+//   });
+//   const subscription = Linking.addListener('url', handleUrl);
+//   return () => {
+//     subscription.remove();
+//   };
+// }, []);
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <AppInner />
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </AuthProvider>
