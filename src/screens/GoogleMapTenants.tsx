@@ -15,6 +15,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import MapView, {
   PROVIDER_GOOGLE,
@@ -27,6 +28,7 @@ import { createTenant, createTenantImage, editTenant } from '../api/tenantApi';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { PermissionsAndroid } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+import { Linking } from 'react-native';
 
 export default function MapsScreenTenants() {
   type MapTabParamsList = {
@@ -48,67 +50,83 @@ export default function MapsScreenTenants() {
 
   const mapRef = useRef<MapView | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
-  const requestStoragePermission = async () => {
+  const requestStoragePermission = async (): Promise<boolean> => {
     try {
       if (Platform.OS === 'android') {
-        const apiLevel = parseInt(Platform.Version as unknown as string, 10);
+        const apiLevel = parseInt(Platform.Version as any, 10);
+        let granted;
 
         if (apiLevel >= 33) {
-          const granted = await PermissionsAndroid.request(
+          granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
             {
               title: 'Photo Access Permission',
               message: 'App needs access to your photos to select images',
               buttonPositive: 'OK',
+              buttonNegative: 'Cancel',
             },
           );
-          return granted === PermissionsAndroid.RESULTS.GRANTED;
         } else {
-          const granted = await PermissionsAndroid.request(
+          granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
             {
               title: 'Storage Permission',
-              message: 'App needs access to your storage to select photos',
+              message: 'App needs access to your storage to select images',
               buttonPositive: 'OK',
+              buttonNegative: 'Cancel',
             },
           );
-          return granted === PermissionsAndroid.RESULTS.GRANTED;
+        }
+
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          return true;
+        } else if (granted === PermissionsAndroid.RESULTS.DENIED) {
+          Alert.alert(
+            'Permission Denied',
+            'Please allow storage/photo access to pick images from gallery.',
+          );
+          return false;
+        } else if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          Alert.alert(
+            'Permission Required',
+            'Please allow photo access from settings.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            ],
+          );
+          return false;
         }
       }
-      return true;
+      return true; // iOS or other platforms
     } catch (err) {
-      console.warn(err);
+      console.warn('Permission error:', err);
       return false;
     }
   };
 
   const pickImageFromGallery = async () => {
-    const options = {
-      mediaType: 'photo' as const,
-      selectionLimit: 0,
-    };
     const hasPermission = await requestStoragePermission();
-    if (!hasPermission) {
-      console.warn('Storage permission denied');
-      return;
-    }
+    if (!hasPermission) return;
 
-    launchImageLibrary(options, response => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorCode) {
-        console.error('ImagePicker Error: ', response.errorMessage);
-      } else if (response.assets && response.assets.length > 0) {
-        const uris = response.assets
-          .map(asset => asset.uri)
-          .filter(uri => uri !== undefined) as string[];
-        setSelectedImages(prev => [...prev, ...uris]);
-      } else {
-        console.warn('No assets returned from image picker');
-      }
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      selectionLimit: 0, // multiple images
     });
+
+    if (result.didCancel) {
+      console.log('User cancelled image picker');
+    } else if (result.errorCode) {
+      console.log('ImagePicker Error: ', result.errorMessage);
+      Alert.alert('Error', result.errorMessage || 'Failed to pick image');
+    } else if (result.assets) {
+      const uris = result.assets.map(a => a.uri).filter(Boolean) as string[];
+      console.log('Selected images:', uris);
+      setSelectedImages(prev => [...prev, ...uris]);
+    }
   };
 
+  console.log('Selected Images===========:', selectedImages);
   const [marker, setMarker] = useState<{
     latitude: number;
     longitude: number;
@@ -255,7 +273,7 @@ export default function MapsScreenTenants() {
               },
             }}
             query={{
-              key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
+              key: 'AIzaSyAhdGhZ6oWVPsUH6fzvDiPe_TgCsCKisJs',
               language: 'en',
               types: 'geocode',
               components: 'country:np',
@@ -391,28 +409,29 @@ export default function MapsScreenTenants() {
                 )}
               />
               {selectedImages.length > 0 ? (
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: '#3b82f6',
-                    padding: 10,
-                    borderRadius: 10,
-                    marginTop: 10, // Add this for gap
+                (console.log('selectedImages', selectedImages),
+                (
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#3b82f6',
+                      padding: 10,
+                      borderRadius: 10,
+                      marginTop: 10, // Add this for gap
 
-                    marginBottom: 10,
-                    width: '100%',
-                  }}
-                  onPress={uploadImages}
-                >
-                  {loading ? (
-                   <ActivityIndicator size={20} color="#fff" />
-
-                  ):(
-                  <Text style={{ color: 'white', textAlign: 'center' }}>
-                    Upload
-                  </Text>
-                  )
-                }
-                </TouchableOpacity>
+                      marginBottom: 10,
+                      width: '100%',
+                    }}
+                    onPress={uploadImages}
+                  >
+                    {loading ? (
+                      <ActivityIndicator size={20} color="#fff" />
+                    ) : (
+                      <Text style={{ color: 'white', textAlign: 'center' }}>
+                        Upload
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))
               ) : (
                 <View>
                   <Image

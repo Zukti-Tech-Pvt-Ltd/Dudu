@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 interface ProductDataType {
   id: number;
   name: string;
-  image: string;
+  image: string | any;
   price: number;
   // add other fields as needed
   video?: string;
@@ -36,10 +36,9 @@ interface ApiResponse<T> {
   data: T;
 }
 
-let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
 const DetailScreen = () => {
-      const insets = useSafeAreaInsets(); 
-  
+  const insets = useSafeAreaInsets();
+
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -69,30 +68,30 @@ const DetailScreen = () => {
     }
   };
 
-  const handleShare=async()=>{
-    try{
-    const url = `https://yourdomain.com/product/${product.id}`; // Replace with your actual domain and product path
-    const message = `Check out this product: ${product.name}\n${url}`;
-    console.log('message',message)
-    const result = await Share.share({
-      message,
-      url, 
-      title: product.name,
-    });
-    // Optional: handle different share actions
-    if (result.action === Share.sharedAction) {
-      if (result.activityType) {
-        // shared with activity type of result.activityType
-      } else {
-        // shared successfully
+  const handleShare = async () => {
+    try {
+      const url = `https://yourdomain.com/product/${product.id}`; // Replace with your actual domain and product path
+      const message = `Check out this product: ${product.name}\n${url}`;
+      console.log('message', message);
+      const result = await Share.share({
+        message,
+        url,
+        title: product.name,
+      });
+      // Optional: handle different share actions
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type of result.activityType
+        } else {
+          // shared successfully
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
       }
-    } else if (result.action === Share.dismissedAction) {
-      // dismissed
+    } catch (error) {
+      console.log('Error sharing:', error);
     }
-  } catch (error) {
-    console.log('Error sharing:', error);
-  }
-};
+  };
   let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
   console.log('productId', productId);
   if (productId) {
@@ -120,12 +119,7 @@ const DetailScreen = () => {
     };
   }
 
-  const normalizedImage =
-    product && product.image
-      ? product.image.startsWith('/')
-        ? product.image.slice(1)
-        : product.image
-      : null;
+  const normalizedImage = product?.image ? product.image : '';
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,7 +127,7 @@ const DetailScreen = () => {
       const item = await getItems();
       console.log('item', item);
       if (item) {
-        setProduct(item.data); // no .data here
+        setProduct(item.data);
       }
       setLoading(false);
     };
@@ -141,12 +135,14 @@ const DetailScreen = () => {
   }, [productId, productName]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white -mb-2"
-    style={{
+    <SafeAreaView
+      className="flex-1 bg-white -mb-2"
+      style={{
         flex: 1,
-        backgroundColor: '#f9fafb', 
+        backgroundColor: '#f9fafb',
         paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
-      }}>
+      }}
+    >
       {loading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#007AFF" />
@@ -158,35 +154,34 @@ const DetailScreen = () => {
           <View className="absolute top-10 left-4 z-10">
             <TouchableOpacity
               onPress={() => navigation.goBack()}
-              className="w-9 h-9 rounded-full bg-black/10 items-center justify-center"
+              className="w-9 h-9 rounded-full bg-white/50 items-center justify-center"
             >
               <Image
                 source={require('../../../assets/navIcons/left-arrow.png')}
-                style={{ width: 16, height: 16, tintColor: '#FBBF24' }}
+                style={{ width: 16, height: 16, tintColor: '#000000ff' }}
               />
             </TouchableOpacity>
           </View>
 
           {/* Header */}
           <View className="bg-blue-500 h-52 w-full rounded-b-[48px] items-center justify-center relative">
-            {normalizedImage && (
-              <Image
-                source={{ uri: `${API_BASE_URL}/${product.image}` }}
-                className="absolute top-0 left-0 w-full h-full rounded-b-[48px]"
-                resizeMode="cover"
-              />
-            )}
+            <Image
+              source={
+                normalizedImage
+                  ? { uri: `${API_BASE_URL}/${normalizedImage}` } // real image
+                  : require('../../../assets/images/photo.png')
+              }
+              className="absolute top-0 left-0 w-full h-full rounded-b-[48px]"
+              resizeMode="cover"
+            />
 
-       
-
-            {/* Badge */}
+            {/* Badge
             <View className="bg-green-500 rounded-3xl px-5 py-1.5 absolute -bottom-3">
               <Text className="text-white font-medium text-base">
                 100% Organic
               </Text>
-            </View>
+            </View> */}
           </View>
-
 
           {/* Content */}
           <View
@@ -198,11 +193,10 @@ const DetailScreen = () => {
               elevation: 3, // Android shadow elevation
             }}
           >
-          
             <Text className="text-xl font-semibold text-gray-800 mb-2">
               {product.name?.trim()}
             </Text>
-              {/* Right Icons */}
+            {/* Right Icons */}
             <View className="absolute right-8 top-12 flex-row">
               {/* <TouchableOpacity>
                 <Image
@@ -210,9 +204,7 @@ const DetailScreen = () => {
                   style={{ width: 20, height: 20, tintColor: '#000000' }}
                 />
               </TouchableOpacity> */}
-              <TouchableOpacity 
-               onPress={handleShare}
-              className="ml-7">
+              <TouchableOpacity onPress={handleShare} className="ml-7">
                 <Image
                   source={require('../../../assets/navIcons/send.png')}
                   style={{ width: 20, height: 20, tintColor: '#000000' }}
@@ -246,70 +238,77 @@ const DetailScreen = () => {
               {product.description || 'No description available.'}
             </Text>
           </View>
-             
-          
+
           <View className="absolute bottom-8 right-5 flex-row">
-        <TouchableOpacity
-          onPress={handleShowPopup} // Show popup on press
-          activeOpacity={0.8}
-          className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 mr-3 shadow-2xl"
-          style={{
-            shadowOffset: { width: 0, height: 8 },
-            elevation: 10,
-          }}
-        >
-          <Text className="text-white font-semibold text-base mr-2">
-            Buy Now
-          </Text>
-          <Image
-            source={require('../../../assets/navIcons/check.png')}
-            className="w-5 h-5 tint-white"
-            style={{ tintColor: 'white' }}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleAddToCart}
-          activeOpacity={0.8}
-          className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 shadow-2xl"
-          style={{
-            shadowOffset: { width: 0, height: 8 },
+            <TouchableOpacity
+              onPress={handleShowPopup} // Show popup on press
+              activeOpacity={0.8}
+              className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 mr-3 shadow-2xl"
+              style={{
+                shadowOffset: { width: 0, height: 8 },
+                elevation: 10,
+              }}
+            >
+              <Text className="text-white font-semibold text-base mr-2">
+                Buy Now
+              </Text>
+              <Image
+                source={require('../../../assets/navIcons/check.png')}
+                className="w-5 h-5 tint-white"
+                style={{ tintColor: 'white' }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleAddToCart}
+              activeOpacity={0.8}
+              className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 shadow-2xl"
+              style={{
+                shadowOffset: { width: 0, height: 8 },
 
-            elevation: 10,
-          }}
-        >
-          <Text className="text-white font-semibold text-base mr-2">
-            Add to Cart
-          </Text>
-          <Image
-            source={require('../../../assets/navIcons/cart.png')}
-            className="w-5 h-5 tint-white"
-            style={{ tintColor: 'white' }}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Success Popup */}
-      {showSuccess && (
-        <View className="absolute top-0 left-0 right-0 bottom-0 flex-1 justify-center items-center z-50">
-          <View className="bg-green-600 py-3 px-6 rounded-xl shadow-lg min-w-[150px] max-w-[250px]">
-            <Text className="text-white font-semibold text-lg text-center">
-              Added to Cart!
-            </Text>
+                elevation: 10,
+              }}
+            >
+              <Text className="text-white font-semibold text-base mr-2">
+                Add to Cart
+              </Text>
+              <Image
+                source={require('../../../assets/navIcons/cart.png')}
+                className="w-5 h-5 tint-white"
+                style={{ tintColor: 'white' }}
+              />
+            </TouchableOpacity>
           </View>
-        </View>
-      )}
 
-      {/* Render BuyNowPopup conditionally */}
-      {showBuyNowPopup && <BuyNowPopup onClose={handleClosePopup}name={product.name} id={product.id} image={product.image} quantity={quantity} price={product.price}/>}
+          {/* Success Popup */}
+          {showSuccess && (
+            <View className="absolute top-0 left-0 right-0 bottom-0 flex-1 justify-center items-center z-50">
+              <View className="bg-green-600 py-3 px-6 rounded-xl shadow-lg min-w-[150px] max-w-[250px]">
+                <Text className="text-white font-semibold text-lg text-center">
+                  Added to Cart!
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Render BuyNowPopup conditionally */}
+          {showBuyNowPopup && (
+            <BuyNowPopup
+              onClose={handleClosePopup}
+              name={product.name}
+              id={product.id}
+              image={
+                product.image ?? require('../../../assets/images/photo.png')
+              }
+              quantity={quantity}
+              price={product.price}
+            />
+          )}
         </View>
-        
       ) : (
         <View className="flex-1 justify-center items-center">
           <Text>No Product Found</Text>
         </View>
       )}
-
-      
     </SafeAreaView>
   );
 };

@@ -19,14 +19,15 @@ type buyNowPopupProps = {
   onClose: () => void;
   quantity: number;
   name: string;
-  id:string,
+  id: string;
   image: string;
-  price:number,
+  price: number;
 };
 type RootStackParamList = {
   BuyNowPopup: {};
-    CheckoutScreen:{selectedItems: { id: string; quantity: number; price: number }[]};
-
+  CheckoutScreen: {
+    selectedItems: { id: string; quantity: number; price: number }[];
+  };
 };
 type checkOutNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -40,12 +41,12 @@ export default function BuyNowPopup({
   image,
   price,
 }: buyNowPopupProps) {
-  console.log('imagesdfasdfasdfasdfasdfa',price);
+  console.log('imagesdfasdfasdfasdfasdfa', price);
   const slideAnim = useRef(new Animated.Value(height)).current;
   const navigation = useNavigation<checkOutNavigationProp>();
 
   useEffect(() => {
-      console.log('------------------');
+    console.log('------------------');
 
     Animated.timing(slideAnim, {
       toValue: 0,
@@ -79,20 +80,23 @@ export default function BuyNowPopup({
         }}
       >
         <TouchableOpacity style={{ flex: 1 }} onPress={closePopup} />
-     <Animated.View
-  style={{
-    transform: [{ translateY: slideAnim }],
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    width: '100%',
-  }}
-  className="bg-white rounded-t-3xl p-5 items-center"
->
-
+        <Animated.View
+          style={{
+            transform: [{ translateY: slideAnim }],
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            width: '100%',
+          }}
+          className="bg-white rounded-t-3xl p-5 items-center"
+        >
           <Image
-            source={{ uri: `${API_BASE_URL}/${image}` }}
+            source={
+              image
+                ? { uri: `${API_BASE_URL}/${image}` }
+                : require('../../../assets/images/photo.png')
+            }
             className="w-full h-48 rounded-b-3xl mb-5"
             resizeMode="cover"
           />
@@ -110,7 +114,7 @@ export default function BuyNowPopup({
                   {
                     id: id,
                     quantity: quantity,
-                    price:price 
+                    price: price,
                   },
                 ],
               });

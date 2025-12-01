@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, Image, Pressable, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  Pressable,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import Video, { VideoRef } from 'react-native-video';
 import { getRandomProducts } from '../../api/homeApi';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,7 +15,7 @@ import { API_BASE_URL } from '@env';
 import { createThumbnail } from 'react-native-create-thumbnail';
 
 type Product = {
-   id: number;
+  id: number;
   image: string;
   video: string;
   name: string;
@@ -19,9 +26,8 @@ type Product = {
   rate: number;
   count: number;
   createdAt: string;
-  table:string
+  table: string;
 };
-
 
 type HoldToPlayVideoProps = {
   thumbnail: string;
@@ -34,15 +40,15 @@ type HoldToPlayVideoProps = {
   onPlay: (id: number) => void;
 };
 
-
 type RootStackParamList = {
   TwoByTwoGrid: { categoryId: string; categoryName: string };
   DetailScreen: { productId: number; productName: string; tableName: string };
 };
 
-type CategoryNavigationProp = NativeStackNavigationProp<RootStackParamList, 'TwoByTwoGrid'>;
-
-const DEFAULT_VIDEO = require("../../../assets/images/butterfly.mp4");
+type CategoryNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'TwoByTwoGrid'
+>;
 const windowWidth = Dimensions.get('window').width;
 const cardMargin = 12;
 const cardWidth = (windowWidth - cardMargin * 3) / 2; // two cards per row with margins
@@ -58,8 +64,11 @@ const HoldToPlayVideo = ({
   isPlaying,
   onPlay,
 }: HoldToPlayVideoProps) => {
-  
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
+
+  const normalizedThumb = thumbnail.startsWith('/')
+    ? thumbnail.slice(1)
+    : thumbnail;
 
   const videoRef = useRef<VideoRef>(null);
   const navigation = useNavigation<CategoryNavigationProp>();
@@ -69,32 +78,36 @@ const HoldToPlayVideo = ({
   //   ? thumbnail.slice(1)
   //   : thumbnail;
   // const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+  const hasVideo = typeof videoUri === 'string' && videoUri.trim() !== '';
+  if (!hasVideo) {
+    console.log('No video for product id:', productId);
+  }
   console.log('videoUri================', videoUri);
-   const normalizedVideo = thumbnail.startsWith('/')
-    ? videoUri.slice(1)
-    : videoUri;
-  const video = `${API_BASE_URL}/${normalizedVideo}`;
+  const normalizedVideo = hasVideo ? videoUri.replace(/^\/+/, '') : null;
+  const video = hasVideo ? `${API_BASE_URL}/${normalizedVideo}` : undefined;
 
-  useEffect(() => {
-    const fetchThumbnail = async () => {
-      const uri = await getThumbnail(video);
-      setThumbnailUri(uri);
-    };
-    fetchThumbnail();
-  }, [video]);
+  // useEffect(() => {
+  //   if (!hasVideo || !video) return;
 
-  const getThumbnail = async (videoUri: string) => {
-    try {
-      const response = await createThumbnail({
-        url: videoUri,
-        timeStamp: 1000,
-      });
-      return response.path;
-    } catch (e) {
-      console.error('Error creating thumbnail:', e);
-      return null;
-    }
-  };
+  //   const fetchThumbnail = async () => {
+  //     const uri = await getThumbnail(video);
+  //     setThumbnailUri(uri);
+  //   };
+  //   fetchThumbnail();
+  // }, [video]);
+
+  // const getThumbnail = async (videoUri: string) => {
+  //   try {
+  //     const response = await createThumbnail({
+  //       url: videoUri,
+  //       timeStamp: 1000,
+  //     });
+  //     return response.path;
+  //   } catch (e) {
+  //     console.error('Error creating thumbnail:', e);
+  //     return null;
+  //   }
+  // };
   return (
     <TouchableOpacity
       activeOpacity={0.7}
@@ -114,75 +127,99 @@ const HoldToPlayVideo = ({
       style={{ width: cardWidth }}
     >
       <View
-  className="w-full rounded-t-2xl overflow-hidden bg-gray-200 relative"
-  style={{ height: videoHeight }}
->
-  {/* Step 1: Always show thumbnail */}
-  <Image
-    source={thumbnailUri ? { uri: thumbnailUri } : undefined}
-    className="w-full h-full absolute top-0 left-0 right-0 bottom-0"
-    resizeMode="cover"
-    style={{
-        opacity: isPlaying && !isLoading ? 0 : 1, // hide only after video is ready
-      }}
-  />
+        className="w-full rounded-t-2xl overflow-hidden bg-gray-200 relative"
+        style={{ height: videoHeight }}
+      >
+        {/* Step 1: Always show thumbnail */}
+        {/* <Image
+          source={thumbnailUri ? { uri: thumbnailUri } : undefined}
+          className="w-full h-full absolute top-0 left-0 right-0 bottom-0"
+          resizeMode="cover"
+          style={{
+            opacity: isPlaying && !isLoading ? 0 : 1, // hide only after video is ready
+          }}
+        /> */}
+        {/* <Image
+          source={
+            thumbnailUri
+              ? { uri: thumbnailUri } // use generated thumbnail
+              : normalizedThumb
+              ? { uri: `${API_BASE_URL}/${normalizedThumb}` }
+              : require('../../../assets/images/photo.png')
+          }
+          className="absolute inset-0 w-full h-full"
+          resizeMode="cover"
+          style={{ opacity: isPlaying && !isLoading ? 0 : 1 }}
+        /> */}
+        <Image
+          source={
+            normalizedThumb
+              ? { uri: `${API_BASE_URL}/${normalizedThumb}` }
+              : require('../../../assets/images/photo.png')
+          }
+          className="absolute inset-0 w-full h-full"
+          resizeMode="cover"
+          style={{ opacity: isPlaying && !isLoading ? 0 : 1 }}
+        />
 
-  {/* Step 2: Render video only after it has loaded */}
-  {isPlaying && (
-    <Video
-      ref={(ref) => {
-        videoRef.current = ref;
-      }}
-      source={{ uri: video }}
-      className="w-full h-full"
-      paused={!isPlaying}
-      resizeMode="cover"
-      onLoadStart={() => setIsLoading(true)}
-      onLoad={() => setIsLoading(false)}
-      repeat
-      muted
-      controls={false}
-      style={[
-        {
-          opacity: isLoading ? 0 : 1, // hide video while loading
-        },
-      ]}
-    />
-  )}
+        {/* Step 2: Render video only after it has loaded */}
+        {isPlaying && hasVideo && (
+          <Video
+            ref={ref => {
+              videoRef.current = ref;
+            }}
+            source={{ uri: video }}
+            className="w-full h-full"
+            paused={!isPlaying}
+            resizeMode="cover"
+            onLoadStart={() => setIsLoading(true)}
+            onLoad={() => setIsLoading(false)}
+            repeat
+            muted
+            controls={false}
+            style={[
+              {
+                opacity: isLoading ? 0 : 1, // hide video while loading
+              },
+            ]}
+          />
+        )}
 
-  {/* Step 3: Optional “Loading…” overlay */}
-  {isPlaying && isLoading && (
-    <View className="absolute inset-0 ml-2 justify-center items-center">
-      <Text className="text-white text-sm">Loading...</Text>
-    </View>
-  )}
+        {/* Step 3: Optional “Loading…” overlay */}
+        {isPlaying && hasVideo && isLoading && (
+          <View className="absolute inset-0 ml-2 justify-center items-center">
+            <Text className="text-white text-sm">Loading...</Text>
+          </View>
+        )}
 
-  <Pressable
-    className="absolute top-0 left-0 right-0 bottom-0"
-    onPressIn={() => {
-      onPlay(productId);
-      videoRef.current?.seek?.(0);
-    }}
-     onPress={() => {
-    navigation.navigate('DetailScreen', {
-      productId,
-      productName,
-      tableName,
-    });
-  }}
-  />
-</View>
+        <Pressable
+          className="absolute top-0 left-0 right-0 bottom-0"
+          onPressIn={() => {
+            onPlay(productId);
+            if (hasVideo) {
+              videoRef.current?.seek?.(0);
+            }
+          }}
+          onPress={() => {
+            navigation.navigate('DetailScreen', {
+              productId,
+              productName,
+              tableName,
+            });
+          }}
+        />
+      </View>
 
       <View className="absolute bottom-0 left-0 right-0 items-center px-2">
-  <View className="px-3 py-1 rounded-full">
-    <Text
-      className="text-white text-lg font-semibold capitalize text-center"
-      numberOfLines={1}
-    >
-      {label}
-    </Text>
-  </View>
-</View>
+        <View className="px-3 py-1 rounded-full">
+          <Text
+            className="text-white text-lg font-semibold capitalize text-center"
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        </View>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -192,14 +229,14 @@ export default function TwoByTwoGrid() {
   const [playingId, setPlayingId] = useState<number | null>(null);
 
   useEffect(() => {
-    getRandomProducts().then((res) => setProducts(res?.data ?? []));
+    getRandomProducts().then(res => setProducts(res?.data ?? []));
   }, []);
 
   const gridProducts = products.slice(0, 6);
-console.log('gridProducts========',gridProducts)
+  console.log('gridProducts========', gridProducts);
   const handlePlay = (id: number) => {
     // If the same video is pressed while playing, pause it, else play new one
-    setPlayingId((current) => (current === id ? null : id));
+    setPlayingId(current => (current === id ? null : id));
   };
   return (
     <View
@@ -208,7 +245,7 @@ console.log('gridProducts========',gridProducts)
                     px-4 py-6"
     >
       <View className="flex-row mb-4 justify-between">
-        {gridProducts.slice(0, 2).map((p) => (
+        {gridProducts.slice(0, 2).map(p => (
           <HoldToPlayVideo
             key={p.id}
             thumbnail={`${p.image}`}
@@ -223,7 +260,7 @@ console.log('gridProducts========',gridProducts)
         ))}
       </View>
       <View className="flex-row mb-4 justify-between">
-        {gridProducts.slice(2, 4).map((p) => (
+        {gridProducts.slice(2, 4).map(p => (
           <HoldToPlayVideo
             key={p.id}
             thumbnail={`${p.image}`}
@@ -238,7 +275,7 @@ console.log('gridProducts========',gridProducts)
         ))}
       </View>
       <View className="flex-row justify-between">
-        {gridProducts.slice(4, 6).map((p) => (
+        {gridProducts.slice(4, 6).map(p => (
           <HoldToPlayVideo
             key={p.id}
             thumbnail={`${p.image}`}

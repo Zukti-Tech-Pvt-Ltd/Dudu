@@ -13,6 +13,7 @@ import {
   FlatList,
   ActivityIndicator,
   KeyboardAvoidingViewBase,
+  useColorScheme,
 } from 'react-native';
 import MapView, {
   PROVIDER_GOOGLE,
@@ -26,7 +27,7 @@ import { getTenant } from '../api/tenantApi';
 import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { API_BASE_URL } from '@env';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { AuthContext } from '../helper/authContext';
 
 const destination = {
@@ -49,7 +50,8 @@ export default function MapsScreen() {
   type MapsScreenRouteProp = RouteProp<MapsScreenParamsList, 'map'>;
   const route = useRoute<MapsScreenRouteProp>();
   const searchRef = useRef<any>(null);
-
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
   const { lat = 0 } = route.params ?? {};
   const { long = 0 } = route.params ?? {};
   const { name = '' } = route.params ?? {};
@@ -57,6 +59,7 @@ export default function MapsScreen() {
   const { image = [] } = route.params ?? {};
   const mapRef = useRef<MapView | null>(null);
   const activeMarkerRef = useRef<any>(null); // 👈 Add this
+  const navigation = useNavigation();
 
   const slideAnim = useRef(new Animated.Value(height)).current;
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -125,17 +128,53 @@ export default function MapsScreen() {
   };
   if (!isLoggedIn) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View
+        className={`flex-1 items-center justify-center ${
+          isDarkMode ? 'bg-gray-900' : 'bg-white'
+        }`}
+      >
         <Image
           source={require('../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+          className={`w-20 h-20 rounded-full mb-4 ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+          }`}
         />
-        <Text className="font-bold text-lg text-gray-900 mb-2">
-          please login in first
+
+        <Text
+          className={`font-bold text-lg mb-2 ${
+            isDarkMode ? 'text-gray-100' : 'text-gray-900'
+          }`}
+        >
+          Please login first
         </Text>
+
+        <Text
+          className={`text-base mb-4 ${
+            isDarkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}
+        >
+          You must be logged in to use Maps.
+        </Text>
+
+        {/* Go Back Button */}
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className={`px-5 py-2 rounded-full ${
+            isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
+          }`}
+        >
+          <Text
+            className={`font-medium ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            }`}
+          >
+            Go Back
+          </Text>
+        </TouchableOpacity>
       </View>
     );
   }
+
   useEffect(() => {
     if (selectedTenant) {
       Animated.timing(slideAnim, {
@@ -152,6 +191,10 @@ export default function MapsScreen() {
         const granted = await PermissionsAndroid.request(
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          console.warn('Location permission denied');
+          return;
+        }
         return granted === PermissionsAndroid.RESULTS.GRANTED;
       }
       return true; // iOS permissions handled differently at app level
@@ -182,7 +225,7 @@ export default function MapsScreen() {
         error => {
           console.error('Error getting location', error);
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 },
       );
 
       // Existing tenant data fetch
@@ -292,7 +335,7 @@ export default function MapsScreen() {
               },
             }}
             query={{
-              key: 'AIzaSyB8Pg3Bm6cqXX_oeQN3HHQdRaU2YRPX5oU',
+              key: 'AIzaSyAhdGhZ6oWVPsUH6fzvDiPe_TgCsCKisJs',
               language: 'en',
               types: 'geocode',
               components: 'country:np',

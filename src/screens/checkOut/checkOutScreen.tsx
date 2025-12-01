@@ -8,6 +8,7 @@ import {
   ScrollView,
   SafeAreaView,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { getMultiple } from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
@@ -45,10 +46,15 @@ export default function CheckoutScreen() {
   const [email, setEmail] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
+  // const [deliveryAddress, setDeliveryAddress] = useState<string | null>(
+  //   address,
+  // );
 
   const { selectedItems } = route.params;
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
+  console.log('Received products:', products);
+
   console.log('Received selectedItems:', selectedItems);
   const selectedIds = selectedItems.map(item => item.id);
   useEffect(() => {
@@ -154,7 +160,7 @@ export default function CheckoutScreen() {
                   height: 30,
                   resizeMode: 'contain',
                 }}
-              />{' '}
+              />
             </View>
             <Text className="text-base font-semibold text-gray-900">
               {username || 'Customer'}
@@ -164,14 +170,26 @@ export default function CheckoutScreen() {
           <View className="border-t border-gray-200" />
 
           <View className="mt-1">
-            <Text className="text-sm text-gray-600 mb-1">
+            {/* <Text className="text-sm text-gray-600 mb-1">
               <Text className="font-medium text-gray-700">Address: </Text>
               {address || 'Not provided'}
-            </Text>
+            </Text> */}
             <Text className="text-sm text-gray-600">
               <Text className="font-medium text-gray-700">Phone: </Text>
               {phone || 'N/A'}
             </Text>
+            <View className="mt-2">
+              <Text className="font-medium text-gray-700">
+                Delivery Address:
+              </Text>
+              <TextInput
+                value={address || ''}
+                onChangeText={setAddress}
+                placeholder="Enter delivery address"
+                className="border border-gray-300 rounded-lg px-3 py-2 mt-1 text-gray-800"
+                placeholderTextColor="#999"
+              />
+            </View>
           </View>
         </View>
       </View>
@@ -180,25 +198,24 @@ export default function CheckoutScreen() {
       <ScrollView className="flex-grow px-2">
         <Text className="text-lg font-semibold mb-3 px-3">Shopping List</Text>
         {products.map(product => {
-          const normalizedImage =
-            product && product.image
-              ? product.image.startsWith('/')
-                ? product.image.slice(1)
-                : product.image
-              : null;
+          const normalizedImage = product?.image ? product.image : '';
+
           return (
             <View
               key={product.id}
               className="bg-white rounded-xl mb-4 shadow-sm border border-gray-100"
             >
               <View className="flex-row items-center p-3">
-                {normalizedImage && (
-                  <Image
-                    source={{ uri: `${API_BASE_URL}/${product.image}` }}
-                    className="w-20 h-20 rounded-lg mr-4"
-                    resizeMode="cover"
-                  />
-                )}
+                <Image
+                  source={
+                    normalizedImage
+                      ? { uri: `${API_BASE_URL}/${normalizedImage}` } // real image
+                      : require('../../../assets/images/photo.png')
+                  }
+                  className="w-20 h-20 rounded-lg mr-4"
+                  resizeMode="cover"
+                />
+
                 <View className="flex-1">
                   <Text className="text-base font-bold mb-1">
                     {product.name}
@@ -217,7 +234,7 @@ export default function CheckoutScreen() {
                   </View>
                   <View className="flex-row items-center">
                     <Text className="text-lg text-blue-600 font-bold mr-3">
-                      ${product.price.toFixed(2)}
+                      Rs.{product.price.toFixed(2)}
                     </Text>
                     {/* <Text className="text-base text-gray-400 line-through">
                   ${product.oldPrice.toFixed(2)}
@@ -238,7 +255,7 @@ export default function CheckoutScreen() {
                         Total ({quantity}) :
                       </Text>
                       <Text className="text-base font-bold">
-                        ${(product.price * quantity).toFixed(2)}
+                        Rs.{(product.price * quantity).toFixed(2)}
                       </Text>
                     </>
                   );
@@ -253,7 +270,9 @@ export default function CheckoutScreen() {
         {/* Increased py-6 adds more vertical padding, pushing button up */}
         <View className="flex-row justify-between mb-4">
           <Text className="text-base font-bold">Total Price :</Text>
-          <Text className="text-base font-bold">${totalPrice.toFixed(2)}</Text>
+          <Text className="text-base font-bold">
+            Rs.{totalPrice.toFixed(2)}
+          </Text>
         </View>
 
         <TouchableOpacity
@@ -277,6 +296,7 @@ export default function CheckoutScreen() {
               await createOrder({
                 status: 'Pending',
                 price: totalPrice,
+                deliveryAddress: address!,
                 estimatedDeliveryDate: new Date().toISOString(),
                 orderItems: orderItemsPayload,
               });

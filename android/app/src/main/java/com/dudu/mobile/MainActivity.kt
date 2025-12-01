@@ -1,4 +1,4 @@
-package com.dudu
+package com.dudu.mobile
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

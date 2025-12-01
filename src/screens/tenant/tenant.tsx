@@ -19,6 +19,7 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
+  useColorScheme,
 } from 'react-native';
 import { createTenant, deleteTenant, getTenant } from '../../api/tenantApi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -59,7 +60,8 @@ export default function TenantScreen() {
     'TenantScreen'
   >;
   const navigation = useNavigation<HomeNavigationProp>();
-
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
   const [placeName, setPlaceName] = useState('');
   const [location, setLocation] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -153,13 +155,21 @@ export default function TenantScreen() {
     <SafeAreaView
       style={{
         flex: 1,
-        backgroundColor: '#f9fafb', // same as your gradient top color
+        backgroundColor: isDarkMode ? '#0f172a' : '#f9fafb',
         paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
       }}
     >
-      <View className="flex-1 bg-gradient-to-b from-blue-50 via-white to-blue-50">
+      <View
+        className={`flex-1 ${
+          isDarkMode
+            ? 'bg-gray-900'
+            : 'bg-gradient-to-b from-blue-50 via-white to-blue-50'
+        }`}
+      >
         <View
-          className="bg-white py-4 px-4 mb-2 flex-row items-center justify-between"
+          className={`py-4 px-4 mb-2 flex-row items-center justify-between ${
+            isDarkMode ? 'bg-gray-800' : 'bg-white'
+          }`}
           style={{
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 4 },
@@ -176,11 +186,19 @@ export default function TenantScreen() {
             >
               <Image
                 source={require('../../../assets/navIcons/left-arrow.png')}
-                style={{ width: 16, height: 16, tintColor: '#000000' }}
+                style={{
+                  width: 16,
+                  height: 16,
+                  tintColor: isDarkMode ? 'white' : 'black',
+                }}
               />
             </TouchableOpacity>
 
-            <Text className="text-xl font-semibold ml-2 mt-4 text-black">
+            <Text
+              className={`text-xl font-semibold ml-2 mt-4 ${
+                isDarkMode ? 'text-white' : 'text-black'
+              }`}
+            >
               Add Homes
             </Text>
           </View>
@@ -192,12 +210,15 @@ export default function TenantScreen() {
             android_ripple={{ color: '#1D4ED8' }}
             accessibilityLabel="Add a new place"
           >
-            <Text className="text-black text-3xl font-extrabold leading-none">
+            <Text
+              className={`text-3xl font-extrabold leading-none ${
+                isDarkMode ? 'text-white' : 'text-black'
+              }`}
+            >
               +
             </Text>
           </Pressable>
         </View>
-
         <FlatList
           contentContainerStyle={{ paddingHorizontal: 20 }}
           data={places}
@@ -214,9 +235,17 @@ export default function TenantScreen() {
                 }
               }}
             >
-              <View className="bg-white rounded-3xl  p-5 mb-5 shadow-lg flex-row items-center justify-between">
+              <View
+                className={`rounded-3xl p-5 mb-5 shadow-lg flex-row justify-between ${
+                  isDarkMode ? 'bg-gray-800' : 'bg-white'
+                }`}
+              >
                 <View>
-                  <Text className="font-bold text-2xl text-blue-900 mb-2">
+                  <Text
+                    className={`font-bold text-2xl mb-2 ${
+                      isDarkMode ? 'text-blue-300' : 'text-blue-900'
+                    }`}
+                  >
                     {item.placeName}
                   </Text>
                   <Text className="text-blue-700 mb-1">
@@ -226,7 +255,6 @@ export default function TenantScreen() {
                     Phone: {item.phoneNumber}
                   </Text>
                 </View>
-
                 <Pressable
                   className="ml-4 bg-blue-500 rounded-full w-12 h-12 justify-center items-center"
                   onPress={() => {
@@ -267,7 +295,11 @@ export default function TenantScreen() {
             </Pressable>
           )}
           ListEmptyComponent={
-            <Text className="text-center text-blue-300 mt-20 text-lg italic">
+            <Text
+              className={`text-center mt-20 text-lg italic ${
+                isDarkMode ? 'text-gray-500' : 'text-blue-300'
+              }`}
+            >
               No places added yet.
             </Text>
           }
@@ -276,7 +308,9 @@ export default function TenantScreen() {
           <View
             style={{
               ...StyleSheet.absoluteFillObject,
-              backgroundColor: 'rgba(255, 255, 255, 0.7)',
+              backgroundColor: isDarkMode
+                ? 'rgba(0,0,0,0.4)'
+                : 'rgba(255,255,255,0.7)',
               justifyContent: 'center',
               alignItems: 'center',
               zIndex: 1000,
@@ -285,7 +319,6 @@ export default function TenantScreen() {
             <ActivityIndicator size="large" color="#3b82f6" />
           </View>
         )}
-
         {/* Floating Plus Button */}
         <Pressable
           className="absolute bottom-4 right-2 bg-blue-500 rounded-full w-14 h-14  shadow-2xl justify-center items-center"
@@ -316,8 +349,16 @@ export default function TenantScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               className="flex-1 justify-end px-6" // Align modal content at bottom, no bg color here
             >
-              <View className="bg-white rounded-t-3xl p-2 shadow-xl">
-                <Text className="text-3xl font-extrabold mb-6 text-blue-900 text-center">
+              <View
+                className={`rounded-t-3xl p-6 shadow-xl ${
+                  isDarkMode ? 'bg-gray-900' : 'bg-white'
+                }`}
+              >
+                <Text
+                  className={`text-3xl font-extrabold mb-6 text-center ${
+                    isDarkMode ? 'text-blue-300' : 'text-blue-900'
+                  }`}
+                >
                   Edit Place
                 </Text>
                 {selectedPlace?.image && selectedPlace.image.length > 0 && (
@@ -331,7 +372,7 @@ export default function TenantScreen() {
                       (imgPath: string, index: number) => (
                         <Image
                           key={index}
-                          source={{ uri: `${API_BASE_URL}/${imgPath}` }} // adjust base URL
+                          source={{ uri: ` ${API_BASE_URL}/${imgPath}` }} // adjust base URL
                           className="w-28 h-28 rounded-2xl mr-3 border border-blue-300"
                           resizeMode="cover"
                         />
@@ -341,17 +382,25 @@ export default function TenantScreen() {
                 )}
                 <View className="mb-6">
                   {
-                    <Text className="absolute -ml-4 -top-5 left-5 bg-white px-2 text-blue-500 text-md font-semibold z-10">
+                    <Text
+                      className={`absolute -top-4 left-5 px-2 z-10 ${
+                        isDarkMode
+                          ? 'bg-gray-900 text-blue-300'
+                          : 'bg-white text-blue-500'
+                      }`}
+                    >
                       Place Name:
                     </Text>
                   }
 
                   <TextInput
-                    className={`bg-blue-50 border ${
-                      isFocusedName ? 'border-blue-500' : 'border-blue-300'
-                    } rounded-2xl px-5 py-4 text-lg text-blue-900`}
+                    className={`rounded-2xl px-5 py-4 text-lg ${
+                      isDarkMode
+                        ? 'bg-gray-800 text-white border-gray-700'
+                        : 'bg-blue-50 text-blue-900 border-blue-300'
+                    } border`}
                     placeholder={selectedPlace?.placeName}
-                    placeholderTextColor="#93C5FD"
+                    placeholderTextColor={isDarkMode ? '#64748b' : '#93C5FD'}
                     value={placeName}
                     onChangeText={setPlaceName}
                     onFocus={() => setIsFocusedName(true)}
@@ -360,19 +409,27 @@ export default function TenantScreen() {
                 </View>
                 <View className="mb-6">
                   {
-                    <Text className="absolute -ml-4 -top-5 left-5 bg-white px-2 text-blue-500 text-md font-semibold z-10">
+                    <Text
+                      className={`absolute -top-4 left-5 px-2 z-10 ${
+                        isDarkMode
+                          ? 'bg-gray-900 text-blue-300'
+                          : 'bg-white text-blue-500'
+                      }`}
+                    >
                       Location:
                     </Text>
                   }
                   <TextInput
-                    className={`bg-blue-50 border ${
-                      isFocusedLocation ? 'border-blue-500' : 'border-blue-300'
-                    } rounded-2xl px-5 py-4 text-lg text-blue-900`}
+                    className={`rounded-2xl px-5 py-4 text-lg ${
+                      isDarkMode
+                        ? 'bg-gray-800 text-white border-gray-700'
+                        : 'bg-blue-50 text-blue-900 border-blue-300'
+                    } border`}
                     placeholder={selectedPlace?.location}
                     value={location}
                     onChangeText={setLocation}
                     keyboardType="default"
-                    placeholderTextColor="#93C5FD"
+                    placeholderTextColor={isDarkMode ? '#64748b' : '#93C5FD'}
                     onFocus={() => setIsFocusedLocation(true)}
                     onBlur={() => setIsFocusedLocation(false)}
                   />
@@ -380,19 +437,27 @@ export default function TenantScreen() {
                 <View className="mb-4">
                   {/* Floating label */}
                   {
-                    <Text className="absolute -ml-4 -top-5 left-5 bg-white px-2 text-blue-500 text-md font-semibold z-10">
+                    <Text
+                      className={`absolute -top-4 left-5 px-2 z-10 ${
+                        isDarkMode
+                          ? 'bg-gray-900 text-blue-300'
+                          : 'bg-white text-blue-500'
+                      }`}
+                    >
                       Phone Number:
                     </Text>
                   }
                   <TextInput
-                    className={`bg-blue-50 border ${
-                      isFocusedPhone ? 'border-blue-500' : 'border-blue-300'
-                    } rounded-2xl px-5 py-4 text-lg text-blue-900`}
+                    className={`rounded-2xl px-5 py-4 text-lg ${
+                      isDarkMode
+                        ? 'bg-gray-800 text-white border-gray-700'
+                        : 'bg-blue-50 text-blue-900 border-blue-300'
+                    } border`}
                     placeholder={selectedPlace?.phoneNumber}
                     value={phoneNumber}
                     onChangeText={setPhoneNumber}
                     keyboardType="phone-pad"
-                    placeholderTextColor="#93C5FD"
+                    placeholderTextColor={isDarkMode ? '#64748b' : '#93C5FD'}
                     onFocus={() => setIsFocusedPhone(true)}
                     onBlur={() => setIsFocusedPhone(false)}
                   />
@@ -414,7 +479,6 @@ export default function TenantScreen() {
                       text-black
                       `}
                     >
-                      {' '}
                       Done
                     </Text>
                   </Pressable>
@@ -452,35 +516,55 @@ export default function TenantScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               className="flex-1 justify-end px-6" // Align modal content at bottom, no bg color here
             >
-              <View className="bg-white rounded-t-3xl p-8 shadow-xl">
-                <Text className="text-3xl font-extrabold mb-6 text-blue-900 text-center">
+              <View
+                className={`rounded-t-3xl p-8 shadow-xl ${
+                  isDarkMode ? 'bg-gray-900' : 'bg-white'
+                }`}
+              >
+                <Text
+                  className={`text-3xl font-extrabold mb-6 text-center ${
+                    isDarkMode ? 'text-blue-300' : 'text-blue-900'
+                  }`}
+                >
                   Add a Place
                 </Text>
 
                 <TextInput
-                  className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-5 text-lg text-blue-900"
+                  className={`rounded-2xl px-5 py-4 mb-5 text-lg border ${
+                    isDarkMode
+                      ? 'bg-gray-800 text-white border-gray-700'
+                      : 'bg-blue-50 text-blue-900 border-blue-300'
+                  }`}
                   placeholder="Place Name"
                   value={placeName}
                   onChangeText={setPlaceName}
                   keyboardType="default"
-                  placeholderTextColor="#93C5FD"
+                  placeholderTextColor={isDarkMode ? '#64748b' : '#93C5FD'}
                   autoFocus
                 />
                 <TextInput
-                  className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-5 text-lg text-blue-900"
+                  className={`rounded-2xl px-5 py-4 mb-5 text-lg border ${
+                    isDarkMode
+                      ? 'bg-gray-800 text-white border-gray-700'
+                      : 'bg-blue-50 text-blue-900 border-blue-300'
+                  }`}
                   placeholder="Location"
                   value={location}
                   onChangeText={setLocation}
                   keyboardType="default"
-                  placeholderTextColor="#93C5FD"
+                  placeholderTextColor={isDarkMode ? '#64748b' : '#93C5FD'}
                 />
                 <TextInput
-                  className="bg-blue-50 border border-blue-300 rounded-2xl px-5 py-4 mb-8 text-lg text-blue-900"
+                  className={`rounded-2xl px-5 py-4 mb-8 text-lg border ${
+                    isDarkMode
+                      ? 'bg-gray-800 text-white border-gray-700'
+                      : 'bg-blue-50 text-blue-900 border-blue-300'
+                  }`}
                   placeholder="Phone Number"
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
+                  placeholderTextColor={isDarkMode ? '#64748b' : '#93C5FD'}
                   keyboardType="phone-pad"
-                  placeholderTextColor="#93C5FD"
                 />
 
                 <View className="flex-row justify-center">
@@ -510,10 +594,9 @@ export default function TenantScreen() {
                       className={`font-semibold text-lg text-center ${
                         placeName && location && phoneNumber
                           ? 'text-blue-700'
-                          : 'text-gray-500'
+                          : 'text-gray-100'
                       }`}
                     >
-                      {' '}
                       Mark Location
                     </Text>
                   </Pressable>

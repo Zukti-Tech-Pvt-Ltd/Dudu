@@ -11,30 +11,34 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { useRoute, RouteProp, useFocusEffect, useNavigation } from '@react-navigation/native';
+import {
+  useRoute,
+  RouteProp,
+  useFocusEffect,
+  useNavigation,
+} from '@react-navigation/native';
 import { getRandomProducts } from '../../api/homeApi';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { API_BASE_URL } from '@env';
 import { getByCategory } from '../../api/serviceList/productApi';
 
-
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_MARGIN = 8;
 const CARD_WIDTH = (SCREEN_WIDTH - CARD_MARGIN * 3) / 2; // Two columns with margin
 
-
-  type BottomTabParamList = {
+type BottomTabParamList = {
   category: { categoryId: string; categoryName: string };
-      DetailScreen: { productId: string;}; 
-
+  DetailScreen: { productId: string };
 };
-type CategoryNavigationProp = NativeStackNavigationProp<BottomTabParamList, 'category'>;
+type CategoryNavigationProp = NativeStackNavigationProp<
+  BottomTabParamList,
+  'category'
+>;
 type CategoryRouteProp = RouteProp<BottomTabParamList, 'category'>;
 
 export default function Category() {
-const navigation = useNavigation<CategoryNavigationProp>();
+  const navigation = useNavigation<CategoryNavigationProp>();
 
-  
   const route = useRoute<CategoryRouteProp>();
   var { categoryId, categoryName } = route.params;
 
@@ -72,14 +76,14 @@ const navigation = useNavigation<CategoryNavigationProp>();
   }, [categoryName]);
   useEffect(() => {
     setLoading(true);
-      setFood([]);   // Clear old data immediately
+    setFood([]); // Clear old data immediately
 
     if (!selected) return;
 
-    if (selected === 'All' ) {
+    if (selected === 'All') {
       getRandomProducts()
         .then(res => {
-          setFood(res?.data??[]);
+          setFood(res?.data ?? []);
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -98,83 +102,80 @@ const navigation = useNavigation<CategoryNavigationProp>();
   const renderItem = ({ item, index }: { item: any; index: number }) => {
     const isFirstColumn = index % 2 === 0;
     console.log('item', item);
-    const normalizedImage = item.image.startsWith('/')
-      ? item.image.slice(1)
-      : item.image;
+    const hasImage =
+      typeof item?.image === 'string' && item.image.trim() !== '';
 
-    const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+    const normalizedThumb = hasImage ? item.image.replace(/^\/+/, '') : null;
     return (
       <TouchableOpacity
-      onPress={() =>{
-        if (selected === 'All') {
-           navigation.navigate('DetailScreen', {
-
-          productId: item.id,
-    
-        })
-          
-        }
-        else{
-        navigation.navigate('DetailScreen', {
-          productId: item.id,
-       
-        })
-      }
-      }
-    }
-      activeOpacity={0.7}
-      >
-      <View
-        className="bg-white rounded-2xl mb-2 mr-2"
-        style={{
-          width: CARD_WIDTH,
-          backgroundColor: 'white',
-          borderRadius: 16,
-          shadowColor: '#888',
-          shadowOpacity: 0.13,
-          shadowRadius: 12,
-          marginBottom: CARD_MARGIN,
-          marginLeft: isFirstColumn ? CARD_MARGIN : CARD_MARGIN / 2,
-          marginRight: isFirstColumn ? CARD_MARGIN / 2 : CARD_MARGIN,
-          elevation: 2,
+        onPress={() => {
+          if (selected === 'All') {
+            navigation.navigate('DetailScreen', {
+              productId: item.id,
+            });
+          } else {
+            navigation.navigate('DetailScreen', {
+              productId: item.id,
+            });
+          }
         }}
+        activeOpacity={0.7}
       >
-        <Image
-          source={{ uri: imageUri}}
+        <View
+          className="bg-white rounded-2xl mb-2 mr-2"
           style={{
-            width: '100%',
-            height: 110,
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            resizeMode: 'cover',
+            width: CARD_WIDTH,
+            backgroundColor: 'white',
+            borderRadius: 16,
+            shadowColor: '#888',
+            shadowOpacity: 0.13,
+            shadowRadius: 12,
+            marginBottom: CARD_MARGIN,
+            marginLeft: isFirstColumn ? CARD_MARGIN : CARD_MARGIN / 2,
+            marginRight: isFirstColumn ? CARD_MARGIN / 2 : CARD_MARGIN,
+            elevation: 2,
           }}
-        />
-        <View className="px-3 pb-4 pt-3">
-          <Text
-            className="font-bold text-gray-900 text-base mb-1"
-            numberOfLines={2}
-          >
-            {item.name}
-          </Text>
-
-          {/* Rating Row */}
-          <View className="flex-row items-center mb-1.5">
-            <Image
-              source={require('../../../assets/navIcons/star.png')}
-              style={{ width: 16, height: 16, tintColor: '#fcc419' }}
-            />
-            <Text className="ml-1 text-[13px] font-semibold text-gray-800">
-              {item.rate}
+        >
+          <Image
+            source={
+              normalizedThumb
+                ? { uri: `${API_BASE_URL}/${normalizedThumb}` }
+                : require('../../../assets/images/photo.png')
+            }
+            style={{
+              width: '100%',
+              height: 110,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              resizeMode: 'cover',
+            }}
+          />
+          <View className="px-3 pb-4 pt-3">
+            <Text
+              className="font-bold text-gray-900 text-base mb-1"
+              numberOfLines={2}
+            >
+              {item.name}
             </Text>
-            <Text className="ml-1 text-xs text-gray-500">({item.count})</Text>
-          </View>
 
-          {/* Price + Add button */}
-          <View className="flex-row items-center justify-between">
-            <Text className="text-[#2563eb] font-bold text-[15px]">
-              ${item.price ?? 'N/A'}
-            </Text>
-            {/* <TouchableOpacity
+            {/* Rating Row */}
+            <View className="flex-row items-center mb-1.5">
+              <Image
+                source={require('../../../assets/navIcons/star.png')}
+                style={{ width: 16, height: 16, tintColor: '#fcc419' }}
+              />
+              <Text className="ml-1 text-[13px] font-semibold text-gray-800">
+                {item.rate}
+              </Text>
+              <Text className="ml-1 text-xs text-gray-500">({item.count})</Text>
+            </View>
+
+            {/* Price + Add button */}
+            <View className="flex-row items-center justify-between">
+              <Text className="text-[#2563eb] font-bold text-[15px]">
+                Rs.{item.price ?? 'N/A'}
+              </Text>
+              {/* <TouchableOpacity
               className="rounded-full items-center justify-center"
               style={{
                 backgroundColor: '#2563eb',
@@ -186,9 +187,9 @@ const navigation = useNavigation<CategoryNavigationProp>();
                 style={{ width: 16, height: 16, tintColor: '#fff' }}
               />
             </TouchableOpacity> */}
+            </View>
           </View>
         </View>
-      </View>
       </TouchableOpacity>
     );
   };
@@ -196,8 +197,6 @@ const navigation = useNavigation<CategoryNavigationProp>();
   return (
     <SafeAreaView className="flex-1 bg-[#f3f4f6]">
       <View className="m-1">
-  
-
         {/* Filter Row */}
         <ScrollView
           horizontal
@@ -241,7 +240,6 @@ const navigation = useNavigation<CategoryNavigationProp>();
             ref={scrollRef}
             data={food}
             keyExtractor={(item, index) => `prod-${item.id}-${index}`}
-
             renderItem={renderItem}
             numColumns={2}
             columnWrapperStyle={{

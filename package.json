@@ -12,6 +12,8 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/geolocation": "^3.4.0",
+    "@react-native-firebase/app": "^23.5.0",
+    "@react-native-firebase/messaging": "^23.5.0",
     "@react-native/new-app-screen": "0.80.2",
     "@react-navigation/bottom-tabs": "^7.4.4",
     "@react-navigation/native": "^7.1.16",
@@ -23,6 +25,7 @@
     "fuse.js": "^7.1.0",
     "haversine-distance": "^1.2.4",
     "jwt-decode": "^4.0.0",
+    "lucide-react-native": "^0.555.0",
     "nativewind": "^2.0.11",
     "postcss": "^8.4.21",
     "react": "19.1.0",

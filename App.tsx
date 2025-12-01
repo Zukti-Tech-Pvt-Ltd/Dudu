@@ -25,10 +25,11 @@ import KhaltiPayment from './src/screens/payment/khalti';
 import TenantScreen from './src/screens/tenant/tenant';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
-
+// import { useNotification } from './src/notification/useNotification';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  // useNotification();
   useEffect(() => {
     const handleUrl = event => {
       const url = event.url;

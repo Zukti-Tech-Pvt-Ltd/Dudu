@@ -41,7 +41,7 @@ export default function SearchScreen() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -70,74 +70,73 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView
-  edges={['top', 'bottom']}
-  style={{
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    paddingBottom: insets.bottom || 10,
-  }}
->
-  {/* Search bar */}
-  <View style={{ flexDirection: 'row', padding: 16, alignItems: 'center' }}>
-<Pressable onPress={() => navigation.goBack()}>
-      <Image
-        source={require('../../../assets/navIcons/left-arrow.png')}
-        style={{
-          width: 25,
-          height: 25,
-          resizeMode: 'contain',
-          marginRight: 12,
-        }}
-      />
-    </Pressable>
-    <TextInput
-      ref={inputRef}
+      edges={['top', 'bottom']}
       style={{
         flex: 1,
-        height: 40,
-        backgroundColor: '#e5e7eb',
-        borderRadius: 8,
-        paddingHorizontal: 10,
+        backgroundColor: '#f9fafb',
+        paddingBottom: insets.bottom || 10,
       }}
-      placeholder="Search for products..."
-      value={searchText}
-      onChangeText={setSearchText}
-      autoFocus={true}
-    />
-  </View>
+    >
+      {/* Search bar */}
+      <View style={{ flexDirection: 'row', padding: 16, alignItems: 'center' }}>
+        <Pressable onPress={() => navigation.goBack()}>
+          <Image
+            source={require('../../../assets/navIcons/left-arrow.png')}
+            style={{
+              width: 25,
+              height: 25,
+              resizeMode: 'contain',
+              marginRight: 12,
+            }}
+          />
+        </Pressable>
+        <TextInput
+          ref={inputRef}
+          style={{
+            flex: 1,
+            height: 40,
+            backgroundColor: '#e5e7eb',
+            borderRadius: 8,
+            paddingHorizontal: 10,
+          }}
+          placeholder="Search for products..."
+          value={searchText}
+          onChangeText={setSearchText}
+          autoFocus={true}
+        />
+      </View>
 
-  {/* Results */}
-  <FlatList
-    data={results}
-    keyExtractor={item => item.id.toString()}
-    renderItem={({ item }) => (
-      <TouchableOpacity
-        onPress={() => handleSelect(item)}
-        style={{
-          padding: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: '#e5e7eb',
-        }}
-      >
-        <Text>{item.name}</Text>
-      </TouchableOpacity>
-    )}
-    ListEmptyComponent={() => (
-      <Text
-        style={{
-          textAlign: 'center',
-          marginTop: 20,
-          color: 'gray',
-        }}
-      >
-        No results found
-      </Text>
-    )}
-    style={{ flex: 1 }}
-    contentContainerStyle={{ paddingHorizontal: 16 }}
-  />
-</SafeAreaView>
-
+      {/* Results */}
+      <FlatList
+        data={results}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            onPress={() => handleSelect(item)}
+            style={{
+              padding: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: '#e5e7eb',
+            }}
+          >
+            <Text>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={() => (
+          <Text
+            style={{
+              textAlign: 'center',
+              marginTop: 20,
+              color: 'gray',
+            }}
+          >
+            No results found
+          </Text>
+        )}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+      />
+    </SafeAreaView>
   );
 }
 

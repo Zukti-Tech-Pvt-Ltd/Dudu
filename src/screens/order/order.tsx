@@ -6,9 +6,12 @@ import {
   TouchableOpacity,
   View,
   Image,
+  useColorScheme,
 } from 'react-native';
 import { getAllOrders } from '../../api/orderApi';
 import OrderCard from './orderCard';
+import { FlatList } from 'react-native';
+
 import { AuthContext } from '../../helper/authContext';
 type Product = {
   id: number;
@@ -31,7 +34,7 @@ type OrderItem = {
   quantity: number;
   price: string;
   createdAt: string;
-  __product__: Product;
+  _product_: Product;
 };
 
 type Order = {
@@ -41,7 +44,7 @@ type Order = {
   price: string;
   createdAt: string;
   estimatedDeliveryDate: string;
-  __orderItems__: OrderItem[];
+  _orderItems_: OrderItem[];
 };
 const filters = [
   { label: 'All Orders' },
@@ -51,31 +54,22 @@ const filters = [
   { label: 'Shipped' },
   { label: 'Delivered' },
 ];
-
 export default function OrdersScreen() {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
   const { isLoggedIn } = useContext(AuthContext);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState('');
-  if (!isLoggedIn) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Image
-          source={require('../../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
-        />
-        <Text className="font-bold text-lg text-gray-900 mb-2">
-          please login in first
-        </Text>
-      </View>
-    );
-  }
+
+  // ✅ UseEffect should always run (or at least hook called)
   useEffect(() => {
+    if (!isLoggedIn) return; // skip API call if not logged in
+
     (async () => {
       setLoading(true);
       try {
         const filterParam = selected === 'All Orders' ? '' : selected;
-
         const data = await getAllOrders(filterParam);
         setOrders(data);
       } catch (err) {
@@ -83,16 +77,34 @@ export default function OrdersScreen() {
       }
       setLoading(false);
     })();
-  }, [selected]);
+  }, [selected, isLoggedIn]);
 
-  console.log('........');
+  // Conditional rendering is fine *after all hooks*
+  if (!isLoggedIn) {
+    return (
+      <View
+        className={`flex-1 items-center justify-center ${
+          isDarkMode ? 'bg-gray-900' : 'bg-white'
+        }`}
+      >
+        <Image
+          source={require('../../../assets/images/user.png')}
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+        />
+        <Text
+          className={`font-bold text-lg mb-2 ${
+            isDarkMode ? 'text-white' : 'text-gray-900'
+          }`}
+        >
+          Please login first
+        </Text>
+      </View>
+    );
+  }
 
-
-return (
-  <View className="flex-1">
-    {/* Main ScrollView for filters and orders */}
-    <ScrollView>
-      {/* Filter bar */}
+  return (
+    <View className="flex-1 relative">
+      {/* Filter Bar */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -121,22 +133,37 @@ return (
           ))}
         </View>
       </ScrollView>
-
-      {/* Order list or empty state */}
-      {orders.length === 0 && !loading ? (
-        <Text className="text-center text-gray-500">No orders found.</Text>
-      ) : (
-        orders.map(order => <OrderCard key={order.id} order={order} />)
+      {/* Orders List */}
+      <FlatList
+        data={orders}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({ item }) => <OrderCard order={item} />}
+        ListEmptyComponent={
+          !loading ? (
+            <Text className="text-center text-gray-500 mt-10">
+              No orders found.
+            </Text>
+          ) : null
+        }
+        contentContainerStyle={{ paddingBottom: 50 }}
+      />
+      {/* Loading Overlay */}
+      {loading && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(255,255,255,0.6)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <ActivityIndicator size="large" color="#2563eb" />
+        </View>
       )}
-    </ScrollView>
-
-    {/* ✅ Centered loading overlay */}
-    {loading && (
-      <View className="absolute top-0 left-0 right-0 bottom-0 bg-white/60 justify-center items-center">
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
-    )}
-  </View>
-);
-
+    </View>
+  );
 }

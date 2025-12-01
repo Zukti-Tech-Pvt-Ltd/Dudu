@@ -9,26 +9,26 @@ const statusIconMap: Record<string, any> = {
   Delivered: require('../../../assets/images/box.png'),
 };
 export default function OrderCard({ order }: any) {
-    const iconSource = statusIconMap[order.status] || null;
+  const iconSource = statusIconMap[order.status] || null;
   return (
-<View className="-inset-5 mt-0.5 p-4 bg-white mb-3 rounded-xl shadow-xl">
-      <Text className="text-sm -mt-2 text-gray-500">{new Date(order.createdAt).toDateString()}</Text>
-  <View className="flex-row justify-end items-center -mt-2 bg-green-100 rounded-lg p-2 py-1 self-end">
+    <View className="-inset-5 mt-0.5 p-4 bg-white mb-3 rounded-xl shadow-xl">
+      <Text className="text-sm -mt-2 text-gray-500">
+        {new Date(order.createdAt).toDateString()}
+      </Text>
+      <View className="flex-row justify-end items-center -mt-2 bg-green-100 rounded-lg p-2 py-1 self-end">
         {iconSource && (
           <Image
             source={iconSource}
             className="w-5 h-5 mr-2" // width and height ~20-22px (5*4=20)
             resizeMode="contain"
-                style={{ tintColor: '#16a34a' }} // green tint
-
+            style={{ tintColor: '#16a34a' }} // green tint
           />
         )}
 
         <Text className="text-sm font-bold text-green-700">{order.status}</Text>
       </View>
-      
-      <DeliveryStatusBar status={order.status} />
 
+      <DeliveryStatusBar status={order.status} />
 
       {order.__orderItems__.map((item: any) => (
         <OrderItemRow key={item.id} item={item} />
@@ -36,9 +36,9 @@ export default function OrderCard({ order }: any) {
 
       <Text className="text-lg font-bold mt-1 ">Total: ${order.price}</Text>
 
-      <TouchableOpacity className="bg-blue-600 rounded-lg p-3 mt-2 items-center">
+      {/* <TouchableOpacity className="bg-blue-600 rounded-lg p-3 mt-2 items-center">
         <Text className="text-white font-bold">Track Order</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 }

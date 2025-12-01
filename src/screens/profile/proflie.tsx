@@ -1,13 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 import LogoutButton from './logoutButton'; // Adjust the import path
 import { AuthContext } from '../../helper/authContext';
 import { decodeToken } from '../../api/indexAuth';
@@ -19,35 +13,32 @@ interface JwtPayload {
   phone?: string;
 }
 
-type AccountActionProps ={
-  icon:any;
-  label:string;
-  description:string;
-}
+type AccountActionProps = {
+  icon: any;
+  label: string;
+  description: string;
+};
 
 export default function ProfileScreen({ navigation }: any) {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string>('sadhubasnet@gmail.com');
   const [phone, setPhone] = useState<string>('+1 (555) 123-4567');
   // const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const { isLoggedIn,token } = useContext(AuthContext);
+  const { isLoggedIn, token } = useContext(AuthContext);
 
   useEffect(() => {
-      const fetchToken = async () => {
+    const fetchToken = async () => {
       if (token) {
-        
-          const decoded = await decodeToken();
-          console.log('decoded=============',decoded)
-          const userData=await getUser(decoded!.userId)
-                    console.log('userData',userData)
+        const decoded = await decodeToken();
+        console.log('decoded=============', decoded);
+        const userData = await getUser(decoded!.userId);
+        console.log('userData', userData);
 
-          console.log('userData',userData)
-          setUsername(userData.data.username );
-          setEmail(userData.data.email );
-          setPhone(userData.data.phoneNumber );
-
-
-        } 
+        console.log('userData', userData);
+        setUsername(userData.data.username);
+        setEmail(userData.data.email);
+        setPhone(userData.data.phoneNumber);
+      }
     };
     fetchToken();
   }, []);
@@ -70,7 +61,7 @@ export default function ProfileScreen({ navigation }: any) {
   //   };
   //   fetchToken();
   // }, []);
- if (!isLoggedIn) {
+  if (!isLoggedIn) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
         <Image
@@ -91,26 +82,22 @@ export default function ProfileScreen({ navigation }: any) {
   }
   return (
     <ScrollView className="flex-1 bg-white px-4">
-
       {/* Profile Card */}
       <View className="flex-row items-center bg-white rounded-2xl p-4 shadow mb-3">
-        <Image
-            source={require('../../../assets/images/girl.png')}
-
-          className="w-14 h-14 rounded-full mr-3 bg-gray-200"
-        />
         <View className="flex-1">
-          <Text className="font-bold text-lg text-gray-900">{username ?? 'User name'}</Text>
+          <Text className="font-bold text-lg text-gray-900">
+            {username ?? 'User name'}
+          </Text>
           <Text className="text-gray-600 text-sm">{email}</Text>
           <Text className="text-gray-600 text-sm">{phone}</Text>
         </View>
-        <TouchableOpacity className="bg-blue-50 px-3 py-1 rounded-lg">
+        {/* <TouchableOpacity className="bg-blue-50 px-3 py-1 rounded-lg">
           <Text className="text-blue-600 font-medium text-base">Edit</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Summary Cards */}
-      <View className="flex-row justify-between mb-4">
+      {/* <View className="flex-row justify-between mb-4">
         <View className="bg-white rounded-xl flex-1 mx-1 px-2 py-3 items-center shadow">
           <Text className="font-bold text-base text-gray-900 mb-1">24</Text>
           <Text className="text-gray-500 text-xs">Total Orders</Text>
@@ -123,10 +110,10 @@ export default function ProfileScreen({ navigation }: any) {
           <Text className="font-bold text-base text-gray-900 mb-1">4.8</Text>
           <Text className="text-gray-500 text-xs">Rating</Text>
         </View>
-      </View>
+      </View> */}
 
       {/* Account Actions */}
-      <View className="bg-white rounded-2xl shadow mb-3">
+      {/* <View className="bg-white rounded-2xl shadow mb-3">
         <AccountAction
           icon={require('../../../assets/navIcons/pin.png')}
           label="Delivery Address"
@@ -152,10 +139,10 @@ export default function ProfileScreen({ navigation }: any) {
           label="Help & Support"
           description="FAQs and contact us"
         />
-      </View>
+      </View> */}
 
       {/* Sign Out Button */}
-      <View className="mt-8 mb-10 items-center">
+      <View className="flex-1 justify-end items-center pb-10">
         <LogoutButton />
       </View>
     </ScrollView>
@@ -163,7 +150,7 @@ export default function ProfileScreen({ navigation }: any) {
 }
 
 // Account action component with icon
-function AccountAction({ icon, label, description }:AccountActionProps) {
+function AccountAction({ icon, label, description }: AccountActionProps) {
   return (
     <TouchableOpacity
       className="flex-row items-center justify-between py-4 px-3 border-b border-gray-100"

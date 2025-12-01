@@ -10,6 +10,7 @@ import {
   Pressable,
   TouchableWithoutFeedback,
   Keyboard,
+  useColorScheme,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
@@ -54,6 +55,8 @@ type RootStackParamList = {
 };
 type cartNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Cart'>;
 export default function CartScreen() {
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const [loading, setLoading] = useState<boolean>(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [cartData, setCartData] = useState<CartGroup[]>([]);
@@ -63,12 +66,20 @@ export default function CartScreen() {
 
   if (!isLoggedIn) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View
+        className={`flex-1 items-center justify-center ${
+          isDark ? 'bg-gray-900' : 'bg-white'
+        }`}
+      >
         <Image
           source={require('../../../assets/images/user.png')}
           className="w-20 h-20 rounded-full mb-4 bg-gray-200"
         />
-        <Text className="font-bold text-lg text-gray-900 mb-2">
+        <Text
+          className={`font-bold text-lg ${
+            isDark ? 'text-gray-100' : 'text-gray-900'
+          }`}
+        >
           please login in first
         </Text>
       </View>
@@ -197,198 +208,236 @@ export default function CartScreen() {
   }, 0);
 
   const handleDeleteItem = async (id: string, name: string) => {
-  
-          try {
-            setLoading(true);
-            await deleteCart(id);
-            setCartData(prev =>
-              prev
-                .map(group => ({
-                  ...group,
-                  items: group.items.filter(item => item.id !== id),
-                }))
-                .filter(group => group.items.length > 0),
-            );
-
-          } catch (error) {
-            Alert.alert('Error', 'Failed to delete place');
-            console.error(error);
-          } 
-          finally {
-            setLoading(false);
-          }
-    
+    try {
+      setLoading(true);
+      await deleteCart(id);
+      setCartData(prev =>
+        prev
+          .map(group => ({
+            ...group,
+            items: group.items.filter(item => item.id !== id),
+          }))
+          .filter(group => group.items.length > 0),
+      );
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete place');
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
-  
+
   return (
-  <TouchableWithoutFeedback
-    onPress={() => {
-      Keyboard.dismiss();
-      setSelectedItemId(null);
-    }}
-  >
-    <StyledView className="flex-1 bg-gray-100">
-      {/* Main ScrollView */}
-      <ScrollView className="flex-1 py-3 px-3">
-        {cartData.map((group, idx) => (
-          <StyledView
-            key={group.shop}
-            className="bg-white rounded-2xl mb-4 p-3 shadow"
-          >
-            {/* Shop Header */}
-            <StyledView className="flex-row items-center mb-2">
-              <Checkbox
-                value={!!selected[group.shop]}
-                onValueChange={(val) =>
-                  handleShopSelect(group.shop, group.items, val)
-                }
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              />
-              <StyledImage
-                source={require('../../../assets/images/shop.png')}
-                className="ml-2 w-4 h-4"
-                style={{ marginTop: 1 }}
-              />
-              <StyledText className="px-1 font-semibold text-base">
-                {group.shop}
-              </StyledText>
-            </StyledView>
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+        setSelectedItemId(null);
+      }}
+    >
+      <StyledView
+        className={`flex-1 ${isDark ? 'bg-gray-950' : 'bg-gray-100'}`}
+      >
+        {/* Main ScrollView */}
+        <ScrollView className="flex-1 py-3 px-3">
+          {cartData.map((group, idx) => (
+            <StyledView
+              key={group.shop}
+              className={`rounded-2xl mb-4 p-3 shadow ${
+                isDark ? 'bg-gray-900 shadow-black' : 'bg-white'
+              }`}
+            >
+              {/* Shop Header */}
+              <StyledView className="flex-row items-center mb-2">
+                <Checkbox
+                  value={!!selected[group.shop]}
+                  onValueChange={val =>
+                    handleShopSelect(group.shop, group.items, val)
+                  }
+                  color={isDark ? '#3b82f6' : undefined}
+                />
 
-            {group.items.map((item) => {
-              const normalizedImage = item.img.startsWith('/')
-                ? item.img.slice(1)
-                : item.img;
-              const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+                <StyledImage
+                  source={require('../../../assets/images/shop.png')}
+                  className="ml-2 w-4 h-4"
+                  style={{
+                    marginTop: 1,
+                    tintColor: isDark ? '#f3f4f6' : '#1f2937', // light gray vs dark text
+                  }}
+                />
 
-              return (
-                <Swipeable
-                  key={item.id}
-                  renderRightActions={() => (
-                    <StyledTouchable
-                      onPress={() => handleDeleteItem(item.id, item.name)}
-                      className="bg-red-500 justify-center items-center w-20 rounded-r-2xl"
-                    >
-                      <Text className="text-white font-bold">Delete</Text>
-                    </StyledTouchable>
-                  )}
+                <StyledText
+                  className={`px-1 font-semibold text-base ${
+                    isDark ? 'text-gray-100' : 'text-gray-900'
+                  }`}
                 >
-                  <StyledView className="flex-row py-0">
-                    <Checkbox
-                      className="mt-4 mr-2"
-                      value={!!selected[item.id]}
-                      onValueChange={(val) =>
-                        handleItemSelect(group.shop, group.items, item.id, val)
-                      }
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    />
+                  {group.shop}
+                </StyledText>
+              </StyledView>
 
-                    <StyledTouchable
-                      onPress={() =>
-                        navigation.navigate('DetailScreen', {
-                          productId: '',
-                          productName: item.name,
-                          tableName: '',
-                        })
-                      }
-                      className="flex-row items-center flex-1"
-                    >
-                      <StyledImage
-                        source={{ uri: imageUri }}
-                        className="w-14 h-14 rounded mr-2 bg-gray-200"
+              {group.items.map(item => {
+                const normalizedImage = item.img ? item.img : '';
+                // const imageUri = `${API_BASE_URL}/${normalizedImage}`;
+
+                return (
+                  <Swipeable
+                    key={item.id}
+                    renderRightActions={() => (
+                      <StyledTouchable
+                        onPress={() => handleDeleteItem(item.id, item.name)}
+                        className="bg-red-500 justify-center items-center w-20 rounded-r-2xl"
+                      >
+                        <Text className="text-white font-bold">Delete</Text>
+                      </StyledTouchable>
+                    )}
+                  >
+                    <StyledView className="flex-row py-0">
+                      <Checkbox
+                        className="mt-4 mr-2"
+                        value={!!selected[item.id]}
+                        onValueChange={val =>
+                          handleItemSelect(
+                            group.shop,
+                            group.items,
+                            item.id,
+                            val,
+                          )
+                        }
+                        color={isDark ? '#3b82f6' : undefined}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       />
-                      <StyledView className="flex-1">
-                        <StyledText className="font-medium text-gray-900">
-                          {item.name}
-                        </StyledText>
-                        <StyledText className="text-gray-500 text-xs">
-                          {item.extra}
-                        </StyledText>
-                        {item.ends && (
-                          <StyledText className="text-xs text-orange-600">
-                            {item.ends}
-                          </StyledText>
-                        )}
-                        {item.left && (
-                          <StyledText className="text-xs text-rose-500">
-                            {item.left} item(s) left
-                          </StyledText>
-                        )}
-                        <StyledView className="flex-row mt-1 items-center">
+
+                      <StyledTouchable
+                        onPress={() =>
+                          navigation.navigate('DetailScreen', {
+                            productId: '',
+                            productName: item.name,
+                            tableName: '',
+                          })
+                        }
+                        className="flex-row items-center flex-1"
+                      >
+                        <StyledImage
+                          source={
+                            normalizedImage
+                              ? { uri: `${API_BASE_URL}/${normalizedImage}` } // real image
+                              : require('../../../assets/images/photo.png')
+                          }
+                          className="w-14 h-14 rounded mr-2 bg-gray-200"
+                        />
+                        <StyledView className="flex-1">
                           <StyledText
-                            style={{ color: '#3b82f6' }}
-                            className="text-base font-bold"
+                            className={`${
+                              isDark ? 'text-gray-100' : 'text-gray-900'
+                            } font-medium`}
                           >
-                            Rs. {item.price}
+                            {item.name}
                           </StyledText>
-                          {item.oldPrice && (
-                            <StyledText className="text-gray-400 text-xs line-through ml-2">
-                              Rs. {item.oldPrice}
+                          <StyledText
+                            className={`text-xs ${
+                              isDark ? 'text-gray-400' : 'text-gray-500'
+                            }`}
+                          >
+                            {item.extra}
+                          </StyledText>
+                          {item.ends && (
+                            <StyledText className="text-xs text-orange-600">
+                              {item.ends}
                             </StyledText>
                           )}
+                          {item.left && (
+                            <StyledText className="text-xs text-rose-500">
+                              {item.left} item(s) left
+                            </StyledText>
+                          )}
+                          <StyledView className="flex-row mt-1 items-center">
+                            <StyledText
+                              style={{ color: '#3b82f6' }}
+                              className="text-base font-bold"
+                            >
+                              Rs. {item.price}
+                            </StyledText>
+                            {item.oldPrice && (
+                              <StyledText
+                                className={`text-xs line-through ml-2 ${
+                                  isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`}
+                              >
+                                Rs. {item.oldPrice}
+                              </StyledText>
+                            )}
+                          </StyledView>
                         </StyledView>
+                      </StyledTouchable>
+
+                      <StyledView className="flex-row items-center">
+                        <StyledTouchable
+                          onPress={() => handleQtyChange(item.id, -1)}
+                          className={`w-6 h-6 items-center justify-center rounded
+    ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}
+                        >
+                          <StyledText className={isDark ? 'text-gray-100' : ''}>
+                            -
+                          </StyledText>
+                        </StyledTouchable>
+                        <StyledText className="mx-2">
+                          {quantities[item.id]}
+                        </StyledText>
+                        <StyledTouchable
+                          onPress={() => handleQtyChange(item.id, 1)}
+                          className={`w-6 h-6 items-center justify-center rounded
+    ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}
+                        >
+                          <StyledText className={isDark ? 'text-gray-100' : ''}>
+                            +
+                          </StyledText>
+                        </StyledTouchable>
                       </StyledView>
-                    </StyledTouchable>
-
-                    <StyledView className="flex-row items-center">
-                      <StyledTouchable
-                        onPress={() => handleQtyChange(item.id, -1)}
-                        className="w-6 h-6 items-center justify-center bg-gray-200 rounded"
-                      >
-                        <StyledText>-</StyledText>
-                      </StyledTouchable>
-                      <StyledText className="mx-2">{quantities[item.id]}</StyledText>
-                      <StyledTouchable
-                        onPress={() => handleQtyChange(item.id, 1)}
-                        className="w-6 h-6 items-center mr-2 justify-center bg-gray-200 rounded"
-                      >
-                        <StyledText>+</StyledText>
-                      </StyledTouchable>
                     </StyledView>
-                  </StyledView>
-                </Swipeable>
-              );
-            })}
+                  </Swipeable>
+                );
+              })}
+            </StyledView>
+          ))}
+        </ScrollView>
+
+        {/* Checkout & Subtotal */}
+        {cartData.length === 0 ? (
+          <StyledText className="text-center py-6 text-gray-500">
+            Your cart is empty
+          </StyledText>
+        ) : (
+          <StyledView className="px-4 pb-4">
+            <StyledView className="flex-row items-center justify-between my-2">
+              <StyledText className="text-base font-bold">
+                Subtotal:{' '}
+                <StyledText style={{ color: '#3b82f6' }}>
+                  Rs. {subtotal}
+                </StyledText>
+              </StyledText>
+              <StyledText className="text-base font-medium text-gray-600">
+                Shipping Fee:{' '}
+                <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
+              </StyledText>
+            </StyledView>
+            <StyledTouchable
+              style={{ backgroundColor: '#3b82f6' }}
+              className="w-full py-4 rounded-xl items-center mb-1"
+              onPress={handleCheckout}
+            >
+              <StyledText className="text-white text-lg font-bold">
+                CheckOut
+              </StyledText>
+            </StyledTouchable>
           </StyledView>
-        ))}
-      </ScrollView>
+        )}
 
-      {/* Checkout & Subtotal */}
-      {cartData.length === 0 ? (
-        <StyledText className="text-center py-6 text-gray-500">
-          Your cart is empty
-        </StyledText>
-      ) : (
-        <StyledView className="px-4 pb-4">
-          <StyledView className="flex-row items-center justify-between my-2">
-            <StyledText className="text-base font-bold">
-              Subtotal:{' '}
-              <StyledText style={{ color: '#3b82f6' }}>Rs. {subtotal}</StyledText>
-            </StyledText>
-            <StyledText className="text-base font-medium text-gray-600">
-              Shipping Fee:{' '}
-              <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
-            </StyledText>
-          </StyledView>
-          <StyledTouchable
-            style={{ backgroundColor: '#3b82f6' }}
-            className="w-full py-4 rounded-xl items-center mb-1"
-            onPress={handleCheckout}
-          >
-            <StyledText className="text-white text-lg font-bold">
-              CheckOut
-            </StyledText>
-          </StyledTouchable>
-        </StyledView>
-      )}
-
-      {/* Loading overlay */}
-      {loading && (
-        <View className="absolute top-0 left-0 right-0 bottom-0 bg-white/50 justify-center items-center">
-          <ActivityIndicator size="large" color="#2563eb" />
-        </View>
-      )}
-    </StyledView>
-  </TouchableWithoutFeedback>
-);
-
+        {/* Loading overlay */}
+        {loading && (
+          <View className="absolute top-0 left-0 right-0 bottom-0 bg-white/50 justify-center items-center">
+            <ActivityIndicator size="large" color="#2563eb" />
+          </View>
+        )}
+      </StyledView>
+    </TouchableWithoutFeedback>
+  );
 }

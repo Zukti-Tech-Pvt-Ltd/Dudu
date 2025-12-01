@@ -47,14 +47,18 @@ export default function DeliveryMapsScreen() {
     name,
   });
 
-  const [markerB, setMarkerB] = useState<{ latitude: number; longitude: number; name: string } | null>(null);
+  const [markerB, setMarkerB] = useState<{
+    latitude: number;
+    longitude: number;
+    name: string;
+  } | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [isMapAnimating, setIsMapAnimating] = useState(false);
 
   const requestLocationPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
@@ -76,13 +80,14 @@ export default function DeliveryMapsScreen() {
               latitude: (markerA.latitude + latitude) / 2,
               longitude: (markerA.longitude + longitude) / 2,
               latitudeDelta: Math.abs(markerA.latitude - latitude) * 2 || 0.05,
-              longitudeDelta: Math.abs(markerA.longitude - longitude) * 2 || 0.05,
+              longitudeDelta:
+                Math.abs(markerA.longitude - longitude) * 2 || 0.05,
             };
             mapRef.current.animateToRegion(region, 1000);
           }
         },
         error => console.error('Error getting location', error),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
       );
     };
 
@@ -99,7 +104,10 @@ export default function DeliveryMapsScreen() {
   if (!isLoggedIn) {
     return (
       <View style={styles.centered}>
-        <Image source={require('../../assets/images/user.png')} style={styles.userImg} />
+        <Image
+          source={require('../../assets/images/user.png')}
+          style={styles.userImg}
+        />
         <Text style={styles.loginText}>Please login first</Text>
       </View>
     );
@@ -110,50 +118,55 @@ export default function DeliveryMapsScreen() {
       <View style={{ flex: 1 }}>
         {/* Google Search */}
         <View style={styles.searchContainer}>
-       <GooglePlacesAutocomplete
-  ref={searchRef}
-  placeholder="Search location..."
-  fetchDetails
-  debounce={200}
-  enablePoweredByContainer={false}
-  styles={{
-    textInput: styles.searchInput,
-    listView: styles.listView,
-  }}
-  query={{
-    key: GOOGLE_API_KEY,
-    language: 'en',
-    components: 'country:np',
-  }}
-  onFail={(error) => {
-    console.warn('Places API error:', error);
-  }}
-  onNotFound={() => {
-    console.warn('No results found');
-  }}
-  onPress={(data, details = null) => {
-    if (!details?.geometry?.location) return;
-    const { lat, lng } = details.geometry.location;
-    setMarkerA({
-      latitude: lat,
-      longitude: lng,
-      name: details.formatted_address || 'Selected Location',
-    });
-    mapRef.current?.animateToRegion({
-      latitude: lat,
-      longitude: lng,
-      latitudeDelta: 0.01,
-      longitudeDelta: 0.01,
-    });
-  }}
-/>
-
+          <GooglePlacesAutocomplete
+            ref={searchRef}
+            placeholder="Search location..."
+            fetchDetails
+            debounce={200}
+            predefinedPlaces={[]}
+            textInputProps={{}}
+            enablePoweredByContainer={false}
+            styles={{
+              textInput: styles.searchInput,
+              listView: styles.listView,
+            }}
+            query={{
+              key: GOOGLE_API_KEY,
+              language: 'en',
+              components: 'country:np',
+            }}
+            onFail={error => {
+              console.warn('Places API error:', error);
+            }}
+            onNotFound={() => {
+              console.warn('No results found');
+            }}
+            onPress={(data, details = null) => {
+              if (!details?.geometry?.location) return;
+              const { lat, lng } = details.geometry.location;
+              setMarkerA({
+                latitude: lat,
+                longitude: lng,
+                name: details.formatted_address || 'Selected Location',
+              });
+              mapRef.current?.animateToRegion({
+                latitude: lat,
+                longitude: lng,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              });
+            }}
+          />
         </View>
 
         {isMapAnimating && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size={20} color="#3B82F6" />
-            <Text style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}>Centering map...</Text>
+            <Text
+              style={{ color: '#3b82f6', marginTop: 10, fontWeight: '600' }}
+            >
+              Centering map...
+            </Text>
           </View>
         )}
 
@@ -171,16 +184,26 @@ export default function DeliveryMapsScreen() {
           showsUserLocation
           showsMyLocationButton
         >
-          {markerA && <Marker coordinate={markerA} title={markerA.name} pinColor="red" />}
-          {markerB && <Marker coordinate={markerB} title={markerB.name} pinColor="blue" />}
+          {markerA && (
+            <Marker coordinate={markerA} title={markerA.name} pinColor="red" />
+          )}
+          {markerB && (
+            <Marker coordinate={markerB} title={markerB.name} pinColor="blue" />
+          )}
           {markerA && markerB && (
-            <Polyline coordinates={[markerA, markerB]} strokeColor="#007AFF" strokeWidth={3} />
+            <Polyline
+              coordinates={[markerA, markerB]}
+              strokeColor="#007AFF"
+              strokeWidth={3}
+            />
           )}
         </MapView>
 
         {distance !== null && (
           <View style={styles.distanceBox}>
-            <Text style={styles.distanceText}>Distance: {distance.toFixed(2)} km</Text>
+            <Text style={styles.distanceText}>
+              Distance: {distance.toFixed(2)} km
+            </Text>
           </View>
         )}
       </View>
@@ -189,11 +212,28 @@ export default function DeliveryMapsScreen() {
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'white' },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+  },
   userImg: { width: 80, height: 80, borderRadius: 40, marginBottom: 16 },
   loginText: { fontWeight: 'bold', fontSize: 18, color: '#333' },
-  searchContainer: { position: 'absolute', top: 50, zIndex: 10, width: '100%', paddingHorizontal: 16 },
-  searchInput: { backgroundColor: 'white', borderRadius: 10, fontSize: 16, paddingHorizontal: 10, color: '#000' },
+  searchContainer: {
+    position: 'absolute',
+    top: 50,
+    zIndex: 10,
+    width: '100%',
+    paddingHorizontal: 16,
+  },
+  searchInput: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    fontSize: 16,
+    paddingHorizontal: 10,
+    color: '#000',
+  },
   listView: { backgroundColor: 'white', borderRadius: 10 },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
