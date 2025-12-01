@@ -25,61 +25,34 @@ import KhaltiPayment from './src/screens/payment/khalti';
 import TenantScreen from './src/screens/tenant/tenant';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
-import messaging from '@react-native-firebase/messaging';
-
+import { useNotification } from './src/notification/useNotification';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const requestPermission = async () => {
-    try {
-      const results = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      );
-      if (results === PermissionsAndroid.RESULTS.GRANTED) {
-        getToken();
-        console.log('You can use the location');
-      } else {
-        console.log('location permission denied');
-      }
-    } catch (e) {
-      console.log(e);
-    }
-  };
-  const getToken = async () => {
-    try {
-      await messaging().registerDeviceForRemoteMessages();
-      const token = await messaging().getToken();
-      console.log('token===', token);
-    } catch (error) {
-      console.log('error in fetching token', error);
-    }
-  };
-  useEffect(() => {
-    requestPermission();
-  });
-  useEffect(() => {
-    const handleUrl = event => {
-      const url = event.url;
-      if (url.startsWith('myapp://payment-success')) {
-        Alert.alert('Payment Success', `URL: ${url}`);
-        // Parse and navigate or update state accordingly
-      } else if (url.startsWith('myapp://payment-failure')) {
-        Alert.alert('Payment Failed', `URL: ${url}`);
-      }
-    };
+  useNotification();
+  // useEffect(() => {
+  //   const handleUrl = event => {
+  //     const url = event.url;
+  //     if (url.startsWith('myapp://payment-success')) {
+  //       Alert.alert('Payment Success', `URL: ${url}`);
+  //       // Parse and navigate or update state accordingly
+  //     } else if (url.startsWith('myapp://payment-failure')) {
+  //       Alert.alert('Payment Failed', `URL: ${url}`);
+  //     }
+  //   };
 
-    // Listen for deep link events
-    // Linking.addEventListener('url', handleUrl);
+  //   // Listen for deep link events
+  //   // Linking.addEventListener('url', handleUrl);
 
-    // Handle app launch from deep link
-    Linking.getInitialURL().then(url => {
-      if (url) handleUrl({ url });
-    });
-    const subscription = Linking.addListener('url', handleUrl);
-    return () => {
-      subscription.remove();
-    };
-  }, []);
+  //   // Handle app launch from deep link
+  //   Linking.getInitialURL().then(url => {
+  //     if (url) handleUrl({ url });
+  //   });
+  //   const subscription = Linking.addListener('url', handleUrl);
+  //   return () => {
+  //     subscription.remove();
+  //   };
+  // }, []);
   const scheme = useColorScheme(); // 'dark' | 'light'
 
   return (

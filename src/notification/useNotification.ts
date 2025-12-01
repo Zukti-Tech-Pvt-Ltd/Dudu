@@ -15,7 +15,7 @@ const requestUserPermission = async () => {
 const getToken = async () => {
   try {
     const token = await messaging().getToken();
-    console.log('token', token);
+    console.log('token--=-=-=-=-=', token);
   } catch (error) {
     console.log('error in fetching token', error);
   }
