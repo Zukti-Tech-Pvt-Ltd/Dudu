@@ -23,6 +23,10 @@ import PaymentMethodScreen from './src/screens/payment/paymentScreen';
 import ESewaTestPayment from './src/screens/payment/esewa';
 import KhaltiPayment from './src/screens/payment/khalti';
 import TenantScreen from './src/screens/tenant/tenant';
+import ActiveDelivery from './src/screens/deliveryScreen/activeDelivery';
+import CompletedDelivery from './src/screens/deliveryScreen/completeDelivery';
+import DeliveryStatusScreen from './src/screens/deliveryScreen/deliveryStatusScreen';
+
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
 import { useNotification } from './src/notification/useNotification';
@@ -112,6 +116,21 @@ function AppInner() {
           name="TenantScreen"
           component={TenantScreen}
           options={{ title: 'TenantScreen' }}
+        />
+        <Stack.Screen
+          name="ActiveDelivery"
+          component={ActiveDelivery}
+          options={{ title: 'ActiveDelivery' }}
+        />
+        <Stack.Screen
+          name="CompletedDelivery"
+          component={CompletedDelivery}
+          options={{ title: 'CompletedDelivery' }}
+        />
+        <Stack.Screen
+          name="DeliveryStatusScreen"
+          component={DeliveryStatusScreen}
+          options={{ title: 'DeliveryStatusScreen' }}
         />
       </Stack.Navigator>
     </NavigationContainer>

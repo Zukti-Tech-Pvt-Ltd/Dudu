@@ -51,7 +51,7 @@ export default function MainTabs() {
       token!,
     );
     console.log('decoded!!!!!!!!!!!!!!!!!', decoded);
-    if (decoded.userType === 'tenant') {
+    if (decoded.userType === 'delivery') {
       return (
         <Tab.Navigator
           screenOptions={({ route }) => ({

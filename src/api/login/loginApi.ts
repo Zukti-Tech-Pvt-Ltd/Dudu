@@ -12,3 +12,7 @@ export const login = async (
   });
   return response.data;
 };
+// export const getUser = async (userId: number) => {
+//   const response = await api.post(`api/user/getOne/${userId}/`);
+//   return response.data;
+// };

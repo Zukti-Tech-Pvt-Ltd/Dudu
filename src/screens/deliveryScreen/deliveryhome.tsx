@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   SafeAreaView,
   ScrollView,
   useColorScheme,
+  Pressable,
 } from 'react-native';
 import {
   Plus,
@@ -15,6 +16,24 @@ import {
   ArrowRight,
   Activity,
 } from 'lucide-react-native';
+import { getDeliveryOrder } from '../../api/deliveryOrderApi';
+import { useFocusEffect } from '@react-navigation/native';
+import { AuthContext } from '../../helper/authContext';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { getUser } from '../../api/userApi';
+import { decodeToken } from '../../api/indexAuth';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+type RootStackParamList = {
+  DeliveryHubScreen: undefined;
+  ActiveDelivery: undefined;
+  CompletedDelivery: undefined;
+  DeliveryStatusScreen: { deliveryItem: DeliveryTaskItem };
+};
+type deliveryHomeNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'DeliveryHubScreen'
+>;
 
 interface StatusCardProps {
   icon: React.ReactNode;
@@ -22,6 +41,25 @@ interface StatusCardProps {
   label: string;
   className?: string;
   dark?: boolean;
+  onPress?: () => void;
+}
+interface DeliveryCustomer {
+  id: number;
+  username: string;
+  phoneNumber: string;
+}
+
+export interface DeliveryTaskItem {
+  id: number;
+  pickupAddress: string;
+  deliveryAddress: string;
+  pickupLat: number;
+  pickupLng: number;
+  deliveryLat: number;
+  deliveryLng: number;
+  deliveryFee: number;
+  status: string;
+  __customer__: DeliveryCustomer;
 }
 
 const StatusCard: React.FC<StatusCardProps> = ({
@@ -30,25 +68,30 @@ const StatusCard: React.FC<StatusCardProps> = ({
   label,
   className = '',
   dark,
+  onPress,
 }) => (
-  <View
-    className={`p-3 rounded-xl w-1/3 items-center justify-center shadow-lg ${className}
+  <Pressable
+    onPress={onPress}
+    className={`w-1/3 p-3  rounded-xl shadow-lg items-center justify-center ${className}
       ${dark ? 'bg-gray-800' : 'bg-gray-100'}
     `}
     style={{ aspectRatio: 1 }}
+    android_ripple={{ color: dark ? '#333' : '#ccc', borderless: false }}
   >
     {icon}
+
     <Text
       className={`${dark ? 'text-white' : 'text-black'} text-xl font-bold mt-2`}
     >
       {value}
     </Text>
+
     <Text
       className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs mt-1`}
     >
       {label}
     </Text>
-  </View>
+  </Pressable>
 );
 
 interface AppDetailsProps {
@@ -64,7 +107,7 @@ const AppDetails: React.FC<AppDetailsProps> = ({
   dbStatus,
   dark,
 }) => (
-  <View className="mt-8 px-4">
+  <View className="mt-10 px-4">
     <Text className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs`}>
       App ID:{' '}
       <Text className={`${dark ? 'text-cyan-400' : 'text-cyan-600'}`}>
@@ -100,10 +143,139 @@ const AppDetails: React.FC<AppDetailsProps> = ({
   </View>
 );
 
-const DeliveryHubScreen: React.FC = () => {
-  const scheme = useColorScheme();
-  const dark = scheme === 'dark';
+export const DeliveryCard = ({
+  item,
+  dark,
+  onPress,
+}: {
+  item: DeliveryTaskItem;
+  dark: boolean;
+  onPress?: () => void;
+}) => {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`rounded-xl p-4 mb-4 ${
+        dark ? 'bg-gray-800' : 'bg-gray-100'
+      } shadow`}
+      android_ripple={{ color: dark ? '#333' : '#ccc' }}
+    >
+      {/* Header */}
+      <View className="flex-row justify-between items-center mb-2">
+        <Text
+          className={`${dark ? 'text-white' : 'text-black'} font-bold text-lg`}
+        >
+          Delivery #{item.id}
+        </Text>
 
+        <Text
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            item.status === 'pending'
+              ? dark
+                ? 'bg-yellow-600 text-white'
+                : 'bg-yellow-200 text-yellow-900'
+              : dark
+              ? 'bg-green-600 text-white'
+              : 'bg-green-200 text-green-900'
+          }`}
+        >
+          {item.status}
+        </Text>
+      </View>
+
+      {/* Pickup */}
+      <View className="mt-2">
+        <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
+          Pickup Address
+        </Text>
+        <Text className={`${dark ? 'text-white' : 'text-black'} font-semibold`}>
+          {item.pickupAddress}
+        </Text>
+      </View>
+
+      {/* Delivery */}
+      <View className="mt-3">
+        <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
+          Delivery Address
+        </Text>
+        <Text className={`${dark ? 'text-white' : 'text-black'} font-semibold`}>
+          {item.deliveryAddress}
+        </Text>
+      </View>
+
+      {/* Footer */}
+      <View className="flex-row justify-between items-center mt-4">
+        <View>
+          <Text
+            className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}
+          >
+            Customer
+          </Text>
+          <Text
+            className={`${dark ? 'text-white' : 'text-black'} font-semibold`}
+          >
+            {item.__customer__.username} ({item.__customer__.phoneNumber})
+          </Text>
+        </View>
+
+        <View className="items-end">
+          <Text
+            className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}
+          >
+            Fee
+          </Text>
+          <Text
+            className={`${
+              dark ? 'text-green-400' : 'text-green-600'
+            } font-bold`}
+          >
+            ${item.deliveryFee}
+          </Text>
+        </View>
+      </View>
+    </Pressable>
+  );
+};
+
+const DeliveryHubScreen: React.FC = () => {
+  const { token } = useContext(AuthContext);
+  const navigation = useNavigation<deliveryHomeNavigationProp>();
+
+  const scheme = useColorScheme();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [deliveryData, setDeliveryData] = useState<DeliveryTaskItem[]>([]);
+  const [userData, setUserData] = useState<any | null>(null);
+
+  const dark = scheme === 'dark';
+  const fetchData = async () => {
+    setLoading(true);
+    const decoded = await decodeToken();
+    const user = await getUser(decoded!.userId);
+    setUserData(user.data); // extract actual user
+
+    if (!token) return;
+    try {
+      const response = await getDeliveryOrder();
+      if (response && response.data) {
+        setDeliveryData(response.data);
+      } else {
+        setDeliveryData([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setDeliveryData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  console.log('userDat22222a', userData);
+  console.log('deliveryData', deliveryData);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, []),
+  );
   return (
     <SafeAreaView className={`flex-1 ${dark ? 'bg-gray-900' : 'bg-white'}`}>
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
@@ -130,14 +302,16 @@ const DeliveryHubScreen: React.FC = () => {
                   dark ? 'text-white' : 'text-black'
                 } text-xl font-bold`}
               >
-                Delivery Hub
+                {userData?.username}
               </Text>
               <Text
                 className={`font-semibold text-sm ${
                   dark ? 'text-green-400' : 'text-green-600'
                 }`}
               >
-                Status: Active
+                {userData?.isOnline}
+                Status:
+                {userData?.isOnline ? 'Online' : 'Offline'}
               </Text>
             </View>
           </View>
@@ -149,21 +323,27 @@ const DeliveryHubScreen: React.FC = () => {
 
         {/* Main Content */}
         <View className="p-4">
-          <View className="flex-row justify-between space-x-3">
+          <View className="flex-row space-x-2 px-1">
             <StatusCard
               icon={<Truck size={28} color={dark ? '#4ade80' : '#16a34a'} />}
-              value="0"
+              value={deliveryData
+                .filter(item => item.status?.toLowerCase() === 'accepted')
+                .length.toString()}
               label="Active"
               dark={dark}
+              onPress={() => navigation.navigate('ActiveDelivery')}
             />
 
             <StatusCard
               icon={
                 <CheckCircle size={28} color={dark ? '#60a5fa' : '#1d4ed8'} />
               }
-              value="7"
+              value={deliveryData
+                .filter(item => item.status?.toLowerCase() === 'delivered')
+                .length.toString()}
               label="Completed Today"
               dark={dark}
+              onPress={() => navigation.navigate('CompletedDelivery')}
             />
 
             <StatusCard
@@ -189,7 +369,7 @@ const DeliveryHubScreen: React.FC = () => {
                     dark ? 'text-white' : 'text-black'
                   } text-lg font-bold ml-2`}
                 >
-                  Active Tasks (0)
+                  Active Tasks ({deliveryData.length})
                 </Text>
               </View>
 
@@ -203,34 +383,48 @@ const DeliveryHubScreen: React.FC = () => {
                 </Text>
               </TouchableOpacity>
             </View>
+            {deliveryData.length === 0 ? (
+              <View className="items-center justify-center mt-12 mb-12">
+                <View
+                  className={`p-2 rounded-full transform rotate-45 mb-4 ${
+                    dark ? 'bg-green-500' : 'bg-green-600'
+                  }`}
+                >
+                  <Truck size={32} color={dark ? '#0a0a0a' : '#ffffff'} />
+                </View>
 
-            <View className="items-center justify-center mt-12 mb-12">
-              <View
-                className={`p-2 rounded-full transform rotate-45 mb-4 ${
-                  dark ? 'bg-green-500' : 'bg-green-600'
-                }`}
-              >
-                <Truck size={32} color={dark ? '#0a0a0a' : '#ffffff'} />
+                <Text
+                  className={`${
+                    dark ? 'text-white' : 'text-black'
+                  } text-base font-semibold`}
+                >
+                  No active deliveries currently assigned.
+                </Text>
+                <Text
+                  className={`${
+                    dark ? 'text-gray-400' : 'text-gray-600'
+                  } text-sm mt-1`}
+                >
+                  Take a break or check for new tasks.
+                </Text>
               </View>
-
-              <Text
-                className={`${
-                  dark ? 'text-white' : 'text-black'
-                } text-base font-semibold`}
-              >
-                No active deliveries currently assigned.
-              </Text>
-              <Text
-                className={`${
-                  dark ? 'text-gray-400' : 'text-gray-600'
-                } text-sm mt-1`}
-              >
-                Take a break or check for new tasks.
-              </Text>
-            </View>
+            ) : (
+              deliveryData.map(item => (
+                <DeliveryCard
+                  key={item.id}
+                  item={item}
+                  dark={dark}
+                  onPress={() =>
+                    navigation.navigate('DeliveryStatusScreen', {
+                      deliveryItem: item,
+                    })
+                  }
+                />
+              ))
+            )}
 
             {/* FAB */}
-            <View className="items-center mt-8">
+            {/* <View className="items-center mt-8">
               <TouchableOpacity
                 className={`w-16 h-16 rounded-full items-center justify-center shadow-2xl ${
                   dark ? 'bg-blue-500' : 'bg-blue-600'
@@ -238,14 +432,13 @@ const DeliveryHubScreen: React.FC = () => {
               >
                 <Plus size={32} color="#ffffff" />
               </TouchableOpacity>
-            </View>
-
-            <AppDetails
+            </View> */}
+            {/* <AppDetails
               appId="c_52f99807e097976e_DeliveryAppHome.jsx-438"
               userId="05915764922349435223"
               dbStatus="Connected"
               dark={dark}
-            />
+            /> */}
           </View>
         </View>
       </ScrollView>
