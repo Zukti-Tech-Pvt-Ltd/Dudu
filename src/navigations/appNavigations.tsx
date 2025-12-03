@@ -95,11 +95,7 @@ export default function MainTabs() {
               },
             }}
           />
-          <Tab.Screen
-            name="map"
-            component={DeliveryMapsScreen}
-            options={{ title: 'Map', headerShown: true }}
-          />
+
           <Tab.Screen
             name="profile"
             component={ProfileScreen}

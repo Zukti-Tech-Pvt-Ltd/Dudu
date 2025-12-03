@@ -12,6 +12,7 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DeliveryTaskItem } from './deliveryhome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { editDeliveryOrder } from '../../api/deliveryOrderApi';
 
 type RootStackParamList = {
   DeliveryStatusScreen: { deliveryItem: DeliveryTaskItem };
@@ -45,6 +46,11 @@ const DeliveryStatusScreen: React.FC = () => {
   const handleSave = () => {
     // Here you would call your API to update the status
     // e.g., await updateDeliveryStatus(deliveryItem.id, selectedStatus)
+    console.log(
+      '111111111111111111111111111111111111111111111111111111111111deliveryItem',
+      deliveryItem.id,
+    );
+    editDeliveryOrder(deliveryItem.id, selectedStatus);
     Alert.alert(
       'Status Updated',
       `Delivery #${deliveryItem.id} is now ${selectedStatus}`,

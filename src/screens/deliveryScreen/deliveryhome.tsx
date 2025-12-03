@@ -15,6 +15,8 @@ import {
   BatteryCharging,
   ArrowRight,
   Activity,
+  Pin,
+  Map,
 } from 'lucide-react-native';
 import { getDeliveryOrder } from '../../api/deliveryOrderApi';
 import { useFocusEffect } from '@react-navigation/native';
@@ -29,6 +31,7 @@ type RootStackParamList = {
   ActiveDelivery: undefined;
   CompletedDelivery: undefined;
   DeliveryStatusScreen: { deliveryItem: DeliveryTaskItem };
+  DeliveryMapsScreen: undefined;
 };
 type deliveryHomeNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -278,170 +281,177 @@ const DeliveryHubScreen: React.FC = () => {
   );
   return (
     <SafeAreaView className={`flex-1 ${dark ? 'bg-gray-900' : 'bg-white'}`}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-        {/* Header */}
-        <View className="flex-row justify-between items-center p-4">
-          <View className="flex-row items-center">
-            <View
-              className={`rounded-full p-2 ${
-                dark ? 'bg-gray-700' : 'bg-gray-200'
-              }`}
-            >
-              <Text
-                className={`${
-                  dark ? 'text-white' : 'text-black'
-                } text-lg font-bold`}
-              >
-                👤
-              </Text>
-            </View>
-
-            <View className="ml-3">
-              <Text
-                className={`${
-                  dark ? 'text-white' : 'text-black'
-                } text-xl font-bold`}
-              >
-                {userData?.username}
-              </Text>
-              <Text
-                className={`font-semibold text-sm ${
-                  dark ? 'text-green-400' : 'text-green-600'
+      <View style={{ flex: 1, position: 'relative' }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+          {/* Header */}
+          <View className="flex-row justify-between items-center p-4">
+            <View className="flex-row items-center">
+              <View
+                className={`rounded-full p-2 ${
+                  dark ? 'bg-gray-700' : 'bg-gray-200'
                 }`}
               >
-                {userData?.isOnline}
-                Status:
-                {userData?.isOnline ? 'Online' : 'Offline'}
-              </Text>
-            </View>
-          </View>
-
-          <TouchableOpacity className="p-2">
-            <ArrowRight size={24} color={dark ? '#f87171' : '#dc2626'} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Main Content */}
-        <View className="p-4">
-          <View className="flex-row space-x-2 px-1">
-            <StatusCard
-              icon={<Truck size={28} color={dark ? '#4ade80' : '#16a34a'} />}
-              value={deliveryData
-                .filter(item => item.status?.toLowerCase() === 'accepted')
-                .length.toString()}
-              label="Active"
-              dark={dark}
-              onPress={() => navigation.navigate('ActiveDelivery')}
-            />
-
-            <StatusCard
-              icon={
-                <CheckCircle size={28} color={dark ? '#60a5fa' : '#1d4ed8'} />
-              }
-              value={deliveryData
-                .filter(item => item.status?.toLowerCase() === 'delivered')
-                .length.toString()}
-              label="Completed Today"
-              dark={dark}
-              onPress={() => navigation.navigate('CompletedDelivery')}
-            />
-
-            <StatusCard
-              icon={
-                <BatteryCharging
-                  size={28}
-                  color={dark ? '#ef4444' : '#be123c'}
-                />
-              }
-              value="85%"
-              label="Device Battery"
-              dark={dark}
-            />
-          </View>
-
-          {/* Tasks Section */}
-          <View className="mt-8">
-            <View className="flex-row justify-between items-center">
-              <View className="flex-row items-center">
-                <Activity size={20} color={dark ? '#e5e5e5' : '#111'} />
                 <Text
                   className={`${
                     dark ? 'text-white' : 'text-black'
-                  } text-lg font-bold ml-2`}
+                  } text-lg font-bold`}
                 >
-                  Active Tasks ({deliveryData.length})
+                  👤
                 </Text>
               </View>
 
-              <TouchableOpacity>
+              <View className="ml-3">
                 <Text
                   className={`${
-                    dark ? 'text-blue-400' : 'text-blue-600'
-                  } font-semibold`}
+                    dark ? 'text-white' : 'text-black'
+                  } text-xl font-bold`}
                 >
-                  View All
+                  {userData?.username}
                 </Text>
-              </TouchableOpacity>
-            </View>
-            {deliveryData.length === 0 ? (
-              <View className="items-center justify-center mt-12 mb-12">
-                <View
-                  className={`p-2 rounded-full transform rotate-45 mb-4 ${
-                    dark ? 'bg-green-500' : 'bg-green-600'
+                <Text
+                  className={`font-semibold text-sm ${
+                    dark ? 'text-green-400' : 'text-green-600'
                   }`}
                 >
-                  <Truck size={32} color={dark ? '#0a0a0a' : '#ffffff'} />
-                </View>
-
-                <Text
-                  className={`${
-                    dark ? 'text-white' : 'text-black'
-                  } text-base font-semibold`}
-                >
-                  No active deliveries currently assigned.
-                </Text>
-                <Text
-                  className={`${
-                    dark ? 'text-gray-400' : 'text-gray-600'
-                  } text-sm mt-1`}
-                >
-                  Take a break or check for new tasks.
+                  {userData?.isOnline}
+                  Status:
+                  {userData?.isOnline ? 'Online' : 'Offline'}
                 </Text>
               </View>
-            ) : (
-              deliveryData.map(item => (
-                <DeliveryCard
-                  key={item.id}
-                  item={item}
-                  dark={dark}
-                  onPress={() =>
-                    navigation.navigate('DeliveryStatusScreen', {
-                      deliveryItem: item,
-                    })
-                  }
-                />
-              ))
-            )}
+            </View>
 
-            {/* FAB */}
-            {/* <View className="items-center mt-8">
-              <TouchableOpacity
-                className={`w-16 h-16 rounded-full items-center justify-center shadow-2xl ${
-                  dark ? 'bg-blue-500' : 'bg-blue-600'
-                }`}
-              >
-                <Plus size={32} color="#ffffff" />
-              </TouchableOpacity>
-            </View> */}
-            {/* <AppDetails
+            <TouchableOpacity className="p-2">
+              <ArrowRight size={24} color={dark ? '#f87171' : '#dc2626'} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Main Content */}
+          <View className="p-4">
+            <View className="flex-row space-x-2 px-1">
+              <StatusCard
+                icon={<Truck size={28} color={dark ? '#4ade80' : '#16a34a'} />}
+                value={deliveryData
+                  .filter(item => item.status?.toLowerCase() === 'accepted')
+                  .length.toString()}
+                label="Active"
+                dark={dark}
+                onPress={() => navigation.navigate('ActiveDelivery')}
+              />
+
+              <StatusCard
+                icon={
+                  <CheckCircle size={28} color={dark ? '#60a5fa' : '#1d4ed8'} />
+                }
+                value={deliveryData
+                  .filter(item => item.status?.toLowerCase() === 'delivered')
+                  .length.toString()}
+                label="Completed Today"
+                dark={dark}
+                onPress={() => navigation.navigate('CompletedDelivery')}
+              />
+
+              <StatusCard
+                icon={
+                  <BatteryCharging
+                    size={28}
+                    color={dark ? '#ef4444' : '#be123c'}
+                  />
+                }
+                value="85%"
+                label="Device Battery"
+                dark={dark}
+              />
+            </View>
+
+            {/* Tasks Section */}
+            <View className="mt-8">
+              <View className="flex-row justify-between items-center">
+                <View className="flex-row items-center">
+                  <Activity size={20} color={dark ? '#e5e5e5' : '#111'} />
+                  <Text
+                    className={`${
+                      dark ? 'text-white' : 'text-black'
+                    } text-lg font-bold ml-2`}
+                  >
+                    Active Tasks ({deliveryData.length})
+                  </Text>
+                </View>
+
+                <TouchableOpacity>
+                  <Text
+                    className={`${
+                      dark ? 'text-blue-400' : 'text-blue-600'
+                    } font-semibold`}
+                  >
+                    View All
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {deliveryData.length === 0 ? (
+                <View className="items-center justify-center mt-12 mb-12">
+                  <View
+                    className={`p-2 rounded-full transform rotate-45 mb-4 ${
+                      dark ? 'bg-green-500' : 'bg-green-600'
+                    }`}
+                  >
+                    <Truck size={32} color={dark ? '#0a0a0a' : '#ffffff'} />
+                  </View>
+
+                  <Text
+                    className={`${
+                      dark ? 'text-white' : 'text-black'
+                    } text-base font-semibold`}
+                  >
+                    No active deliveries currently assigned.
+                  </Text>
+                  <Text
+                    className={`${
+                      dark ? 'text-gray-400' : 'text-gray-600'
+                    } text-sm mt-1`}
+                  >
+                    Take a break or check for new tasks.
+                  </Text>
+                </View>
+              ) : (
+                deliveryData.map(item => (
+                  <DeliveryCard
+                    key={item.id}
+                    item={item}
+                    dark={dark}
+                    onPress={() =>
+                      navigation.navigate('DeliveryStatusScreen', {
+                        deliveryItem: item,
+                      })
+                    }
+                  />
+                ))
+              )}
+
+              {/* <AppDetails
               appId="c_52f99807e097976e_DeliveryAppHome.jsx-438"
               userId="05915764922349435223"
               dbStatus="Connected"
               dark={dark}
             /> */}
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+        {/* FAB */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DeliveryMapsScreen')}
+          className={`w-16 h-16 rounded-full items-center justify-center shadow-2xl ${
+            dark ? 'bg-blue-500' : 'bg-blue-600'
+          }`}
+          style={{
+            position: 'absolute',
+            bottom: 30,
+            right: 30,
+            elevation: 10,
+          }}
+        >
+          <Map size={32} color="#ffffff" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };

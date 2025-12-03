@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, Alert, Text, SafeAreaView } from 'react-native';
+import {
+  View,
+  ActivityIndicator,
+  Alert,
+  Text,
+  SafeAreaView,
+} from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { WebView } from 'react-native-webview';
@@ -17,8 +23,8 @@ type RootStackParamList = {
 type khaltiNavigationProp = RouteProp<RootStackParamList, 'KhaltiPayment'>;
 
 const KhaltiPayment = () => {
-      const insets = useSafeAreaInsets();
-  
+  const insets = useSafeAreaInsets();
+
   // Always call hooks at the top, unconditionally
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -32,7 +38,9 @@ const KhaltiPayment = () => {
   const { selectedItems } = route.params;
   const { totalPrice } = route.params;
 
-  const publicKey = '1d37c096e1694b70a779bf601c63f88e';
+  const publicKey = '1d37c096e1694b70a779bf601c63f88e'; //test public key
+  // const publicKey = '1d37c096e1694b70a779bf601c63f88e';   //live public key
+
   const returnUrl = `${API_BASE_URL}/`; // Valid URL for return
 
   useEffect(() => {
@@ -50,7 +58,7 @@ const KhaltiPayment = () => {
       try {
         console.log('selectedItems', selectedItems);
         console.log('claim', claim);
-        const priceInRs=totalPrice*100
+        const priceInRs = totalPrice * 100;
         const response = await khaltiPayment(
           selectedItems,
           claim?.userId,
@@ -58,6 +66,8 @@ const KhaltiPayment = () => {
         );
         const pidx = response.pidx;
         const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;
+        // const checkoutUrl = `https://khalti.com/api/v2/payment/load/?pidx=${pidx}`;    //live Khalti
+
         setKhaltiCheckoutUrl(checkoutUrl);
       } catch (error) {
         console.error('Error fetching Pidx:', error);
@@ -80,57 +90,56 @@ const KhaltiPayment = () => {
 
   return (
     <SafeAreaView
-        
-          style={{
-            flex: 1,
-            backgroundColor: '#f9fafb', 
-            paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
-          }}
-        > 
-    <View style={{ flex: 1 }}>
-      {/* {loading && (
+      style={{
+        flex: 1,
+        backgroundColor: '#f9fafb',
+        paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        {/* {loading && (
         <ActivityIndicator
           size="large"
           color="#5C2D91"
           style={{ position: 'absolute', top: '50%', left: '50%', zIndex: 1 }}
         />
       )} */}
-      <WebView
-        source={{ uri: khaltiCheckoutUrl }}
-        onLoadEnd={() => setLoading(false)}
-        onNavigationStateChange={navState => {
-          const url = navState.url;
-          if (url.startsWith(returnUrl)) {
-            console.log('Return URL reached:', url);
-            const status = url.includes('status=')
-              ? decodeURIComponent(
-                  url.split('status=')[1].split('&')[0].replace(/\+/g, '%20'),
-                )
-              : null;
-            if (status === 'Completed') {
-              // successUrl;
-              console.log('Return URL completed:', url);
+        <WebView
+          source={{ uri: khaltiCheckoutUrl }}
+          onLoadEnd={() => setLoading(false)}
+          onNavigationStateChange={navState => {
+            const url = navState.url;
+            if (url.startsWith(returnUrl)) {
+              console.log('Return URL reached:', url);
+              const status = url.includes('status=')
+                ? decodeURIComponent(
+                    url.split('status=')[1].split('&')[0].replace(/\+/g, '%20'),
+                  )
+                : null;
+              if (status === 'Completed') {
+                // successUrl;
+                console.log('Return URL completed:', url);
 
-              Alert.alert('Payment Success', 'Your payment was successful.');
-            } else if (status === 'User canceled') {
-              console.log('Return URL cancelled:', url);
-              // failureUrl;
-              Alert.alert(
-                'Payment Cancelled',
-                'You have cancelled the payment.',
-              );
-            } else {
-              console.log('Return URL failed:', url);
+                Alert.alert('Payment Success', 'Your payment was successful.');
+              } else if (status === 'User canceled') {
+                console.log('Return URL cancelled:', url);
+                // failureUrl;
+                Alert.alert(
+                  'Payment Cancelled',
+                  'You have cancelled the payment.',
+                );
+              } else {
+                console.log('Return URL failed:', url);
 
-              Alert.alert('Payment Failed', 'Payment was not successful.');
-              // failureUrl;
+                Alert.alert('Payment Failed', 'Payment was not successful.');
+                // failureUrl;
+              }
+              navigation.goBack(); // Close payment screen or navigate elsewhere
             }
-            navigation.goBack(); // Close payment screen or navigate elsewhere
-          }
-        }}
-        startInLoadingState
-      />
-    </View>
+          }}
+          startInLoadingState
+        />
+      </View>
     </SafeAreaView>
   );
 };

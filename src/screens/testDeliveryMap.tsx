@@ -18,15 +18,12 @@ import MapView, {
   Marker,
   Callout,
   Region,
-  Polyline,
 } from 'react-native-maps';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { API_BASE_URL } from '@env';
-import PolylineDecoder from '@mapbox/polyline';
-
 import {
   RouteProp,
   useNavigation,
@@ -42,7 +39,7 @@ const destination = {
 };
 const { width, height } = Dimensions.get('window');
 
-export default function DeliveryMapsScreen() {
+export default function workingmap() {
   type MapsScreenParamsList = {
     map: {};
   };
@@ -58,10 +55,6 @@ export default function DeliveryMapsScreen() {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
 
-  const [routeCoordinates, setRouteCoordinates] = useState<
-    Array<{ latitude: number; longitude: number }>
-  >([]);
-  const [distanceText, setDistanceText] = useState<string | null>(null);
   const slideAnim = useRef(new Animated.Value(height)).current;
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
@@ -124,52 +117,6 @@ export default function DeliveryMapsScreen() {
       useNativeDriver: true,
     }).start(() => {});
   };
-  const fetchRoute = async (destinationLocation: {
-    latitude: number;
-    longitude: number;
-  }) => {
-    if (!userLocation) return;
-
-    const origin = `${userLocation.latitude},${userLocation.longitude}`;
-    const destinationStr = `${destinationLocation.latitude},${destinationLocation.longitude}`;
-    const apiKey = 'AIzaSyAhdGhZ6oWVPsUH6fzvDiPe_TgCsCKisJs'; // Replace with your API key
-
-    try {
-      const resp = await fetch(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destinationStr}&key=${apiKey}&mode=driving`,
-      );
-      const data = await resp.json();
-      console.log('Directions API response:', data);
-
-      if (data.routes && data.routes.length > 0) {
-        const points = PolylineDecoder.decode(
-          data.routes[0].overview_polyline.points,
-        );
-        const coords = points.map(([lat, lng]: [number, number]) => ({
-          latitude: lat,
-          longitude: lng,
-        }));
-
-        console.log('Decoded Polyline coords:', coords);
-
-        setRouteCoordinates(coords);
-
-        const distance = data.routes[0].legs[0].distance.text;
-        setDistanceText(distance);
-
-        // Optional: fit map to route
-        mapRef.current?.fitToCoordinates(coords, {
-          edgePadding: { top: 100, right: 50, bottom: 150, left: 50 },
-          animated: true,
-        });
-      } else {
-        console.warn('No routes found!');
-      }
-    } catch (error) {
-      console.error('Error fetching directions:', error);
-    }
-  };
-
   if (!isLoggedIn) {
     return (
       <View
@@ -363,7 +310,6 @@ export default function DeliveryMapsScreen() {
               console.warn('Missing geometry details!');
               return;
             }
-            console.log(JSON.stringify(data, null, 2));
 
             const location = {
               latitude: details.geometry.location.lat,
@@ -382,7 +328,6 @@ export default function DeliveryMapsScreen() {
               latitudeDelta: 0.01,
               longitudeDelta: 0.01,
             });
-            fetchRoute(location); // <-- fetch route and distance
           }}
           GooglePlacesSearchQuery={{
             rankby: 'distance',
@@ -409,16 +354,16 @@ export default function DeliveryMapsScreen() {
           </Text>
         </View>
       )}
-
       {/* Map takes full space */}
       {mapRegion ? (
         <MapView
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
           style={StyleSheet.absoluteFillObject}
-          initialRegion={mapRegion}
+          initialRegion={mapRegion} // <-- use user location
           showsUserLocation={true}
         >
+          {/* User marker */}
           {userLocation && (
             <Marker
               coordinate={userLocation}
@@ -427,6 +372,7 @@ export default function DeliveryMapsScreen() {
             />
           )}
 
+          {/* Searched location */}
           {searchedLocation && (
             <Marker
               coordinate={{
@@ -438,14 +384,6 @@ export default function DeliveryMapsScreen() {
               image={require('../../assets/icons/marker.png')}
             />
           )}
-
-          {routeCoordinates.length > 0 && (
-            <Polyline
-              coordinates={routeCoordinates}
-              strokeColor="#3B82F6"
-              strokeWidth={4}
-            />
-          )}
         </MapView>
       ) : (
         <ActivityIndicator
@@ -453,25 +391,6 @@ export default function DeliveryMapsScreen() {
           color="#3B82F6"
           style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
         />
-      )}
-      {/* Distance label OUTSIDE the MapView */}
-      {distanceText && (
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 20, // distance from bottom
-            right: 20, // distance from right
-            backgroundColor: 'white',
-            padding: 8,
-            borderRadius: 8,
-            elevation: 5,
-            zIndex: 10, // ensure it's above the map
-          }}
-        >
-          <Text
-            style={{ fontWeight: '600' }}
-          >{`Distance: ${distanceText}`}</Text>
-        </View>
       )}
     </View>
   );

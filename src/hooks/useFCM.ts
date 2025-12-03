@@ -54,13 +54,13 @@ const useFCM = () => {
                     longitude: pos.coords.longitude,
                   }),
                 reject,
-                { enableHighAccuracy: false, timeout: 3000, maximumAge: 1000 },
+                { enableHighAccuracy: false, timeout: 10000, maximumAge: 1000 },
               );
             } else {
               reject(err);
             }
           },
-          { enableHighAccuracy: true, timeout: 3000, maximumAge: 1000 },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 1000 },
         );
       });
 
@@ -81,7 +81,10 @@ const useFCM = () => {
                 await createRider(decoded.userId, longitude, latitude);
               } catch (error) {
                 console.error('Error creating rider:', error);
-                Alert.alert('Error', 'Failed to get location or create rider.');
+                Alert.alert(
+                  'Error',
+                  `Failed to get location or create rider.${error}`,
+                );
               }
             },
           },
