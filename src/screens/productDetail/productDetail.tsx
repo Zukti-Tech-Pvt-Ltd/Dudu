@@ -213,7 +213,7 @@ const DetailScreen = () => {
             </View>
             <View className="flex-row items-center mb-2">
               <Text className="text-lg font-bold text-blue-500">
-                ${product.price ?? 0}
+                Rs.{product.price ?? 0}
               </Text>
             </View>
             {/* Quantity Controls */}

@@ -30,7 +30,7 @@ export default function CompletedDelivery() {
       if (response && response.data) {
         // Keep only ACTIVE deliveries
         const active = response.data.filter(
-          (item: any) => item.status?.toLowerCase() === 'accepted',
+          (item: any) => item.status?.toLowerCase() === 'delivered',
         );
 
         setDeliveryData(active);

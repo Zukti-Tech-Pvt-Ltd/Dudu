@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -58,45 +59,55 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.select({ ios: 'padding', android: undefined })}
-      className="flex-1 bg-white items-center justify-center px-6"
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <Image
-        source={require('../../../assets/images/dudu.png')}
-        className="w-32 h-32 mb-8"
-        resizeMode="contain"
-      />
-      <TextInput
-        placeholder="Username"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-        className="w-full border border-gray-300 rounded-md px-4 py-3 mb-4"
-      />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        className="w-full border border-gray-300 rounded-md px-4 py-3 mb-6"
-      />
-      <TouchableOpacity
-        className={`w-full py-3 rounded-md items-center ${
-          loading ? 'bg-gray-400' : 'bg-[#3b82f6]'
-        }`}
-        disabled={loading}
-        onPress={handleLogin}
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: 24,
+        }}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-white font-semibold text-lg">
-          {loading ? 'Logging in...' : 'Login'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        className="mt-4"
-        onPress={() => navigation.navigate('Signup')}
-      >
-        <Text className="text-[#3b82f6]">Don't have an account? Sign up</Text>
-      </TouchableOpacity>
+        <Image
+          source={require('../../../assets/images/dudu.png')}
+          className="w-32 h-32 mb-8"
+          resizeMode="contain"
+        />
+        <TextInput
+          placeholder="Username"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          className="w-full border border-gray-300 rounded-md px-4 py-3 mb-4"
+        />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          className="w-full border border-gray-300 rounded-md px-4 py-3 mb-6"
+        />
+        <TouchableOpacity
+          className={`w-full py-3 rounded-md items-center ${
+            loading ? 'bg-gray-400' : 'bg-[#3b82f6]'
+          }`}
+          disabled={loading}
+          onPress={handleLogin}
+        >
+          <Text className="text-white font-semibold text-lg">
+            {loading ? 'Logging in...' : 'Login'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="mt-4"
+          onPress={() => navigation.navigate('Signup')}
+        >
+          <Text className="text-[#3b82f6]">Don't have an account? Sign up</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

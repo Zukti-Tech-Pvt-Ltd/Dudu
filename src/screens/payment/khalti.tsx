@@ -11,7 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { WebView } from 'react-native-webview';
 import { khaltiPayment } from '../../api/khaltiApi';
 import { decodeToken } from '../../api/indexAuth';
-import { API_BASE_URL } from '@env';
+import { API_BASE_URL, KHALTI_PUBLIC_KEY, KHALTI_TEST_PUBLIC_KEY } from '@env';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RootStackParamList = {
@@ -19,6 +19,7 @@ type RootStackParamList = {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
   };
+  maintab: undefined;
 };
 type khaltiNavigationProp = RouteProp<RootStackParamList, 'KhaltiPayment'>;
 
@@ -38,8 +39,8 @@ const KhaltiPayment = () => {
   const { selectedItems } = route.params;
   const { totalPrice } = route.params;
 
-  const publicKey = '1d37c096e1694b70a779bf601c63f88e'; //test public key
-  // const publicKey = '1d37c096e1694b70a779bf601c63f88e';   //live public key
+  // const publicKey = KHALTI_TEST_PUBLIC_KEY; //test public key
+  const publicKey = KHALTI_PUBLIC_KEY; //live public key
 
   const returnUrl = `${API_BASE_URL}/`; // Valid URL for return
 
@@ -58,15 +59,15 @@ const KhaltiPayment = () => {
       try {
         console.log('selectedItems', selectedItems);
         console.log('claim', claim);
-        const priceInRs = totalPrice * 100;
+        const priceInRs = totalPrice;
         const response = await khaltiPayment(
           selectedItems,
           claim?.userId,
           priceInRs,
         );
         const pidx = response.pidx;
-        const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;
-        // const checkoutUrl = `https://khalti.com/api/v2/payment/load/?pidx=${pidx}`;    //live Khalti
+        // const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;
+        const checkoutUrl = `https://pay.khalti.com/?pidx=${pidx}`; //live Khalti
 
         setKhaltiCheckoutUrl(checkoutUrl);
       } catch (error) {
@@ -134,7 +135,10 @@ const KhaltiPayment = () => {
                 Alert.alert('Payment Failed', 'Payment was not successful.');
                 // failureUrl;
               }
-              navigation.goBack(); // Close payment screen or navigate elsewhere
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'maintab' }],
+              });
             }
           }}
           startInLoadingState

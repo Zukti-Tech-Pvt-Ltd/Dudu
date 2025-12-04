@@ -232,7 +232,7 @@ export const DeliveryCard = ({
               dark ? 'text-green-400' : 'text-green-600'
             } font-bold`}
           >
-            ${item.deliveryFee}
+            Rs.{item.deliveryFee}
           </Text>
         </View>
       </View>
