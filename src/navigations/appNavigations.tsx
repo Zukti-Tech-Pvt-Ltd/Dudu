@@ -18,6 +18,7 @@ import { jwtDecode, JwtPayload } from 'jwt-decode';
 import DeliveryHubScreen from '../screens/deliveryScreen/deliveryhome';
 import { useColorScheme } from 'react-native';
 import DeliveryMapsScreen from '../screens/deliveryGoogleMap';
+import OrderList from '../screens/merchantScreen/order';
 
 const Tab = createBottomTabNavigator();
 type RouteName =
@@ -85,6 +86,59 @@ export default function MainTabs() {
             component={DeliveryHubScreen}
             options={{
               title: 'Tasks',
+
+              headerShown: true,
+              headerStyle: {
+                height: 90,
+              },
+              headerTitleStyle: {
+                fontSize: 20,
+              },
+            }}
+          />
+
+          <Tab.Screen
+            name="profile"
+            component={ProfileScreen}
+            options={{ title: 'Profile', headerShown: true }}
+          />
+        </Tab.Navigator>
+      );
+    }
+    if (decoded.userType === 'merchant') {
+      return (
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false,
+            tabBarShowLabel: true,
+            tabBarStyle: {
+              height: 40 + (Platform.OS === 'android' ? insets.bottom : 0),
+              backgroundColor: isDark ? '#000' : '#fff',
+              borderTopColor: isDark ? '#333' : '#ddd',
+            },
+            tabBarActiveTintColor: isDark ? '#60a5fa' : '#2563eb', // blue but lighter in dark mode
+            tabBarInactiveTintColor: isDark ? '#888' : 'gray',
+            tabBarIcon: ({ focused, size }) => {
+              const imageSource = icons[route.name as RouteName];
+              return (
+                <Image
+                  source={imageSource}
+                  style={{
+                    width: size,
+                    height: size,
+                    tintColor: focused ? '#2563eb' : 'gray',
+                    resizeMode: 'contain',
+                  }}
+                />
+              );
+            },
+          })}
+        >
+          <Tab.Screen
+            name="order"
+            component={OrderList}
+            options={{
+              title: 'Orders',
 
               headerShown: true,
               headerStyle: {

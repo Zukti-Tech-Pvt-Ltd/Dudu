@@ -26,6 +26,7 @@ import TenantScreen from './src/screens/tenant/tenant';
 import ActiveDelivery from './src/screens/deliveryScreen/activeDelivery';
 import CompletedDelivery from './src/screens/deliveryScreen/completeDelivery';
 import DeliveryStatusScreen from './src/screens/deliveryScreen/deliveryStatusScreen';
+import OrderDetail from './src/screens/merchantScreen/orderDetail';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
@@ -131,6 +132,11 @@ function AppInner() {
           name="DeliveryStatusScreen"
           component={DeliveryStatusScreen}
           options={{ title: 'DeliveryStatusScreen' }}
+        />
+        <Stack.Screen
+          name="OrderDetail"
+          component={OrderDetail}
+          options={{ title: 'OrderDetail' }}
         />
       </Stack.Navigator>
     </NavigationContainer>
