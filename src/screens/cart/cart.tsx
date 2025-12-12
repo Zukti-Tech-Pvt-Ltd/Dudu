@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   useColorScheme,
+  RefreshControl,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
@@ -63,6 +64,7 @@ export default function CartScreen() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { isLoggedIn, token } = useContext(AuthContext);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   if (!isLoggedIn) {
     return (
@@ -104,20 +106,17 @@ export default function CartScreen() {
   //   }, {}),
   // );
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showLoader = true) => {
+    if (showLoader) setLoading(true);
+
     try {
       const response = await getCart();
-      if (response && response.data) {
-        setCartData(response.data);
-      } else {
-        setCartData([]);
-      }
+      setCartData(response?.data ?? []);
     } catch (err) {
       console.error(err);
       setCartData([]);
     } finally {
-      setLoading(false);
+      if (showLoader) setLoading(false);
     }
   };
 
@@ -238,7 +237,22 @@ export default function CartScreen() {
         className={`flex-1 ${isDark ? 'bg-gray-950' : 'bg-gray-100'}`}
       >
         {/* Main ScrollView */}
-        <ScrollView className="flex-1 py-3 px-3">
+        <ScrollView
+          className="flex-1 py-3 px-3"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await fetchData(false);
+                // ⬅ refresh cart
+                setRefreshing(false);
+              }}
+              tintColor={isDark ? '#fff' : '#000'}
+              colors={['#3b82f6']} // Android color
+            />
+          }
+        >
           {cartData.map((group, idx) => (
             <StyledView
               key={group.shop}
@@ -409,13 +423,13 @@ export default function CartScreen() {
           <StyledView className="px-4 pb-4">
             <StyledView className="flex-row items-center justify-between my-2">
               <StyledText className="text-base font-bold">
-                Subtotal:{' '}
+                Subtotal:
                 <StyledText style={{ color: '#3b82f6' }}>
                   Rs. {subtotal}
                 </StyledText>
               </StyledText>
               <StyledText className="text-base font-medium text-gray-600">
-                Shipping Fee:{' '}
+                Shipping Fee:
                 <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
               </StyledText>
             </StyledView>

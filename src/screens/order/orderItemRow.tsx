@@ -21,7 +21,7 @@ export default function OrderItemRow({ item }: any) {
 
         <View style={styles.detailsRow}>
           <Text style={styles.qty}>Qty: {item.quantity}</Text>
-          <Text style={styles.price}>${item.price}</Text>
+          <Text style={styles.price}>Rs:{item.price}</Text>
         </View>
       </View>
     </View>

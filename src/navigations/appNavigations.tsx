@@ -19,6 +19,7 @@ import DeliveryHubScreen from '../screens/deliveryScreen/deliveryhome';
 import { useColorScheme } from 'react-native';
 import DeliveryMapsScreen from '../screens/deliveryGoogleMap';
 import OrderList from '../screens/merchantScreen/order';
+import ProductScreen from '../screens/merchantScreen/product/product';
 
 const Tab = createBottomTabNavigator();
 type RouteName =
@@ -29,7 +30,8 @@ type RouteName =
   | 'pay'
   | 'cart'
   | 'order'
-  | 'profile';
+  | 'profile'
+  | 'shop';
 const icons: Record<RouteName, ImageSourcePropType> = {
   home: require('../../assets/navIcons/home.png'),
   tasks: require('../../assets/navIcons/tasks.png'),
@@ -39,6 +41,7 @@ const icons: Record<RouteName, ImageSourcePropType> = {
   cart: require('../../assets/navIcons/cart.png'),
   order: require('../../assets/navIcons/orders.png'),
   profile: require('../../assets/navIcons/profile.png'),
+  shop: require('../../assets/images/shop.png'),
 };
 
 export default function MainTabs() {
@@ -139,6 +142,21 @@ export default function MainTabs() {
             component={OrderList}
             options={{
               title: 'Orders',
+
+              headerShown: true,
+              headerStyle: {
+                height: 90,
+              },
+              headerTitleStyle: {
+                fontSize: 20,
+              },
+            }}
+          />
+          <Tab.Screen
+            name="shop"
+            component={ProductScreen}
+            options={{
+              title: 'Product',
 
               headerShown: true,
               headerStyle: {

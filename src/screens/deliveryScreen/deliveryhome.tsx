@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   ScrollView,
   useColorScheme,
   Pressable,
+  RefreshControl,
 } from 'react-native';
 import {
   Plus,
@@ -26,6 +27,14 @@ import { getUser } from '../../api/userApi';
 import { decodeToken } from '../../api/indexAuth';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {
+  googleReverseGeocode,
+  openMap,
+  openMapWithPlace,
+} from '../merchantScreen/availableRider';
+
+import { SortAsc, SortDesc } from 'lucide-react-native';
+
 type RootStackParamList = {
   DeliveryHubScreen: undefined;
   ActiveDelivery: undefined;
@@ -61,6 +70,7 @@ export interface DeliveryTaskItem {
   deliveryLat: number;
   deliveryLng: number;
   deliveryFee: number;
+  createdAt: string;
   status: string;
   __customer__: DeliveryCustomer;
 }
@@ -112,7 +122,7 @@ const AppDetails: React.FC<AppDetailsProps> = ({
 }) => (
   <View className="mt-10 px-4">
     <Text className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs`}>
-      App ID:{' '}
+      App ID:
       <Text className={`${dark ? 'text-cyan-400' : 'text-cyan-600'}`}>
         {appId}
       </Text>
@@ -121,14 +131,14 @@ const AppDetails: React.FC<AppDetailsProps> = ({
     <Text
       className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs mt-1`}
     >
-      User ID:{' '}
+      User ID:
       <Text className={`${dark ? 'text-white' : 'text-black'}`}>{userId}</Text>
     </Text>
 
     <Text
       className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs mt-1`}
     >
-      DB Status:{' '}
+      DB Status:
       <Text
         className={`font-semibold ${
           dbStatus === 'Connected'
@@ -155,6 +165,22 @@ export const DeliveryCard = ({
   dark: boolean;
   onPress?: () => void;
 }) => {
+  const [pickupAddress, setPickupAddress] = useState<string>('Loading...');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('Loading...');
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      const pickup = await googleReverseGeocode(item.pickupLat, item.pickupLng);
+      setPickupAddress(pickup);
+
+      // const delivery = await googleReverseGeocode(
+      //   item.deliveryLat,
+      //   item.deliveryLng,
+      // );
+      // setDeliveryAddress(delivery);
+    };
+
+    fetchAddresses();
+  }, []);
   return (
     <Pressable
       onPress={onPress}
@@ -185,15 +211,28 @@ export const DeliveryCard = ({
           {item.status}
         </Text>
       </View>
-
+      <View className="mt-2">
+        <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
+          Delivery Date
+        </Text>
+        <Text className={`${dark ? 'text-white' : 'text-black'} font-semibold`}>
+          {new Date(item.createdAt).toLocaleString()}
+        </Text>
+      </View>
       {/* Pickup */}
       <View className="mt-2">
         <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
           Pickup Address
         </Text>
-        <Text className={`${dark ? 'text-white' : 'text-black'} font-semibold`}>
-          {item.pickupAddress}
-        </Text>
+        <Pressable onPress={() => openMap(item.pickupLat, item.pickupLng)}>
+          <Text
+            className={`${
+              dark ? 'text-white' : 'text-black'
+            } font-semibold underline`}
+          >
+            {pickupAddress}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Delivery */}
@@ -201,9 +240,15 @@ export const DeliveryCard = ({
         <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
           Delivery Address
         </Text>
-        <Text className={`${dark ? 'text-white' : 'text-black'} font-semibold`}>
-          {item.deliveryAddress}
-        </Text>
+        <Pressable onPress={() => openMapWithPlace(item.deliveryAddress)}>
+          <Text
+            className={`${
+              dark ? 'text-white' : 'text-black'
+            } font-semibold underline`}
+          >
+            {item.deliveryAddress}
+          </Text>
+        </Pressable>
       </View>
 
       {/* Footer */}
@@ -243,11 +288,18 @@ export const DeliveryCard = ({
 const DeliveryHubScreen: React.FC = () => {
   const { token } = useContext(AuthContext);
   const navigation = useNavigation<deliveryHomeNavigationProp>();
+  const [refreshing, setRefreshing] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const scheme = useColorScheme();
   const [loading, setLoading] = useState<boolean>(false);
   const [deliveryData, setDeliveryData] = useState<DeliveryTaskItem[]>([]);
   const [userData, setUserData] = useState<any | null>(null);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchData();
+    setRefreshing(false);
+  };
 
   const dark = scheme === 'dark';
   const fetchData = async () => {
@@ -260,7 +312,12 @@ const DeliveryHubScreen: React.FC = () => {
     try {
       const response = await getDeliveryOrder();
       if (response && response.data) {
-        setDeliveryData(response.data);
+        const sortedData = [...response.data].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+
+        setDeliveryData(sortedData);
       } else {
         setDeliveryData([]);
       }
@@ -282,7 +339,12 @@ const DeliveryHubScreen: React.FC = () => {
   return (
     <SafeAreaView className={`flex-1 ${dark ? 'bg-gray-900' : 'bg-white'}`}>
       <View style={{ flex: 1, position: 'relative' }}>
-        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 20 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {/* Header */}
           <View className="flex-row justify-between items-center p-4">
             <View className="flex-row items-center">
@@ -320,9 +382,38 @@ const DeliveryHubScreen: React.FC = () => {
               </View>
             </View>
 
-            <TouchableOpacity className="p-2">
-              <ArrowRight size={24} color={dark ? '#f87171' : '#dc2626'} />
-            </TouchableOpacity>
+            <View className="flex-row items-center space-x-2">
+              {/* Sort Icon */}
+              <TouchableOpacity
+                onPress={() => {
+                  // Toggle sort order
+                  const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+                  setSortOrder(newSortOrder);
+
+                  // Sort the delivery data by createdAt
+                  const sortedData = [...deliveryData].sort((a, b) => {
+                    const dateA = new Date(a.createdAt).getTime();
+                    const dateB = new Date(b.createdAt).getTime();
+
+                    if (newSortOrder === 'asc') {
+                      return dateA - dateB; // oldest first
+                    } else {
+                      return dateB - dateA; // newest first
+                    }
+                  });
+
+                  setDeliveryData(sortedData);
+                }}
+                className="p-2 rounded"
+                style={{ backgroundColor: dark ? '#333' : '#eee' }}
+              >
+                {sortOrder === 'asc' ? (
+                  <SortAsc color={dark ? 'white' : 'black'} size={22} />
+                ) : (
+                  <SortDesc color={dark ? 'white' : 'black'} size={22} />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Main Content */}
@@ -331,7 +422,7 @@ const DeliveryHubScreen: React.FC = () => {
               <StatusCard
                 icon={<Truck size={28} color={dark ? '#4ade80' : '#16a34a'} />}
                 value={deliveryData
-                  .filter(item => item.status?.toLowerCase() === 'accepted')
+                  .filter(item => item.status?.toLowerCase() === 'picked_up')
                   .length.toString()}
                 label="Active"
                 dark={dark}
@@ -437,6 +528,7 @@ const DeliveryHubScreen: React.FC = () => {
           </View>
         </ScrollView>
         {/* FAB */}
+
         <TouchableOpacity
           onPress={() => navigation.navigate('DeliveryMapsScreen')}
           className={`w-16 h-16 rounded-full items-center justify-center shadow-2xl ${

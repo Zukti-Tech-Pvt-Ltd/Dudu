@@ -293,14 +293,18 @@ export default function CheckoutScreen() {
                   quantity: item.quantity,
                 };
               });
-              await createOrder({
+              console.log('#################################');
+              const data = await createOrder({
                 status: 'Pending',
                 price: totalPrice,
                 deliveryAddress: address!,
                 estimatedDeliveryDate: new Date().toISOString(),
                 orderItems: orderItemsPayload,
               });
-
+              console.log(
+                'Order created!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:',
+                data,
+              );
               navigation.navigate('PaymentMethodScreen', {
                 selectedItems: selectedItems,
                 totalPrice: totalPrice,

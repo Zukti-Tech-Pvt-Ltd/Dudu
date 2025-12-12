@@ -28,7 +28,7 @@ type deliveryStatusRouteProp = RouteProp<
   'DeliveryStatusScreen'
 >;
 
-const STATUS_OPTIONS = ['pending', 'accepted', 'delivered'];
+const STATUS_OPTIONS = ['accepted', 'picked_up', 'delivered'];
 
 const DeliveryStatusScreen: React.FC = () => {
   const scheme = useColorScheme();

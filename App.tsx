@@ -27,6 +27,8 @@ import ActiveDelivery from './src/screens/deliveryScreen/activeDelivery';
 import CompletedDelivery from './src/screens/deliveryScreen/completeDelivery';
 import DeliveryStatusScreen from './src/screens/deliveryScreen/deliveryStatusScreen';
 import OrderDetail from './src/screens/merchantScreen/orderDetail';
+import ProductCreateScreen from './src/screens/merchantScreen/product/addProduct';
+import AvaliableRidersScreen from './src/screens/merchantScreen/availableRider';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Linking, Alert } from 'react-native';
@@ -137,6 +139,16 @@ function AppInner() {
           name="OrderDetail"
           component={OrderDetail}
           options={{ title: 'OrderDetail' }}
+        />
+        <Stack.Screen
+          name="ProductCreateScreen"
+          component={ProductCreateScreen}
+          options={{ title: 'AddProduct', headerShown: true }}
+        />
+        <Stack.Screen
+          name="AvaliableRidersScreen"
+          component={AvaliableRidersScreen}
+          options={{ title: 'Available Riders', headerShown: true }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -7,6 +7,7 @@ import {
   View,
   Image,
   useColorScheme,
+  RefreshControl,
 } from 'react-native';
 import { getAllOrders } from '../../api/orderApi';
 import OrderCard from './orderCard';
@@ -61,22 +62,26 @@ export default function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const fetchOrders = async (showLoader = true) => {
+    if (showLoader) setLoading(true);
+
+    try {
+      const filterParam = selected === 'All Orders' ? '' : selected;
+      const data = await getAllOrders(filterParam);
+      setOrders(data);
+    } catch (err) {
+      console.error(err);
+    }
+
+    if (showLoader) setLoading(false);
+  };
 
   // ✅ UseEffect should always run (or at least hook called)
   useEffect(() => {
-    if (!isLoggedIn) return; // skip API call if not logged in
+    if (!isLoggedIn) return;
 
-    (async () => {
-      setLoading(true);
-      try {
-        const filterParam = selected === 'All Orders' ? '' : selected;
-        const data = await getAllOrders(filterParam);
-        setOrders(data);
-      } catch (err) {
-        // handle error
-      }
-      setLoading(false);
-    })();
+    fetchOrders();
   }, [selected, isLoggedIn]);
 
   // Conditional rendering is fine *after all hooks*
@@ -144,6 +149,18 @@ export default function OrdersScreen() {
               No orders found.
             </Text>
           ) : null
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await fetchOrders(false); // ⬅ no overlay loading
+              setRefreshing(false);
+            }}
+            tintColor={isDarkMode ? '#fff' : '#000'}
+            colors={['#2563eb']}
+          />
         }
         contentContainerStyle={{ paddingBottom: 50 }}
       />

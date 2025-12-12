@@ -26,7 +26,8 @@ export default function SignupScreen({ navigation }: any) {
   // Only for delivery user
   const [vehicleType, setVehicleType] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
-
+  const [khaltiId, setKhaltiId] = useState('');
+  const [esewaId, setEsewaId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -46,6 +47,10 @@ export default function SignupScreen({ navigation }: any) {
     if (userType === 'delivery') {
       payload.vehicleType = vehicleType;
       payload.vehicleNumber = vehicleNumber;
+    }
+    if (userType === 'delivery' || userType === 'merchant') {
+      payload.khaltiNumber = khaltiId;
+      payload.esewaNumber = esewaId;
     }
 
     console.log('FINAL PAYLOAD ---> ', payload);
@@ -180,6 +185,25 @@ export default function SignupScreen({ navigation }: any) {
               placeholder="Eg: BA 23 PA 1234"
               value={vehicleNumber}
               onChangeText={setVehicleNumber}
+              className="w-full border border-gray-300 rounded-md px-4 py-3 mb-4"
+            />
+          </>
+        )}
+        {(userType === 'delivery' || userType === 'merchant') && (
+          <>
+            <Text className="w-full text-gray-600 mb-1">khaltiId</Text>
+            <TextInput
+              placeholder="Enter Khalti Number"
+              value={khaltiId}
+              onChangeText={setKhaltiId}
+              className="w-full border border-gray-300 rounded-md px-4 py-3 mb-4"
+            />
+
+            <Text className="w-full text-gray-600 mb-1">EsewaId</Text>
+            <TextInput
+              placeholder="Enter Esewa Number"
+              value={esewaId}
+              onChangeText={setEsewaId}
               className="w-full border border-gray-300 rounded-md px-4 py-3 mb-4"
             />
           </>

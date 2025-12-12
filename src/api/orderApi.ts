@@ -15,6 +15,8 @@ interface CreateOrderPayload {
 export const createOrder = async (payload: CreateOrderPayload) => {
   console.log('payload', payload);
   const response = await apiAuth.post('api/order/create', payload);
+  console.log('response', response);
+
   return response.data;
 };
 

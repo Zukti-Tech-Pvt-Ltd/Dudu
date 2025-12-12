@@ -34,7 +34,7 @@ export default function OrderCard({ order }: any) {
         <OrderItemRow key={item.id} item={item} />
       ))}
 
-      <Text className="text-lg font-bold mt-1 ">Total: ${order.price}</Text>
+      <Text className="text-lg font-bold mt-1 ">Total: Rs:{order.price}</Text>
 
       {/* <TouchableOpacity className="bg-blue-600 rounded-lg p-3 mt-2 items-center">
         <Text className="text-white font-bold">Track Order</Text>
