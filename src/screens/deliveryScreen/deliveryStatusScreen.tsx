@@ -46,10 +46,7 @@ const DeliveryStatusScreen: React.FC = () => {
   const handleSave = () => {
     // Here you would call your API to update the status
     // e.g., await updateDeliveryStatus(deliveryItem.id, selectedStatus)
-    console.log(
-      '111111111111111111111111111111111111111111111111111111111111deliveryItem',
-      deliveryItem.id,
-    );
+
     editDeliveryOrder(deliveryItem.id, selectedStatus);
     Alert.alert(
       'Status Updated',

@@ -20,6 +20,7 @@ import { useColorScheme } from 'react-native';
 import DeliveryMapsScreen from '../screens/deliveryGoogleMap';
 import OrderList from '../screens/merchantScreen/order';
 import ProductScreen from '../screens/merchantScreen/product/product';
+import OrderTodayScreen from '../screens/order/orderToday';
 
 const Tab = createBottomTabNavigator();
 type RouteName =
@@ -237,8 +238,8 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="order"
-        component={OrdersScreen}
-        options={{ title: 'Order', headerShown: true }}
+        component={OrderTodayScreen}
+        options={{ title: 'Order' }}
       />
       <Tab.Screen
         name="profile"

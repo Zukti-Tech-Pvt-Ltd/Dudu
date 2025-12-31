@@ -3,4 +3,5 @@ declare module '@env' {
   export const GOOGLE_API_KEY: string;
   export const KHALTI_PUBLIC_KEY: string;
   export const KHALTI_TEST_PUBLIC_KEY: string;
+  export const KHALTI_CHECKOUT_URL: string;
 }

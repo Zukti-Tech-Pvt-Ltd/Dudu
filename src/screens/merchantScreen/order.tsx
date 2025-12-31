@@ -18,6 +18,7 @@ import { SortAsc, SortDesc } from 'lucide-react-native';
 
 import { AuthContext } from '../../helper/authContext';
 import OrderMerchantCard from './orderMerchantCard';
+import { connectSocket } from '../../helper/socket';
 
 export type Product = {
   id: number;
@@ -85,6 +86,24 @@ export default function OrderList() {
     setRefreshing(false);
   };
 
+  useEffect(() => {
+    const socket = connectSocket();
+
+    socket.on('orderUpdated', (data: any) => {
+      console.log('Realtime order update:', data);
+
+      // Update orders list in state
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.id === data.orderId ? { ...order, status: data.status } : order,
+        ),
+      );
+    });
+
+    return () => {
+      socket.off('orderUpdated');
+    };
+  }, []);
   // 🔥 Sorting State (default ascending)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 

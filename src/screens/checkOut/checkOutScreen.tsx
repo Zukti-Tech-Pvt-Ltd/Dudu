@@ -31,6 +31,7 @@ type RootStackParamList = {
   PaymentMethodScreen: {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
+    orderId: number[];
   };
   // other screens...
 };
@@ -203,7 +204,7 @@ export default function CheckoutScreen() {
           return (
             <View
               key={product.id}
-              className="bg-white rounded-xl mb-4 shadow-sm border border-gray-100"
+              className="bg-white rounded-xl mb-2 shadow-sm border border-gray-100"
             >
               <View className="flex-row items-center p-3">
                 <Image
@@ -215,15 +216,31 @@ export default function CheckoutScreen() {
                   className="w-20 h-20 rounded-lg mr-4"
                   resizeMode="cover"
                 />
-
                 <View className="flex-1">
-                  <Text className="text-base font-bold mb-1">
+                  <Text className="text-base font-bold mb-0.1 leading-tight">
                     {product.name}
                   </Text>
-                  <Text className="text-sm text-gray-600 mb-1">
+
+                  {/* <Text className="text-sm text-gray-600">
                     Variation: {product.variation}
-                  </Text>
-                  <View className="flex-row items-center mb-1">
+                  </Text> */}
+
+                  {/* Quantity below variation */}
+                  {(() => {
+                    const selectedItem = selectedItems.find(
+                      item => Number(item.id) === Number(product.id),
+                    );
+                    const quantity = selectedItem ? selectedItem.quantity : 1;
+
+                    return (
+                      <Text className="text-sm text-gray-500 mt-0.1 leading-tight">
+                        Quantity:{' '}
+                        <Text className="text-base font-bold ">{quantity}</Text>
+                      </Text>
+                    );
+                  })()}
+
+                  <View className="flex-row items-center mt-1 mb-0.1">
                     <Text className="text-yellow-500 text-base mr-1">★</Text>
                     <Text className="text-base font-medium mr-1">
                       {product.rate}
@@ -232,34 +249,31 @@ export default function CheckoutScreen() {
                       {product.brand}
                     </Text>
                   </View>
-                  <View className="flex-row items-center">
-                    <Text className="text-lg text-blue-600 font-bold mr-3">
-                      Rs.{product.price.toFixed(2)}
-                    </Text>
-                    {/* <Text className="text-base text-gray-400 line-through">
-                  ${product.oldPrice.toFixed(2)}
-                </Text> */}
-                  </View>
-                </View>
-              </View>
-              <View className="flex-row justify-between items-center bg-gray-50 px-4 py-2 rounded-b-xl">
-                {(() => {
-                  const selectedItem = selectedItems.find(
-                    item => Number(item.id) === Number(product.id),
-                  );
-                  const quantity = selectedItem ? selectedItem.quantity : 1;
 
-                  return (
-                    <>
-                      <Text className="text-base font-bold">
-                        Total ({quantity}) :
-                      </Text>
-                      <Text className="text-base font-bold">
-                        Rs.{(product.price * quantity).toFixed(2)}
-                      </Text>
-                    </>
-                  );
-                })()}
+                  <Text className="text-lg text-blue-600 font-bold">
+                    Rs. {product.price.toFixed(2)}
+                  </Text>
+                </View>
+                {/* <View className="mt-3 pt-3 border-t border-gray-200">
+                  {(() => {
+                    const selectedItem = selectedItems.find(
+                      item => Number(item.id) === Number(product.id),
+                    );
+                    const quantity = selectedItem ? selectedItem.quantity : 1;
+                    const total = product.price * quantity;
+
+                    return (
+                      <View className="items-end">
+                        <Text className="text-xs text-gray-500 uppercase tracking-wide">
+                          Total
+                        </Text>
+                        <Text className="text-2xl font-extrabold text-blue-700">
+                          Rs. {total.toFixed(2)}
+                        </Text>
+                      </View>
+                    );
+                  })()}
+                </View> */}
               </View>
             </View>
           );
@@ -296,11 +310,12 @@ export default function CheckoutScreen() {
               console.log('#################################');
               const data = await createOrder({
                 status: 'Pending',
-                price: totalPrice,
+                // price: totalPrice,
                 deliveryAddress: address!,
                 estimatedDeliveryDate: new Date().toISOString(),
                 orderItems: orderItemsPayload,
               });
+              const orderId = data.data.map((item: any) => item.order.id);
               console.log(
                 'Order created!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!:',
                 data,
@@ -308,6 +323,7 @@ export default function CheckoutScreen() {
               navigation.navigate('PaymentMethodScreen', {
                 selectedItems: selectedItems,
                 totalPrice: totalPrice,
+                orderId: orderId,
               }); // ✅ correct navigation
             } catch (err) {
               console.log(API_BASE_URL);

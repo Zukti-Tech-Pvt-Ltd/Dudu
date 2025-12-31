@@ -6,14 +6,21 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { getByName, getOne } from '../../api/serviceList/productApi';
+import {
+  getByName,
+  getOne,
+  getAllImagePerProduct,
+} from '../../api/serviceList/productApi';
 import { API_BASE_URL } from '@env';
 import { createCart } from '../../api/cartApi';
 import BuyNowPopup from '../popUp/buyNowPop';
 import { Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ProductImageCarousel from './productImageCarousel';
 
 interface ProductDataType {
   id: number;
@@ -35,16 +42,18 @@ interface ApiResponse<T> {
   status: string;
   data: T;
 }
+export type ProductImage = { id: number; image: string; productId: number };
 
 const DetailScreen = () => {
   const insets = useSafeAreaInsets();
+  const screenWidth = Dimensions.get('window').width;
 
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showBuyNowPopup, setShowBuyNowPopup] = useState(false);
-
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const handleShowPopup = () => setShowBuyNowPopup(true);
   const handleClosePopup = () => setShowBuyNowPopup(false);
 
@@ -65,6 +74,16 @@ const DetailScreen = () => {
     if (response.status === 'success') {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 1000);
+    }
+  };
+  const productImagesArray = async () => {
+    if (productId) {
+      const res = await getAllImagePerProduct(productId);
+      if (res?.status === 'success' && Array.isArray(res.data)) {
+        setProductImages(res.data); // set only the array
+      } else {
+        setProductImages([]); // fallback
+      }
     }
   };
 
@@ -125,7 +144,9 @@ const DetailScreen = () => {
     const fetchData = async () => {
       setLoading(true);
       const item = await getItems();
+      const iimage = await productImagesArray();
       console.log('item', item);
+
       if (item) {
         setProduct(item.data);
       }
@@ -133,7 +154,17 @@ const DetailScreen = () => {
     };
     fetchData();
   }, [productId, productName]);
+  console.log('iteiimagem!!!!!!', productImages);
+  // Assuming productImages.data is your API response array
+  const galleryImages = productImages
+    ? productImages
+        .map(img => img.image) // get only image paths
+        .filter(img => img !== product?.image) // remove main image
+    : [];
 
+  const allImages = product
+    ? [product.image, ...galleryImages] // main image first
+    : [];
   return (
     <SafeAreaView
       className="flex-1 bg-white -mb-2"
@@ -163,25 +194,7 @@ const DetailScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Header */}
-          <View className="bg-blue-500 h-52 w-full rounded-b-[48px] items-center justify-center relative">
-            <Image
-              source={
-                normalizedImage
-                  ? { uri: `${API_BASE_URL}/${normalizedImage}` } // real image
-                  : require('../../../assets/images/photo.png')
-              }
-              className="absolute top-0 left-0 w-full h-full rounded-b-[48px]"
-              resizeMode="cover"
-            />
-
-            {/* Badge
-            <View className="bg-green-500 rounded-3xl px-5 py-1.5 absolute -bottom-3">
-              <Text className="text-white font-medium text-base">
-                100% Organic
-              </Text>
-            </View> */}
-          </View>
+          <ProductImageCarousel allImages={allImages} />
 
           {/* Content */}
           <View

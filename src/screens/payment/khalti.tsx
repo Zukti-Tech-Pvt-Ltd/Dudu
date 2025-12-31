@@ -11,13 +11,19 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { WebView } from 'react-native-webview';
 import { khaltiPayment } from '../../api/khaltiApi';
 import { decodeToken } from '../../api/indexAuth';
-import { API_BASE_URL, KHALTI_PUBLIC_KEY, KHALTI_TEST_PUBLIC_KEY } from '@env';
+import {
+  API_BASE_URL,
+  KHALTI_CHECKOUT_URL,
+  KHALTI_PUBLIC_KEY,
+  KHALTI_TEST_PUBLIC_KEY,
+} from '@env';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RootStackParamList = {
   KhaltiPayment: {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
+    orderId: number[];
   };
   maintab: undefined;
 };
@@ -38,9 +44,10 @@ const KhaltiPayment = () => {
 
   const { selectedItems } = route.params;
   const { totalPrice } = route.params;
+  const { orderId } = route.params;
 
-  // const publicKey = KHALTI_TEST_PUBLIC_KEY; //test public key
-  const publicKey = KHALTI_PUBLIC_KEY; //live public key
+  const publicKey = KHALTI_TEST_PUBLIC_KEY; //test public key
+  // const publicKey = KHALTI_PUBLIC_KEY; //live public key
 
   const returnUrl = `${API_BASE_URL}/`; // Valid URL for return
 
@@ -54,7 +61,10 @@ const KhaltiPayment = () => {
 
   useEffect(() => {
     if (!claim) return; // Wait for claim to be loaded
-
+    console.log(
+      'checkoutUrl!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+      KHALTI_CHECKOUT_URL,
+    );
     async function fetchPidx() {
       try {
         console.log('selectedItems', selectedItems);
@@ -64,10 +74,12 @@ const KhaltiPayment = () => {
           selectedItems,
           claim?.userId,
           priceInRs,
+          orderId,
         );
         const pidx = response.pidx;
+
         // const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;
-        const checkoutUrl = `https://pay.khalti.com/?pidx=${pidx}`; //live Khalti
+        const checkoutUrl = `${KHALTI_CHECKOUT_URL}?pidx=${pidx}`; //live Khalti
 
         setKhaltiCheckoutUrl(checkoutUrl);
       } catch (error) {

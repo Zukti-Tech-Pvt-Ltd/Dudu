@@ -9,9 +9,9 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useColorScheme } from 'nativewind';
-import { DeliveryCard } from './deliveryhome';
 import { getDeliveryOrder } from '../../api/deliveryOrderApi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DeliveryCard } from './deliveryCard';
 
 export default function ActiveDelivery() {
   const { colorScheme } = useColorScheme();

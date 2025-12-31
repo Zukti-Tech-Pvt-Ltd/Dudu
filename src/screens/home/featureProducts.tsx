@@ -69,7 +69,7 @@ const HoldToPlayVideo = ({
   const normalizedThumb = thumbnail.startsWith('/')
     ? thumbnail.slice(1)
     : thumbnail;
-
+  console.log('normalizedThumb', normalizedThumb);
   const videoRef = useRef<VideoRef>(null);
   const navigation = useNavigation<CategoryNavigationProp>();
   const [isLoading, setIsLoading] = useState(true);
@@ -153,7 +153,10 @@ const HoldToPlayVideo = ({
         /> */}
         <Image
           source={
-            normalizedThumb
+            // Check if it exists AND is not the string "null"
+            normalizedThumb &&
+            normalizedThumb !== 'null' &&
+            normalizedThumb !== 'undefined'
               ? { uri: `${API_BASE_URL}/${normalizedThumb}` }
               : require('../../../assets/images/photo.png')
           }
@@ -161,7 +164,6 @@ const HoldToPlayVideo = ({
           resizeMode="cover"
           style={{ opacity: isPlaying && !isLoading ? 0 : 1 }}
         />
-
         {/* Step 2: Render video only after it has loaded */}
         {isPlaying && hasVideo && (
           <Video

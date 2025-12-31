@@ -12,7 +12,8 @@ import {
   View,
 } from 'react-native';
 import { AuthContext } from '../../helper/authContext';
-import { resetTokenCache } from '../../api/indexAuth';
+import { decodeToken, resetTokenCache } from '../../api/indexAuth';
+import { removeDeviceToken } from '../../api/login/loginApi';
 export type RootStackParamList = {
   maintab: undefined;
   HomeScreen: undefined;
@@ -23,16 +24,23 @@ const LogoutButton = () => {
   type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
   const navigation = useNavigation<NavigationProp>();
   const [visible, setVisible] = useState(false);
-  const { setToken } = useContext(AuthContext); // get from context
+  const { setToken, fcmToken } = useContext(AuthContext); // get from context
 
   const handleLogoutConfirm = async () => {
     setVisible(false);
     resetTokenCache();
     try {
+      const user = await decodeToken();
+      console.log(
+        'user!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+        user,
+      );
+      await removeDeviceToken(user!.userId, fcmToken!);
       // Replace with your token removal logic
       await setToken(null); //clears AsyncStorage + updates context
       // await AsyncStorage.removeItem('token');
       // Replace with your navigation reset logic
+
       navigation.reset({
         index: 0,
         routes: [

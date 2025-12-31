@@ -59,7 +59,7 @@ export default function ProductCreateScreen({ navigation }: any) {
   const colorScheme = useColorScheme();
 
   const isDarkMode = colorScheme === 'dark';
-  const [image, setImage] = useState<any>(null);
+  const [images, setImages] = useState<any[]>([]);
   const [video, setVideo] = useState<any>(null);
 
   const [loading, setLoading] = useState(false);
@@ -77,10 +77,13 @@ export default function ProductCreateScreen({ navigation }: any) {
   // Image Selection (Gallery)
   // -----------------------------
   const pickImage = async () => {
-    const options: ImageLibraryOptions = { mediaType: 'photo' };
+    const options: ImageLibraryOptions = {
+      mediaType: 'photo',
+      selectionLimit: 10, // allow multiple
+    };
     const result = await launchImageLibrary(options);
-    if (!result.didCancel) {
-      setImage(result.assets?.[0]);
+    if (!result.didCancel && result.assets?.length) {
+      setImages(prev => [...prev, ...result.assets!]);
     }
   };
 
@@ -95,8 +98,8 @@ export default function ProductCreateScreen({ navigation }: any) {
     }
 
     const result = await launchCamera({ mediaType: 'photo' });
-    if (!result.didCancel) {
-      setImage(result.assets?.[0]);
+    if (!result.didCancel && result.assets?.[0]) {
+      setImages(prev => [...prev, result.assets![0]]);
     }
   };
 
@@ -122,6 +125,7 @@ export default function ProductCreateScreen({ navigation }: any) {
 
       setVideo({
         uri: videoUri,
+        type: asset.type || 'video/mp4',
         fileName: asset.fileName || 'video.mp4',
         thumbnail: thumb.path,
       });
@@ -170,12 +174,14 @@ export default function ProductCreateScreen({ navigation }: any) {
       formData.append('category', category);
       if (type) formData.append('type', type);
 
-      if (image) {
-        formData.append('image', {
-          uri: normalizeUri(image.uri),
-          type: image.type || 'image/jpeg',
-          name: image.fileName || 'photo.jpg',
-        } as any);
+      if (images && images.length > 0) {
+        images.forEach((image, index) => {
+          formData.append('image', {
+            uri: normalizeUri(image.uri),
+            type: image.type || 'image/jpeg',
+            name: image.fileName || `photo_${index}.jpg`,
+          } as any);
+        });
       }
 
       if (video) {
@@ -339,7 +345,7 @@ export default function ProductCreateScreen({ navigation }: any) {
           Product Image
         </Text>
 
-        {!image ? (
+        {images.length === 0 ? (
           <TouchableOpacity
             onPress={pickImage}
             className={`h-36 rounded-xl items-center justify-center ${
@@ -348,13 +354,39 @@ export default function ProductCreateScreen({ navigation }: any) {
           >
             <Camera size={40} color="#777" />
             <Text className="text-sm mt-2 text-gray-500">Tap to upload</Text>
+            <Text
+              className="text-sm mt-1
+             text-gray-500"
+            >
+              First image is the thumbnail
+            </Text>
           </TouchableOpacity>
         ) : (
-          <Image
-            source={{ uri: image.uri }}
-            className="w-full h-40 rounded-xl mt-1"
-            resizeMode="contain"
-          />
+          <>
+            {/* Thumbnail */}
+            <Image
+              source={{ uri: images[0].uri }}
+              className="w-full h-40 rounded-xl"
+              resizeMode="cover"
+            />
+
+            {/* Gallery images */}
+            {images.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                className="mt-3"
+              >
+                {images.slice(1).map((img, index) => (
+                  <Image
+                    key={index}
+                    source={{ uri: img.uri }}
+                    className="w-20 h-20 rounded-lg mr-2"
+                  />
+                ))}
+              </ScrollView>
+            )}
+          </>
         )}
 
         {/* Buttons */}

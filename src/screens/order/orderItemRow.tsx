@@ -2,6 +2,7 @@ import { API_BASE_URL } from '@env';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 export default function OrderItemRow({ item }: any) {
+  console.log('!!!!!!!!!!!!!!!!!!!!!item', item);
   const normalizedImage = item.__product__?.image?.startsWith('/')
     ? item.__product__.image.slice(1)
     : item.__product__?.image || '';
@@ -17,7 +18,7 @@ export default function OrderItemRow({ item }: any) {
       />
 
       <View style={styles.infoContainer}>
-        <Text style={styles.name}>Product #{item.productId}</Text>
+        <Text style={styles.name}>Product #{item.__product__.id}</Text>
 
         <View style={styles.detailsRow}>
           <Text style={styles.qty}>Qty: {item.quantity}</Text>

@@ -17,31 +17,43 @@ type AccountActionProps = {
   icon: any;
   label: string;
   description: string;
+  navigation: any;
+  route?: string;
 };
 
 export default function ProfileScreen({ navigation }: any) {
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string>('sadhubasnet@gmail.com');
   const [phone, setPhone] = useState<string>('+1 (555) 123-4567');
+  const [userType, setUserType] = useState<string | null>(null);
+
   // const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const { isLoggedIn, token } = useContext(AuthContext);
 
   useEffect(() => {
-    const fetchToken = async () => {
+    const fetchUser = async () => {
       if (token) {
         const decoded = await decodeToken();
-        console.log('decoded=============', decoded);
         const userData = await getUser(decoded!.userId);
         console.log('userData', userData);
-
-        console.log('userData', userData);
         setUsername(userData.data.username);
+        setUserType(userData.data.userType);
         setEmail(userData.data.email);
         setPhone(userData.data.phoneNumber);
       }
     };
-    fetchToken();
-  }, []);
+
+    // Fetch initially
+    fetchUser();
+
+    // Refetch on screen focus
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchUser();
+    });
+
+    return unsubscribe;
+  }, [navigation, token]);
+
   //   const fetchToken = async () => {
   //     if (token) {
   //       try {
@@ -91,55 +103,29 @@ export default function ProfileScreen({ navigation }: any) {
           <Text className="text-gray-600 text-sm">{email}</Text>
           <Text className="text-gray-600 text-sm">{phone}</Text>
         </View>
-        {/* <TouchableOpacity className="bg-blue-50 px-3 py-1 rounded-lg">
-          <Text className="text-blue-600 font-medium text-base">Edit</Text>
-        </TouchableOpacity> */}
       </View>
 
-      {/* Summary Cards */}
-      {/* <View className="flex-row justify-between mb-4">
-        <View className="bg-white rounded-xl flex-1 mx-1 px-2 py-3 items-center shadow">
-          <Text className="font-bold text-base text-gray-900 mb-1">24</Text>
-          <Text className="text-gray-500 text-xs">Total Orders</Text>
-        </View>
-        <View className="bg-white rounded-xl flex-1 mx-1 px-2 py-3 items-center shadow">
-          <Text className="font-bold text-base text-gray-900 mb-1">$1,240</Text>
-          <Text className="text-gray-500 text-xs">Total Spent</Text>
-        </View>
-        <View className="bg-white rounded-xl flex-1 mx-1 px-2 py-3 items-center shadow">
-          <Text className="font-bold text-base text-gray-900 mb-1">4.8</Text>
-          <Text className="text-gray-500 text-xs">Rating</Text>
-        </View>
-      </View> */}
-
       {/* Account Actions */}
-      {/* <View className="bg-white rounded-2xl shadow mb-3">
+      <View className="bg-white rounded-2xl shadow mb-3">
         <AccountAction
-          icon={require('../../../assets/navIcons/pin.png')}
-          label="Delivery Address"
-          description="Manage your addresses"
+          icon={require('../../../assets/navIcons/profile.png')}
+          label="Edit Profile"
+          description="Edit your personal information"
+          navigation={navigation}
+          route="EditProfileScreen"
         />
-        <AccountAction
-          icon={require('../../../assets/navIcons/card.png')}
-          label="Payment Methods"
-          description="Cards and wallets"
-        />
-        <AccountAction
-          icon={require('../../../assets/navIcons/notification.png')}
-          label="Notifications"
-          description="Order updates and offers"
-        />
-        <AccountAction
-          icon={require('../../../assets/navIcons/insurance.png')}
-          label="Privacy & Security"
-          description="Account protection"
-        />
-        <AccountAction
-          icon={require('../../../assets/navIcons/question.png')}
-          label="Help & Support"
-          description="FAQs and contact us"
-        />
-      </View> */}
+      </View>
+      {userType === 'customer' && (
+        <View className="bg-white rounded-2xl shadow mb-3">
+          <AccountAction
+            icon={require('../../../assets/navIcons/profile.png')}
+            label="Order History"
+            description="View your order history"
+            navigation={navigation}
+            route="OrdersScreen"
+          />
+        </View>
+      )}
 
       {/* Sign Out Button */}
       <View className="flex-1 justify-end items-center pb-10">
@@ -150,11 +136,22 @@ export default function ProfileScreen({ navigation }: any) {
 }
 
 // Account action component with icon
-function AccountAction({ icon, label, description }: AccountActionProps) {
+function AccountAction({
+  icon,
+  label,
+  description,
+  navigation,
+  route,
+}: AccountActionProps) {
   return (
     <TouchableOpacity
       className="flex-row items-center justify-between py-4 px-3 border-b border-gray-100"
       activeOpacity={0.7}
+      onPress={() => {
+        if (navigation) {
+          navigation.navigate(route);
+        }
+      }}
     >
       <View className="flex-row items-center">
         <Image source={icon} className="w-6 h-6 mr-3" />

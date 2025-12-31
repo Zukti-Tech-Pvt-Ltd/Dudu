@@ -7,7 +7,7 @@ interface OrderItemPayload {
 }
 interface CreateOrderPayload {
   status: string;
-  price: number;
+  // price: number;
   deliveryAddress: string;
   estimatedDeliveryDate: string;
   orderItems: OrderItemPayload[];
@@ -33,6 +33,15 @@ export const getAllOrders = async (status: string) => {
       params: { status },
     });
     console.log('r1111111111111112121212121212esponse00000', response);
+    return response.data.data; // Return the cart data
+  } catch (err) {
+    console.error(err);
+    return []; // or handle error properly
+  }
+};
+export const getAllOrderToday = async () => {
+  try {
+    const response = await apiAuth.get(`api/order/getAllOrderToday`);
     return response.data.data; // Return the cart data
   } catch (err) {
     console.error(err);

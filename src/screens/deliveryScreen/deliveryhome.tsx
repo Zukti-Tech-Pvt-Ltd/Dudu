@@ -10,30 +10,23 @@ import {
   RefreshControl,
 } from 'react-native';
 import {
-  Plus,
-  CheckCircle,
   Truck,
+  CheckCircle,
   BatteryCharging,
-  ArrowRight,
   Activity,
-  Pin,
   Map,
+  SortAsc,
+  SortDesc,
 } from 'lucide-react-native';
-import { getDeliveryOrder } from '../../api/deliveryOrderApi';
-import { useFocusEffect } from '@react-navigation/native';
-import { AuthContext } from '../../helper/authContext';
-import { jwtDecode, JwtPayload } from 'jwt-decode';
-import { getUser } from '../../api/userApi';
-import { decodeToken } from '../../api/indexAuth';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import {
-  googleReverseGeocode,
-  openMap,
-  openMapWithPlace,
-} from '../merchantScreen/availableRider';
 
-import { SortAsc, SortDesc } from 'lucide-react-native';
+import { AuthContext } from '../../helper/authContext';
+import { decodeToken } from '../../api/indexAuth';
+import { getUser, editUser } from '../../api/userApi';
+import { getDeliveryOrder } from '../../api/deliveryOrderApi';
+import { DeliveryCard } from './deliveryCard';
+import { connectSocket } from '../../helper/socket';
 
 type RootStackParamList = {
   DeliveryHubScreen: undefined;
@@ -42,19 +35,12 @@ type RootStackParamList = {
   DeliveryStatusScreen: { deliveryItem: DeliveryTaskItem };
   DeliveryMapsScreen: undefined;
 };
+
 type deliveryHomeNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'DeliveryHubScreen'
 >;
 
-interface StatusCardProps {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-  className?: string;
-  dark?: boolean;
-  onPress?: () => void;
-}
 interface DeliveryCustomer {
   id: number;
   username: string;
@@ -71,34 +57,40 @@ export interface DeliveryTaskItem {
   deliveryLng: number;
   deliveryFee: number;
   createdAt: string;
+  updatedAt: string;
   status: string;
+  __merchant__: DeliveryCustomer;
   __customer__: DeliveryCustomer;
 }
 
-const StatusCard: React.FC<StatusCardProps> = ({
+/* ---------------- STATUS CARD ---------------- */
+
+const StatusCard = ({
   icon,
   value,
   label,
-  className = '',
   dark,
   onPress,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+  dark: boolean;
+  onPress?: () => void;
 }) => (
   <Pressable
     onPress={onPress}
-    className={`w-1/3 p-3  rounded-xl shadow-lg items-center justify-center ${className}
-      ${dark ? 'bg-gray-800' : 'bg-gray-100'}
-    `}
+    className={`w-1/3 p-3 rounded-xl shadow items-center justify-center ${
+      dark ? 'bg-gray-800' : 'bg-gray-100'
+    }`}
     style={{ aspectRatio: 1 }}
-    android_ripple={{ color: dark ? '#333' : '#ccc', borderless: false }}
   >
     {icon}
-
     <Text
       className={`${dark ? 'text-white' : 'text-black'} text-xl font-bold mt-2`}
     >
       {value}
     </Text>
-
     <Text
       className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs mt-1`}
     >
@@ -107,245 +99,118 @@ const StatusCard: React.FC<StatusCardProps> = ({
   </Pressable>
 );
 
-interface AppDetailsProps {
-  appId: string;
-  userId: string;
-  dbStatus: 'Connected' | 'Disconnected';
-  dark?: boolean;
-}
-
-const AppDetails: React.FC<AppDetailsProps> = ({
-  appId,
-  userId,
-  dbStatus,
-  dark,
-}) => (
-  <View className="mt-10 px-4">
-    <Text className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs`}>
-      App ID:
-      <Text className={`${dark ? 'text-cyan-400' : 'text-cyan-600'}`}>
-        {appId}
-      </Text>
-    </Text>
-
-    <Text
-      className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs mt-1`}
-    >
-      User ID:
-      <Text className={`${dark ? 'text-white' : 'text-black'}`}>{userId}</Text>
-    </Text>
-
-    <Text
-      className={`${dark ? 'text-gray-400' : 'text-gray-700'} text-xs mt-1`}
-    >
-      DB Status:
-      <Text
-        className={`font-semibold ${
-          dbStatus === 'Connected'
-            ? dark
-              ? 'text-green-400'
-              : 'text-green-600'
-            : dark
-            ? 'text-red-400'
-            : 'text-red-600'
-        }`}
-      >
-        {dbStatus}
-      </Text>
-    </Text>
-  </View>
-);
-
-export const DeliveryCard = ({
-  item,
-  dark,
-  onPress,
-}: {
-  item: DeliveryTaskItem;
-  dark: boolean;
-  onPress?: () => void;
-}) => {
-  const [pickupAddress, setPickupAddress] = useState<string>('Loading...');
-  const [deliveryAddress, setDeliveryAddress] = useState<string>('Loading...');
-  useEffect(() => {
-    const fetchAddresses = async () => {
-      const pickup = await googleReverseGeocode(item.pickupLat, item.pickupLng);
-      setPickupAddress(pickup);
-
-      // const delivery = await googleReverseGeocode(
-      //   item.deliveryLat,
-      //   item.deliveryLng,
-      // );
-      // setDeliveryAddress(delivery);
-    };
-
-    fetchAddresses();
-  }, []);
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`rounded-xl p-4 mb-4 ${
-        dark ? 'bg-gray-800' : 'bg-gray-100'
-      } shadow`}
-      android_ripple={{ color: dark ? '#333' : '#ccc' }}
-    >
-      {/* Header */}
-      <View className="flex-row justify-between items-center mb-2">
-        <Text
-          className={`${dark ? 'text-white' : 'text-black'} font-bold text-lg`}
-        >
-          Delivery #{item.id}
-        </Text>
-
-        <Text
-          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-            item.status === 'pending'
-              ? dark
-                ? 'bg-yellow-600 text-white'
-                : 'bg-yellow-200 text-yellow-900'
-              : dark
-              ? 'bg-green-600 text-white'
-              : 'bg-green-200 text-green-900'
-          }`}
-        >
-          {item.status}
-        </Text>
-      </View>
-      <View className="mt-2">
-        <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
-          Delivery Date
-        </Text>
-        <Text className={`${dark ? 'text-white' : 'text-black'} font-semibold`}>
-          {new Date(item.createdAt).toLocaleString()}
-        </Text>
-      </View>
-      {/* Pickup */}
-      <View className="mt-2">
-        <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
-          Pickup Address
-        </Text>
-        <Pressable onPress={() => openMap(item.pickupLat, item.pickupLng)}>
-          <Text
-            className={`${
-              dark ? 'text-white' : 'text-black'
-            } font-semibold underline`}
-          >
-            {pickupAddress}
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Delivery */}
-      <View className="mt-3">
-        <Text className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}>
-          Delivery Address
-        </Text>
-        <Pressable onPress={() => openMapWithPlace(item.deliveryAddress)}>
-          <Text
-            className={`${
-              dark ? 'text-white' : 'text-black'
-            } font-semibold underline`}
-          >
-            {item.deliveryAddress}
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* Footer */}
-      <View className="flex-row justify-between items-center mt-4">
-        <View>
-          <Text
-            className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}
-          >
-            Customer
-          </Text>
-          <Text
-            className={`${dark ? 'text-white' : 'text-black'} font-semibold`}
-          >
-            {item.__customer__.username} ({item.__customer__.phoneNumber})
-          </Text>
-        </View>
-
-        <View className="items-end">
-          <Text
-            className={`${dark ? 'text-gray-300' : 'text-gray-600'} text-xs`}
-          >
-            Fee
-          </Text>
-          <Text
-            className={`${
-              dark ? 'text-green-400' : 'text-green-600'
-            } font-bold`}
-          >
-            Rs.{item.deliveryFee}
-          </Text>
-        </View>
-      </View>
-    </Pressable>
-  );
-};
+/* ---------------- MAIN SCREEN ---------------- */
 
 const DeliveryHubScreen: React.FC = () => {
-  const { token } = useContext(AuthContext);
   const navigation = useNavigation<deliveryHomeNavigationProp>();
+  const scheme = useColorScheme();
+  const dark = scheme === 'dark';
+
+  const { token } = useContext(AuthContext);
+
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [deliveryData, setDeliveryData] = useState<DeliveryTaskItem[]>([]);
+  const [userData, setUserData] = useState<any>(null);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  const scheme = useColorScheme();
-  const [loading, setLoading] = useState<boolean>(false);
-  const [deliveryData, setDeliveryData] = useState<DeliveryTaskItem[]>([]);
-  const [userData, setUserData] = useState<any | null>(null);
+  /* -------- FETCH DATA -------- */
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const decoded = await decodeToken();
+      const user = await getUser(decoded!.userId);
+      setUserData(user.data);
+      setIsOnline(user.data?.isOnline);
+
+      if (!token) return;
+
+      const response = await getDeliveryOrder();
+      if (response?.data) {
+        const sorted = [...response.data].sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+        setDeliveryData(sorted);
+      } else {
+        setDeliveryData([]);
+      }
+    } catch (e) {
+      console.error(e);
+      setDeliveryData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    const socket = connectSocket();
+
+    socket.on('deliveryOrderUpdated', (data: DeliveryTaskItem[]) => {
+      console.log('Realtime order update:', data);
+
+      fetchData();
+    });
+  }, []);
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchData();
     setRefreshing(false);
   };
 
-  const dark = scheme === 'dark';
-  const fetchData = async () => {
-    setLoading(true);
-    const decoded = await decodeToken();
-    const user = await getUser(decoded!.userId);
-    setUserData(user.data); // extract actual user
+  /* -------- UPDATE ONLINE STATUS -------- */
 
-    if (!token) return;
+  const setStatus = async (status: boolean) => {
+    if (!userData?.id) return;
+
     try {
-      const response = await getDeliveryOrder();
-      if (response && response.data) {
-        const sortedData = [...response.data].sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
+      setIsOnline(status);
+      setMenuOpen(false);
 
-        setDeliveryData(sortedData);
-      } else {
-        setDeliveryData([]);
-      }
-    } catch (err) {
-      console.error(err);
-      setDeliveryData([]);
-    } finally {
-      setLoading(false);
+      await editUser(userData.id, { isOnline: status });
+
+      setUserData((prev: any) => ({
+        ...prev,
+        isOnline: status,
+      }));
+    } catch {
+      setIsOnline(userData.isOnline);
     }
   };
-  console.log('userDat22222a', userData);
-  console.log('deliveryData', deliveryData);
 
   useFocusEffect(
     useCallback(() => {
       fetchData();
     }, []),
   );
+
+  /* ---------------- UI ---------------- */
+
   return (
     <SafeAreaView className={`flex-1 ${dark ? 'bg-gray-900' : 'bg-white'}`}>
-      <View style={{ flex: 1, position: 'relative' }}>
+      {/* 🔴 BACKDROP */}
+      {menuOpen && (
+        <Pressable
+          onPress={() => setMenuOpen(false)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 5,
+          }}
+        />
+      )}
+
+      <View style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{ paddingBottom: 20 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
+          contentContainerStyle={{ paddingBottom: 120 }}
         >
-          {/* Header */}
+          {/* HEADER */}
           <View className="flex-row justify-between items-center p-4">
             <View className="flex-row items-center">
               <View
@@ -353,11 +218,7 @@ const DeliveryHubScreen: React.FC = () => {
                   dark ? 'bg-gray-700' : 'bg-gray-200'
                 }`}
               >
-                <Text
-                  className={`${
-                    dark ? 'text-white' : 'text-black'
-                  } text-lg font-bold`}
-                >
+                <Text className={`${dark ? 'text-white' : 'text-black'}`}>
                   👤
                 </Text>
               </View>
@@ -370,141 +231,143 @@ const DeliveryHubScreen: React.FC = () => {
                 >
                   {userData?.username}
                 </Text>
+
                 <Text
-                  className={`font-semibold text-sm ${
-                    dark ? 'text-green-400' : 'text-green-600'
+                  className={`text-sm font-semibold ${
+                    isOnline
+                      ? dark
+                        ? 'text-green-400'
+                        : 'text-green-600'
+                      : dark
+                      ? 'text-red-400'
+                      : 'text-red-600'
                   }`}
                 >
-                  {userData?.isOnline}
-                  Status:
-                  {userData?.isOnline ? 'Online' : 'Offline'}
+                  Status: {isOnline ? 'Online' : 'Offline'}
                 </Text>
               </View>
             </View>
 
-            <View className="flex-row items-center space-x-2">
-              {/* Sort Icon */}
-              <TouchableOpacity
-                onPress={() => {
-                  // Toggle sort order
-                  const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-                  setSortOrder(newSortOrder);
+            {/* MENU */}
+            <View style={{ position: 'relative', zIndex: 20 }}>
+              <Pressable onPress={() => setMenuOpen(v => !v)} hitSlop={10}>
+                <Text
+                  className={`text-2xl ${dark ? 'text-white' : 'text-black'}`}
+                >
+                  ⋮
+                </Text>
+              </Pressable>
 
-                  // Sort the delivery data by createdAt
-                  const sortedData = [...deliveryData].sort((a, b) => {
-                    const dateA = new Date(a.createdAt).getTime();
-                    const dateB = new Date(b.createdAt).getTime();
+              {menuOpen && (
+                <View
+                  className={`absolute right-0 top-8 w-36 rounded-xl shadow-xl ${
+                    dark ? 'bg-gray-900' : 'bg-white'
+                  }`}
+                  style={{ zIndex: 30 }}
+                >
+                  <Pressable
+                    onPress={() => setStatus(true)}
+                    className="px-4 py-3 flex-row items-center"
+                  >
+                    <View className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                    <Text className="text-green-500 font-semibold text-sm">
+                      Go Online
+                    </Text>
+                  </Pressable>
 
-                    if (newSortOrder === 'asc') {
-                      return dateA - dateB; // oldest first
-                    } else {
-                      return dateB - dateA; // newest first
-                    }
-                  });
+                  <View className="h-px bg-gray-200 dark:bg-gray-700" />
 
-                  setDeliveryData(sortedData);
-                }}
-                className="p-2 rounded"
-                style={{ backgroundColor: dark ? '#333' : '#eee' }}
-              >
-                {sortOrder === 'asc' ? (
-                  <SortAsc color={dark ? 'white' : 'black'} size={22} />
-                ) : (
-                  <SortDesc color={dark ? 'white' : 'black'} size={22} />
-                )}
-              </TouchableOpacity>
+                  <Pressable
+                    onPress={() => setStatus(false)}
+                    className="px-4 py-3 flex-row items-center"
+                  >
+                    <View className="w-2 h-2 bg-red-500 rounded-full mr-2" />
+                    <Text className="text-red-500 font-semibold text-sm">
+                      Go Offline
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
           </View>
 
-          {/* Main Content */}
-          <View className="p-4">
-            <View className="flex-row space-x-2 px-1">
-              <StatusCard
-                icon={<Truck size={28} color={dark ? '#4ade80' : '#16a34a'} />}
-                value={deliveryData
-                  .filter(item => item.status?.toLowerCase() === 'picked_up')
-                  .length.toString()}
-                label="Active"
-                dark={dark}
-                onPress={() => navigation.navigate('ActiveDelivery')}
-              />
+          {/* STATUS CARDS */}
+          <View className="flex-row space-x-2 px-4">
+            <StatusCard
+              icon={<Truck size={28} color="#22c55e" />}
+              value={deliveryData
+                .filter(d => d.status === 'picked_up')
+                .length.toString()}
+              label="Active"
+              dark={dark}
+              onPress={() => navigation.navigate('ActiveDelivery')}
+            />
 
-              <StatusCard
-                icon={
-                  <CheckCircle size={28} color={dark ? '#60a5fa' : '#1d4ed8'} />
-                }
-                value={deliveryData
-                  .filter(item => item.status?.toLowerCase() === 'delivered')
-                  .length.toString()}
-                label="Completed Today"
-                dark={dark}
-                onPress={() => navigation.navigate('CompletedDelivery')}
-              />
+            <StatusCard
+              icon={<CheckCircle size={28} color="#3b82f6" />}
+              value={deliveryData
+                .filter(d => d.status === 'delivered')
+                .length.toString()}
+              label="Completed"
+              dark={dark}
+              onPress={() => navigation.navigate('CompletedDelivery')}
+            />
 
-              <StatusCard
-                icon={
-                  <BatteryCharging
-                    size={28}
-                    color={dark ? '#ef4444' : '#be123c'}
-                  />
-                }
-                value="85%"
-                label="Device Battery"
-                dark={dark}
-              />
+            <StatusCard
+              icon={<BatteryCharging size={28} color="#ef4444" />}
+              value="85%"
+              label="Battery"
+              dark={dark}
+            />
+          </View>
+
+          {/* TASK LIST */}
+          <View className="p-4 mt-6">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text
+                className={`text-lg font-bold ${
+                  dark ? 'text-white' : 'text-black'
+                }`}
+              >
+                Active Tasks ({deliveryData.length})
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => {
+                  const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+                  setSortOrder(newOrder);
+                  setDeliveryData(prev =>
+                    [...prev].sort((a, b) =>
+                      newOrder === 'asc'
+                        ? new Date(a.createdAt).getTime() -
+                          new Date(b.createdAt).getTime()
+                        : new Date(b.createdAt).getTime() -
+                          new Date(a.createdAt).getTime(),
+                    ),
+                  );
+                }}
+                className="p-2 rounded bg-gray-200 dark:bg-gray-700"
+              >
+                {sortOrder === 'asc' ? (
+                  <SortAsc color={dark ? 'white' : 'black'} />
+                ) : (
+                  <SortDesc color={dark ? 'white' : 'black'} />
+                )}
+              </TouchableOpacity>
             </View>
 
-            {/* Tasks Section */}
-            <View className="mt-8">
-              <View className="flex-row justify-between items-center">
-                <View className="flex-row items-center">
-                  <Activity size={20} color={dark ? '#e5e5e5' : '#111'} />
-                  <Text
-                    className={`${
-                      dark ? 'text-white' : 'text-black'
-                    } text-lg font-bold ml-2`}
-                  >
-                    Active Tasks ({deliveryData.length})
-                  </Text>
-                </View>
-
-                <TouchableOpacity>
-                  <Text
-                    className={`${
-                      dark ? 'text-blue-400' : 'text-blue-600'
-                    } font-semibold`}
-                  >
-                    View All
-                  </Text>
-                </TouchableOpacity>
-              </View>
-              {deliveryData.length === 0 ? (
-                <View className="items-center justify-center mt-12 mb-12">
-                  <View
-                    className={`p-2 rounded-full transform rotate-45 mb-4 ${
-                      dark ? 'bg-green-500' : 'bg-green-600'
-                    }`}
-                  >
-                    <Truck size={32} color={dark ? '#0a0a0a' : '#ffffff'} />
-                  </View>
-
-                  <Text
-                    className={`${
-                      dark ? 'text-white' : 'text-black'
-                    } text-base font-semibold`}
-                  >
-                    No active deliveries currently assigned.
-                  </Text>
-                  <Text
-                    className={`${
-                      dark ? 'text-gray-400' : 'text-gray-600'
-                    } text-sm mt-1`}
-                  >
-                    Take a break or check for new tasks.
-                  </Text>
-                </View>
-              ) : (
-                deliveryData.map(item => (
+            {deliveryData.length === 0 ? (
+              <Text
+                className={`text-center mt-12 ${
+                  dark ? 'text-gray-400' : 'text-gray-600'
+                }`}
+              >
+                No active deliveries.
+              </Text>
+            ) : (
+              deliveryData
+                .filter(item => item.__customer__ && item.__merchant__) // <-- ensure objects exist
+                .map(item => (
                   <DeliveryCard
                     key={item.id}
                     item={item}
@@ -516,32 +379,18 @@ const DeliveryHubScreen: React.FC = () => {
                     }
                   />
                 ))
-              )}
-
-              {/* <AppDetails
-              appId="c_52f99807e097976e_DeliveryAppHome.jsx-438"
-              userId="05915764922349435223"
-              dbStatus="Connected"
-              dark={dark}
-            /> */}
-            </View>
+            )}
           </View>
         </ScrollView>
-        {/* FAB */}
 
+        {/* FAB */}
         <TouchableOpacity
           onPress={() => navigation.navigate('DeliveryMapsScreen')}
-          className={`w-16 h-16 rounded-full items-center justify-center shadow-2xl ${
+          className={`absolute bottom-8 right-8 w-16 h-16 rounded-full items-center justify-center ${
             dark ? 'bg-blue-500' : 'bg-blue-600'
           }`}
-          style={{
-            position: 'absolute',
-            bottom: 30,
-            right: 30,
-            elevation: 10,
-          }}
         >
-          <Map size={32} color="#ffffff" />
+          <Map size={30} color="#fff" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>

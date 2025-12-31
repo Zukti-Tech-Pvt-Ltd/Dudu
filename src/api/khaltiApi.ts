@@ -1,15 +1,20 @@
-import api from ".";
-
+import api from '.';
 
 export const khaltiPayment = async (
-    selectedItems: { id: string; quantity: number ,price: number}[],
-    userId?:number,
-    totalPrice?:number  
+  selectedItems: { id: string; quantity: number; price: number }[],
+  userId?: number,
+  totalPrice?: number,
+  orderId?: number[],
 ) => {
-      const selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
+  //   const selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
 
-    console.log('========selectedItems', selectedItems);
-    console.log('=========userId', userId);
-    const response = await api.post(`/api/khalti/initiate/${userId}/${selectedItemsParam}/${totalPrice}`);
-    return response.data;
+  console.log('========selectedItems', selectedItems);
+  console.log('=========userId', userId);
+  const response = await api.post(`/api/khalti/initiate`, {
+    userId,
+    selectedItems,
+    totalPrice,
+    orderId,
+  });
+  return response.data;
 };

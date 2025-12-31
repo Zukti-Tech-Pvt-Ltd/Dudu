@@ -2,14 +2,36 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import OrderItemRow from './orderItemRow';
 import DeliveryStatusBar from './deliveryStatusBar';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 const statusIconMap: Record<string, any> = {
   OrderPlaced: require('../../../assets/images/clock.png'),
   Confirmed: require('../../../assets/images/check-mark.png'),
   Shipped: require('../../../assets/images/shipped.png'),
   Delivered: require('../../../assets/images/box.png'),
 };
+type RootStackParamList = {
+  OrderCard: undefined;
+
+  PaymentMethodScreen: {
+    selectedItems: { id: string; quantity: number; price: number }[];
+    totalPrice: number;
+    orderId: number[];
+  };
+  // other screens...
+};
 export default function OrderCard({ order }: any) {
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const iconSource = statusIconMap[order.status] || null;
+  console.log('order', order);
+  const selectedItems = order.__orderItems__.map((item: any) => ({
+    id: String(item.productId), // or item.id depending on your need
+    quantity: item.quantity,
+    price: Number(item.price),
+  }));
+
   return (
     <View className="-inset-5 mt-0.5 p-4 bg-white mb-3 rounded-xl shadow-xl">
       <Text className="text-sm -mt-2 text-gray-500">
@@ -35,10 +57,20 @@ export default function OrderCard({ order }: any) {
       ))}
 
       <Text className="text-lg font-bold mt-1 ">Total: Rs:{order.price}</Text>
-
-      {/* <TouchableOpacity className="bg-blue-600 rounded-lg p-3 mt-2 items-center">
-        <Text className="text-white font-bold">Track Order</Text>
-      </TouchableOpacity> */}
+      {order.status === 'Pending' && (
+        <TouchableOpacity
+          className="bg-blue-600 rounded-lg p-3 mt-2 items-center"
+          onPress={() => {
+            navigation.navigate('PaymentMethodScreen', {
+              selectedItems: selectedItems,
+              totalPrice: order.price,
+              orderId: order.id,
+            });
+          }}
+        >
+          <Text className="text-white font-bold">Pay</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

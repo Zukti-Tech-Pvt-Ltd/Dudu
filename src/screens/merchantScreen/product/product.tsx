@@ -19,6 +19,7 @@ import { Plus } from 'lucide-react-native';
 type RootStackParamList = {
   ProductScreen: undefined;
   ProductCreateScreen: any;
+  ProductEditScreen: { product: any };
 };
 
 type addProductNavigationProp = NativeStackNavigationProp<
@@ -111,6 +112,9 @@ export default function ProductScreen() {
           alignItems: 'center',
           elevation: 3,
         }}
+        onPress={() =>
+          navigation.navigate('ProductEditScreen', { product: item })
+        }
       >
         <Image
           source={
@@ -126,14 +130,11 @@ export default function ProductScreen() {
           }}
           resizeMode="cover"
         />
-
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 16, fontWeight: '600' }}>{item.name}</Text>
-
           <Text style={{ color: 'gray', fontSize: 14 }}>
             Rs. {item.price} | Stock: {item.count}
           </Text>
-
           <Text style={{ fontSize: 13, marginTop: 3, color: '#555' }}>
             Category: {item.category}
           </Text>

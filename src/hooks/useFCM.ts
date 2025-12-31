@@ -75,7 +75,7 @@ const useFCM = () => {
       if (body === 'You are selected for the delivery') {
         Alert.alert(title ?? 'Notification', body ?? '', [
           {
-            text: 'Okays',
+            text: 'Okay',
             onPress: () => {
               console.log('Okay pressed');
             },

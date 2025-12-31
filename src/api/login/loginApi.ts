@@ -1,4 +1,6 @@
 import api from '..';
+import apiAuth from '../indexAuth';
+
 interface signUpPayload {
   username: string;
   password: string;
@@ -28,7 +30,12 @@ export const signUp = async (signUpPayload: signUpPayload) => {
 
   return response.data;
 };
-// export const getUser = async (userId: number) => {
-//   const response = await api.post(`api/user/getOne/${userId}/`);
-//   return response.data;
-// };
+export const removeDeviceToken = async (userId: number, fcmToken?: string) => {
+  console.log('userId=-========================================', userId);
+  const response = await apiAuth.delete(
+    `api/userDeviceToken/delete/${userId}/${fcmToken}`,
+  );
+  console.log('userId=-========================================', response);
+
+  return response.data;
+};

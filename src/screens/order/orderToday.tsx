@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import {
   ScrollView,
   ActivityIndicator,
@@ -10,11 +10,12 @@ import {
   RefreshControl,
   FlatList,
 } from 'react-native';
-import { getAllOrders } from '../../api/orderApi';
+import { getAllOrders, getAllOrderToday } from '../../api/orderApi';
 import OrderCard from './orderCard';
 import { AuthContext } from '../../helper/authContext';
 import { SortAsc, SortDesc } from 'lucide-react-native';
 import { connectSocket } from '../../helper/socket';
+import { useFocusEffect } from '@react-navigation/native';
 
 /* -------------------- TYPES -------------------- */
 
@@ -55,16 +56,9 @@ type Order = {
 
 /* -------------------- CONSTANTS -------------------- */
 
-const filters = [
-  { label: 'All Orders' },
-  { label: 'OrderPlaced' },
-  { label: 'Pending' },
-  { label: 'Delivered' },
-];
-
 /* -------------------- COMPONENT -------------------- */
 
-export default function OrdersScreen() {
+export default function OrderTodayScreen() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const { isLoggedIn } = useContext(AuthContext);
@@ -93,7 +87,7 @@ export default function OrdersScreen() {
     if (showLoader) setLoading(true);
 
     try {
-      const data = await getAllOrders('');
+      const data = await getAllOrderToday();
       setOrders(data);
     } catch (err) {
       console.error(err);
@@ -105,22 +99,20 @@ export default function OrdersScreen() {
   /* -------------------- EFFECTS -------------------- */
 
   // Initial load
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchOrders();
-    }
-  }, [isLoggedIn]);
+  useFocusEffect(
+    useCallback(() => {
+      if (isLoggedIn) {
+        fetchOrders(); // no loader, smoother UX
+      }
+    }, [isLoggedIn]),
+  );
 
   // Socket updates
   useEffect(() => {
     const socket = connectSocket();
 
     const handler = (data: any) => {
-      setOrders(prev =>
-        prev.map(order =>
-          order.id === data.orderId ? { ...order, status: data.status } : order,
-        ),
-      );
+      fetchOrders();
     };
 
     socket.on('orderUpdated', handler);
@@ -197,7 +189,7 @@ export default function OrdersScreen() {
             color: isDarkMode ? '#ffffff' : '#111827',
           }}
         >
-          Orders
+          Orders Today
         </Text>
 
         <TouchableOpacity
@@ -223,30 +215,13 @@ export default function OrdersScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 7, marginVertical: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 7, marginVertical: -12 }}
       >
         <View style={{ flexDirection: 'row' }}>
-          {filters.map((filter, idx) => (
-            <TouchableOpacity
-              key={idx}
-              onPress={() => setSelected(filter.label)}
-              className="px-[10px] h-9 mr-2 rounded-full items-center justify-center"
-              style={{
-                backgroundColor:
-                  selected === filter.label ? '#2563eb' : '#e0e7ef',
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '500',
-                  color: selected === filter.label ? 'white' : '#374151',
-                }}
-              >
-                {filter.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          <TouchableOpacity
+            onPress={() => setSelected('All Orders')}
+            className="px-[10px] h-9 mr-2 rounded-full items-center justify-center"
+          ></TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -259,7 +234,7 @@ export default function OrdersScreen() {
         ListEmptyComponent={
           !loading ? (
             <Text className="text-center text-gray-500 mt-10">
-              No orders found.
+              No orders today.
             </Text>
           ) : null
         }

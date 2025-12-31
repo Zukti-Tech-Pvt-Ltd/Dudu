@@ -20,6 +20,12 @@ import {
   getCurrentLocation,
   requestLocationPermission,
 } from '../../hooks/useFCM';
+interface Rider {
+  id: number;
+  username: string;
+  email: string | null;
+  distance?: number;
+}
 
 interface Rider {
   id: number;
@@ -243,6 +249,35 @@ export default function AvaliableRidersScreen() {
   const isAccepted = (riderId: number) => {
     return accepted.some(item => item.partnerId === riderId);
   };
+  useEffect(() => {
+    if (!sellerlocations || accepted.length === 0) return;
+
+    setRiders(prevRiders => {
+      const updated = prevRiders.map(rider => {
+        const match = accepted.find(a => a.partnerId === rider.id);
+
+        if (!match) return { ...rider, distance: undefined };
+
+        const distance = getDistanceFromLatLonInKm(
+          sellerlocations.latitude,
+          sellerlocations.longitude,
+          match.lat,
+          match.lng,
+        );
+
+        return { ...rider, distance };
+      });
+
+      // 🔥 SORT BY DISTANCE (ASCENDING)
+      updated.sort((a, b) => {
+        if (a.distance == null) return 1; // non-accepted riders go down
+        if (b.distance == null) return -1;
+        return a.distance - b.distance;
+      });
+
+      return updated;
+    });
+  }, [accepted, sellerlocations]);
 
   const handlePress = (rider: Rider) => {
     const acceptedStatus = isAccepted(rider.id);
@@ -332,13 +367,8 @@ export default function AvaliableRidersScreen() {
                       </Text>
                       <Text className="text-sm text-gray-500">
                         🚗{' '}
-                        {sellerlocations && matchedLocation
-                          ? `${getDistanceFromLatLonInKm(
-                              sellerlocations.latitude, //seller location
-                              sellerlocations.longitude,
-                              matchedLocation.lat, //rider location
-                              matchedLocation.lng,
-                            ).toFixed(2)} km away`
+                        {item.distance != null
+                          ? `${item.distance.toFixed(2)} km away`
                           : 'Calculating distance...'}
                       </Text>
                     </>
