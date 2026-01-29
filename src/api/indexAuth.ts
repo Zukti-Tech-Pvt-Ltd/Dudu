@@ -27,16 +27,15 @@ export default apiAuth;
 // utils/jwt.ts or wherever is appropriate
 
 // Module-level variable (cache)
-let cachedToken: string | null = null;
 
 // Async function that returns decoded JWT claims
 export async function decodeToken(): Promise<null | Record<string, any>> {
   try {
-    if (!cachedToken) {
-      cachedToken = await AsyncStorage.getItem('token');
-    }
-    if (!cachedToken) return null;
-    const base64Url = cachedToken.split('.')[1];
+    const token = await AsyncStorage.getItem('token');
+
+    if (!token) return null;
+
+    const base64Url = token.split('.')[1];
     if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const jsonPayload = decodeURIComponent(
@@ -52,9 +51,4 @@ export async function decodeToken(): Promise<null | Record<string, any>> {
     console.error('JWT decode failed:', err);
     return null;
   }
-}
-
-// Optional function to reset cache (when user logs out or token changes)
-export function resetTokenCache() {
-  cachedToken = null;
 }

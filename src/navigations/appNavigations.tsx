@@ -49,6 +49,12 @@ export default function MainTabs() {
   const insets = useSafeAreaInsets();
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+  const tabColors = {
+    background: isDark ? '#000' : '#fff',
+    border: isDark ? '#222' : '#e5e7eb',
+    active: isDark ? '#60a5fa' : '#2563eb',
+    inactive: isDark ? '#9ca3af' : '#6b7280',
+  };
 
   const { isLoggedIn, token } = useContext(AuthContext);
   if (token) {
@@ -77,7 +83,7 @@ export default function MainTabs() {
                   style={{
                     width: size,
                     height: size,
-                    tintColor: focused ? '#2563eb' : 'gray',
+                    tintColor: focused ? tabColors.active : tabColors.inactive,
                     resizeMode: 'contain',
                   }}
                 />
@@ -130,7 +136,7 @@ export default function MainTabs() {
                   style={{
                     width: size,
                     height: size,
-                    tintColor: focused ? '#2563eb' : 'gray',
+                    tintColor: focused ? tabColors.active : tabColors.inactive,
                     resizeMode: 'contain',
                   }}
                 />
@@ -186,8 +192,10 @@ export default function MainTabs() {
         tabBarShowLabel: true,
         tabBarStyle: {
           height: 50 + (Platform.OS === 'android' ? insets.bottom : 0),
-          backgroundColor: '#fff',
+          backgroundColor: tabColors.background,
+          borderTopColor: tabColors.border,
         },
+
         tabBarIcon: ({ focused, size }) => {
           const imageSource = icons[route.name as RouteName];
           return (
@@ -196,7 +204,7 @@ export default function MainTabs() {
               style={{
                 width: size,
                 height: size,
-                tintColor: focused ? '#2563eb' : 'gray',
+                tintColor: focused ? tabColors.active : tabColors.inactive,
                 resizeMode: 'contain',
               }}
             />

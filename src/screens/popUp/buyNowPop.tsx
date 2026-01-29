@@ -10,8 +10,9 @@ import {
   Animated,
   Dimensions,
   Image,
+  useColorScheme, // Import useColorScheme
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // Install this package if not already
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { height } = Dimensions.get('window');
 
@@ -23,16 +24,19 @@ type buyNowPopupProps = {
   image: string;
   price: number;
 };
+
 type RootStackParamList = {
   BuyNowPopup: {};
   CheckoutScreen: {
     selectedItems: { id: string; quantity: number; price: number }[];
   };
 };
+
 type checkOutNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
   'BuyNowPopup'
 >;
+
 export default function BuyNowPopup({
   onClose,
   quantity,
@@ -41,13 +45,14 @@ export default function BuyNowPopup({
   image,
   price,
 }: buyNowPopupProps) {
-  console.log('imagesdfasdfasdfasdfasdfa', price);
+  // Detect dark mode
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const slideAnim = useRef(new Animated.Value(height)).current;
   const navigation = useNavigation<checkOutNavigationProp>();
 
   useEffect(() => {
-    console.log('------------------');
-
     Animated.timing(slideAnim, {
       toValue: 0,
       duration: 150,
@@ -71,7 +76,7 @@ export default function BuyNowPopup({
         edges={['top']}
         style={{
           flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.25)',
+          backgroundColor: 'rgba(0,0,0,0.5)', // Slightly darker for better focus
           position: 'absolute',
           top: 0,
           left: 0,
@@ -89,7 +94,8 @@ export default function BuyNowPopup({
             right: 0,
             width: '100%',
           }}
-          className="bg-white rounded-t-3xl p-5 items-center"
+          // Added dark:bg-neutral-800 for the popup background
+          className="bg-white dark:bg-neutral-800 rounded-t-3xl p-5 items-center"
         >
           <Image
             source={
@@ -100,10 +106,21 @@ export default function BuyNowPopup({
             className="w-full h-48 rounded-b-3xl mb-5"
             resizeMode="cover"
           />
-          <Text className="text-lg mb-2">{name}</Text>
+
+          {/* Added dark:text-white */}
+          <Text className="text-lg mb-2 font-semibold text-black dark:text-white">
+            {name}
+          </Text>
+
           <View className="flex-row items-center mb-6">
-            <Text className="text-lg font-bold mr-2">Quantity :</Text>
-            <Text className="text-lg">{quantity}</Text>
+            {/* Added dark:text-gray-300 for the label */}
+            <Text className="text-lg font-bold mr-2 text-black dark:text-gray-300">
+              Quantity :
+            </Text>
+            {/* Added dark:text-white for the value */}
+            <Text className="text-lg text-black dark:text-white">
+              {quantity}
+            </Text>
           </View>
 
           <TouchableOpacity
@@ -119,9 +136,11 @@ export default function BuyNowPopup({
                 ],
               });
             }}
-            className="bg-blue-500 px-10 py-3 rounded-full"
+            className="bg-blue-500 px-10 py-3 rounded-full shadow-lg"
           >
-            <Text className="text-white text-center">Buy</Text>
+            <Text className="text-white text-center font-bold text-base">
+              Buy
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </SafeAreaView>

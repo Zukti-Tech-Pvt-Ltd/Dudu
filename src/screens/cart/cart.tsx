@@ -15,13 +15,11 @@ import {
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
-import Checkbox from 'expo-checkbox'; // or your preferred checkbox
+import Checkbox from 'expo-checkbox';
 import { styled } from 'nativewind';
 import { deleteCart, getCart } from '../../api/cartApi';
 import { API_BASE_URL } from '@env';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { jwtDecode, JwtPayload } from 'jwt-decode';
 import { AuthContext } from '../../helper/authContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -55,9 +53,17 @@ type RootStackParamList = {
   };
 };
 type cartNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Cart'>;
+
 export default function CartScreen() {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
+
+  // Theme constants
+  const themeBackgroundColor = isDark ? '#171717' : '#f3f4f6'; // neutral-900 vs gray-100
+  const themeCardColor = isDark ? '#262626' : '#ffffff'; // neutral-800 vs white
+  const themeTextColor = isDark ? '#ffffff' : '#111827';
+  const themeIconTint = isDark ? '#ffffff' : '#374151';
+
   const [loading, setLoading] = useState<boolean>(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [cartData, setCartData] = useState<CartGroup[]>([]);
@@ -68,25 +74,18 @@ export default function CartScreen() {
 
   if (!isLoggedIn) {
     return (
-      <View
-        className={`flex-1 items-center justify-center ${
-          isDark ? 'bg-gray-900' : 'bg-white'
-        }`}
-      >
+      <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Image
           source={require('../../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200 dark:bg-neutral-800"
         />
-        <Text
-          className={`font-bold text-lg ${
-            isDark ? 'text-gray-100' : 'text-gray-900'
-          }`}
-        >
-          please login in first
+        <Text className="font-bold text-lg text-gray-900 dark:text-gray-100">
+          Please login first
         </Text>
       </View>
     );
   }
+
   useEffect(() => {
     if (cartData && cartData.length > 0) {
       const qtys = cartData.reduce((prev: Record<string, number>, group) => {
@@ -98,13 +97,6 @@ export default function CartScreen() {
       setQuantities(qtys);
     }
   }, [cartData]);
-
-  // const [quantities, setQuantities] = useState<Record<string, number>>(
-  //   cartData.reduce((prev: Record<string, number>, group) => {
-  //     group.items.forEach(item => (prev[item.id] = item.qty));
-  //     return prev;
-  //   }, {}),
-  // );
 
   const fetchData = async (showLoader = true) => {
     if (showLoader) setLoading(true);
@@ -132,6 +124,7 @@ export default function CartScreen() {
       [id]: Math.max(1, (qty[id] || 1) + delta),
     }));
   };
+
   const handleItemSelect = (
     shop: string,
     items: { id: string }[],
@@ -139,17 +132,11 @@ export default function CartScreen() {
     value: boolean,
   ) => {
     setSelected(prev => {
-      // Only update the selected state for this item
       const updated = { ...prev, [itemId]: value };
-
-      // Check if all items under this shop are now selected
       const shopShouldBeSelected = items.every(item =>
         item.id === itemId ? value : !!updated[item.id],
       );
-
-      // Shop checkbox reflects all items: checked only if all are checked
       updated[shop] = shopShouldBeSelected;
-
       return updated;
     });
   };
@@ -162,17 +149,18 @@ export default function CartScreen() {
     setSelected(prev => {
       const updated = { ...prev, [shop]: value };
       items.forEach(item => {
-        updated[item.id] = value; // select/deselect ALL items under this shop
+        updated[item.id] = value;
       });
       return updated;
     });
   }
+
   const selectedItems = cartData.flatMap(group =>
     group.items
-      .filter(item => selected[item.id]) // only selected items
+      .filter(item => selected[item.id])
       .map(item => ({
         id: item.productId,
-        quantity: quantities[item.id] ?? item.qty, // get quantity from quantities state or fallback to item.qty
+        quantity: quantities[item.id] ?? item.qty,
         price: item.price,
       })),
   );
@@ -182,23 +170,17 @@ export default function CartScreen() {
       Alert.alert('Please select at least one item to checkout.');
       return;
     }
-    console.log('selectedItems=============', selectedItems);
-
     navigation.navigate('CheckoutScreen', {
       selectedItems,
     });
   };
+
   const navigation = useNavigation<cartNavigationProp>();
-  console.log('cartData=====', cartData);
-  console.log('selected=====', selected);
-  console.log('quantities=====', quantities);
 
   // Subtotal calculation
   const subtotal = Object.entries(quantities).reduce((sum, [id, qty]) => {
-    // Find the item and its group
     for (const group of cartData) {
       const item = group.items.find(i => i.id === id);
-      // Only add to subtotal if this item is selected
       if (item && selected[id]) {
         return sum + item.price * qty;
       }
@@ -233,9 +215,7 @@ export default function CartScreen() {
         setSelectedItemId(null);
       }}
     >
-      <StyledView
-        className={`flex-1 ${isDark ? 'bg-gray-950' : 'bg-gray-100'}`}
-      >
+      <StyledView className="flex-1 bg-gray-100 dark:bg-neutral-900">
         {/* Main ScrollView */}
         <ScrollView
           className="flex-1 py-3 px-3"
@@ -245,20 +225,22 @@ export default function CartScreen() {
               onRefresh={async () => {
                 setRefreshing(true);
                 await fetchData(false);
-                // ⬅ refresh cart
                 setRefreshing(false);
               }}
               tintColor={isDark ? '#fff' : '#000'}
-              colors={['#3b82f6']} // Android color
+              colors={['#3b82f6']}
             />
           }
         >
           {cartData.map((group, idx) => (
             <StyledView
               key={group.shop}
-              className={`rounded-2xl mb-4 p-3 shadow ${
-                isDark ? 'bg-gray-900 shadow-black' : 'bg-white'
-              }`}
+              // Card: White in light, Neutral-800 in dark
+              className="rounded-2xl mb-4 p-3 shadow-sm bg-white dark:bg-neutral-800"
+              style={{
+                shadowColor: isDark ? '#000' : '#000',
+                shadowOpacity: isDark ? 0.3 : 0.1,
+              }}
             >
               {/* Shop Header */}
               <StyledView className="flex-row items-center mb-2">
@@ -275,22 +257,17 @@ export default function CartScreen() {
                   className="ml-2 w-4 h-4"
                   style={{
                     marginTop: 1,
-                    tintColor: isDark ? '#f3f4f6' : '#1f2937', // light gray vs dark text
+                    tintColor: themeIconTint,
                   }}
                 />
 
-                <StyledText
-                  className={`px-1 font-semibold text-base ${
-                    isDark ? 'text-gray-100' : 'text-gray-900'
-                  }`}
-                >
+                <StyledText className="px-1 font-semibold text-base text-gray-900 dark:text-gray-100">
                   {group.shop}
                 </StyledText>
               </StyledView>
 
               {group.items.map(item => {
                 const normalizedImage = item.img ? item.img : '';
-                // const imageUri = `${API_BASE_URL}/${normalizedImage}`;
 
                 return (
                   <Swipeable
@@ -304,7 +281,7 @@ export default function CartScreen() {
                       </StyledTouchable>
                     )}
                   >
-                    <StyledView className="flex-row py-0">
+                    <StyledView className="flex-row py-0 bg-white dark:bg-neutral-800">
                       <Checkbox
                         className="mt-4 mr-2"
                         value={!!selected[item.id]}
@@ -333,49 +310,38 @@ export default function CartScreen() {
                         <StyledImage
                           source={
                             normalizedImage
-                              ? { uri: `${API_BASE_URL}/${normalizedImage}` } // real image
+                              ? { uri: `${API_BASE_URL}/${normalizedImage}` }
                               : require('../../../assets/images/photo.png')
                           }
-                          className="w-14 h-14 rounded mr-2 bg-gray-200"
+                          // Added dark:bg-neutral-700
+                          className="w-14 h-14 rounded mr-2 bg-gray-200 dark:bg-neutral-700"
                         />
                         <StyledView className="flex-1">
-                          <StyledText
-                            className={`${
-                              isDark ? 'text-gray-100' : 'text-gray-900'
-                            } font-medium`}
-                          >
+                          <StyledText className="font-medium text-gray-900 dark:text-gray-100">
                             {item.name}
                           </StyledText>
-                          <StyledText
-                            className={`text-xs ${
-                              isDark ? 'text-gray-400' : 'text-gray-500'
-                            }`}
-                          >
+                          <StyledText className="text-xs text-gray-500 dark:text-gray-400">
                             {item.extra}
                           </StyledText>
                           {item.ends && (
-                            <StyledText className="text-xs text-orange-600">
+                            <StyledText className="text-xs text-orange-600 dark:text-orange-400">
                               {item.ends}
                             </StyledText>
                           )}
                           {item.left && (
-                            <StyledText className="text-xs text-rose-500">
+                            <StyledText className="text-xs text-rose-500 dark:text-rose-400">
                               {item.left} item(s) left
                             </StyledText>
                           )}
                           <StyledView className="flex-row mt-1 items-center">
                             <StyledText
-                              style={{ color: '#3b82f6' }}
+                              style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}
                               className="text-base font-bold"
                             >
                               Rs. {item.price}
                             </StyledText>
                             {item.oldPrice && (
-                              <StyledText
-                                className={`text-xs line-through ml-2 ${
-                                  isDark ? 'text-gray-500' : 'text-gray-400'
-                                }`}
-                              >
+                              <StyledText className="text-xs line-through ml-2 text-gray-400 dark:text-gray-600">
                                 Rs. {item.oldPrice}
                               </StyledText>
                             )}
@@ -386,22 +352,22 @@ export default function CartScreen() {
                       <StyledView className="flex-row items-center">
                         <StyledTouchable
                           onPress={() => handleQtyChange(item.id, -1)}
-                          className={`w-6 h-6 items-center justify-center rounded
-    ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}
+                          className="w-6 h-6 items-center justify-center rounded bg-gray-200 dark:bg-neutral-700"
                         >
-                          <StyledText className={isDark ? 'text-gray-100' : ''}>
+                          <StyledText className="text-gray-900 dark:text-white">
                             -
                           </StyledText>
                         </StyledTouchable>
-                        <StyledText className="mx-2">
+
+                        <StyledText className="mx-2 text-gray-900 dark:text-white">
                           {quantities[item.id]}
                         </StyledText>
+
                         <StyledTouchable
                           onPress={() => handleQtyChange(item.id, 1)}
-                          className={`w-6 h-6 items-center justify-center rounded
-    ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}
+                          className="w-6 h-6 items-center justify-center rounded bg-gray-200 dark:bg-neutral-700"
                         >
-                          <StyledText className={isDark ? 'text-gray-100' : ''}>
+                          <StyledText className="text-gray-900 dark:text-white">
                             +
                           </StyledText>
                         </StyledTouchable>
@@ -416,26 +382,22 @@ export default function CartScreen() {
 
         {/* Checkout & Subtotal */}
         {cartData.length === 0 ? (
-          <StyledText className="text-center py-6 text-gray-500">
+          <StyledText className="text-center py-6 text-gray-500 dark:text-gray-400">
             Your cart is empty
           </StyledText>
         ) : (
-          <StyledView className="px-4 pb-4">
-            <StyledView className="flex-row items-center justify-between my-2">
-              <StyledText className="text-base font-bold">
-                Subtotal:
-                <StyledText style={{ color: '#3b82f6' }}>
+          <StyledView className="px-4 pb-4 bg-gray-100 dark:bg-neutral-900">
+            <StyledView className=" my-2">
+              <StyledText className="text-base font-bold text-gray-900 dark:text-white">
+                Subtotal:{' '}
+                <StyledText style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}>
                   Rs. {subtotal}
                 </StyledText>
-              </StyledText>
-              <StyledText className="text-base font-medium text-gray-600">
-                Shipping Fee:
-                <StyledText style={{ color: '#3b82f6' }}>Rs. 0</StyledText>
               </StyledText>
             </StyledView>
             <StyledTouchable
               style={{ backgroundColor: '#3b82f6' }}
-              className="w-full py-4 rounded-xl items-center mb-1"
+              className="w-full py-4 rounded-xl items-center mb-1 shadow-lg"
               onPress={handleCheckout}
             >
               <StyledText className="text-white text-lg font-bold">
@@ -447,8 +409,24 @@ export default function CartScreen() {
 
         {/* Loading overlay */}
         {loading && (
-          <View className="absolute top-0 left-0 right-0 bottom-0 bg-white/50 justify-center items-center">
-            <ActivityIndicator size="large" color="#2563eb" />
+          <View
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: isDark
+                ? 'rgba(0,0,0,0.7)'
+                : 'rgba(255,255,255,0.55)',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <ActivityIndicator
+              size="large"
+              color={isDark ? '#60a5fa' : '#2563eb'}
+            />
           </View>
         )}
       </StyledView>

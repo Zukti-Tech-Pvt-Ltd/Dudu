@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import React from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  useColorScheme,
+} from 'react-native';
 import DeliveryStatusBar from '../order/deliveryStatusBar';
 import OrderItemRow from '../order/orderItemRow';
 import { API_BASE_URL } from '@env';
-import OrderDetail from './orderDetail';
 import { useNavigation } from '@react-navigation/native';
 import { Order } from './order';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Angry } from 'lucide-react-native';
 
 const statusIconMap: Record<string, any> = {
   OrderPlaced: require('../../../assets/images/clock.png'),
@@ -26,37 +30,58 @@ export default function OrderMerchantCard({ order }: any) {
     'OrderMerchantCard'
   >;
   const navigation = useNavigation<HomeNavigationProp>();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
-  console.log('order', order);
-  console.log('API_BASE_URL', API_BASE_URL);
+  // console.log('order', order);
 
   const iconSource = statusIconMap[order.status] || null;
+
   return (
-    <View className="-inset-5 mt-0.5 p-4 bg-white mb-3 rounded-xl shadow-xl">
-      <Text className="font-semibold text-gray-700">
+    <View
+      className="-inset-5 mt-0.5 p-4 bg-white dark:bg-neutral-800 mb-3 rounded-xl shadow-xl"
+      style={{
+        shadowColor: isDarkMode ? '#000' : '#000',
+        shadowOpacity: isDarkMode ? 0.3 : 0.1,
+        elevation: 3,
+      }}
+    >
+      {/* Date */}
+      <Text className="font-semibold text-gray-700 dark:text-gray-200">
         {new Date(order.createdAt).toDateString()}
       </Text>
-      <Text className="text-sm -mt-0 text-gray-500">
-        <Text className="font-semibold text-gray-700">Rider Name: </Text>
+
+      {/* Rider Info */}
+      <Text className="text-sm -mt-0 text-gray-500 dark:text-gray-400">
+        <Text className="font-semibold text-gray-700 dark:text-gray-300">
+          Rider Name:{' '}
+        </Text>
         {order.__rider__?.username ?? 'Not Assigned'}
       </Text>
 
-      <Text className="text-sm -mt-0 text-gray-500">
-        <Text className="font-semibold text-gray-700">Delivery Address: </Text>
+      {/* Address */}
+      <Text className="text-sm -mt-0 text-gray-500 dark:text-gray-400">
+        <Text className="font-semibold text-gray-700 dark:text-gray-300">
+          Delivery Address:{' '}
+        </Text>
         {order.deliveryAddress}
       </Text>
 
-      <View className="flex-row justify-end items-center -mt-2 bg-green-100 rounded-lg p-2 py-1 self-end">
+      {/* Status Badge */}
+      <View className="flex-row justify-end items-center -mt-2 bg-green-100 dark:bg-green-900/40 rounded-lg p-2 py-1 self-end">
         {iconSource && (
           <Image
             source={iconSource}
-            className="w-5 h-5 mr-2" // width and height ~20-22px (5*4=20)
+            className="w-5 h-5 mr-2"
             resizeMode="contain"
-            style={{ tintColor: '#16a34a' }} // green tint
+            // Light Green tint for Dark Mode, Dark Green for Light Mode
+            style={{ tintColor: isDarkMode ? '#4ade80' : '#16a34a' }}
           />
         )}
 
-        <Text className="text-sm font-bold text-green-700">{order.status}</Text>
+        <Text className="text-sm font-bold text-green-700 dark:text-green-400">
+          {order.status}
+        </Text>
       </View>
 
       <DeliveryStatusBar status={order.status} />
@@ -65,10 +90,13 @@ export default function OrderMerchantCard({ order }: any) {
         <OrderItemRow key={item.id} item={item} />
       ))}
 
-      <Text className="text-lg font-bold mt-1 ">Total: Rs:{order.price}</Text>
+      <Text className="text-lg font-bold mt-1 text-black dark:text-white">
+        Total: Rs:{order.price}
+      </Text>
 
       <TouchableOpacity
-        className="bg-blue-600 rounded-lg p-3 mt-2 items-center"
+        className="bg-blue-600 dark:bg-blue-500 rounded-lg p-3 mt-2 items-center"
+        activeOpacity={0.8}
         onPress={() => navigation.navigate('OrderDetail', { order })}
       >
         <Text className="text-white font-bold">View Order</Text>

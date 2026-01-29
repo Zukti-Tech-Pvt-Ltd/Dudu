@@ -5,11 +5,12 @@ import {
   FlatList,
   View,
   Image,
-  TextInput,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
   Dimensions,
+  useColorScheme,
+  StatusBar,
 } from 'react-native';
 import {
   useRoute,
@@ -38,15 +39,28 @@ type CategoryRouteProp = RouteProp<BottomTabParamList, 'category'>;
 
 export default function Category() {
   const navigation = useNavigation<CategoryNavigationProp>();
-
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const route = useRoute<CategoryRouteProp>();
   var { categoryId, categoryName } = route.params;
+
+  // Dynamic Theme Colors
+  const colors = {
+    screenBg: isDark ? '#171717' : '#f3f4f6', // Neutral 900 vs Gray 100
+    cardBg: isDark ? '#262626' : '#ffffff', // Neutral 800 vs White
+    textPrimary: isDark ? '#ffffff' : '#111827',
+    textSecondary: isDark ? '#9ca3af' : '#6b7280',
+    chipBg: isDark ? '#262626' : '#e5e7eb', // Dark chip vs Light chip
+    chipActive: '#3b82f6', // Blue 500
+    border: isDark ? '#404040' : 'transparent', // Subtle border for cards in dark mode
+    price: isDark ? '#60a5fa' : '#2563eb', // Light Blue vs Blue
+  };
 
   const [food, setFood] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<FlatList<any>>(null);
   const [selected, setSelected] = useState('');
-  const [name, setName] = useState('');
+
   const filters = [
     { label: 'All' },
     { label: 'Food' },
@@ -64,16 +78,17 @@ export default function Category() {
       scrollRef.current?.scrollToOffset({ offset: 0, animated: false });
     }, []),
   );
-  console.log('categoryName', categoryName);
-  console.log('selected', selected);
+
   const getItems = async () => {
     let { data, error } = await getByCategory(selected);
     if (error) return [];
     return data || [];
   };
+
   useEffect(() => {
     setSelected(categoryName);
   }, [categoryName]);
+
   useEffect(() => {
     setLoading(true);
     setFood([]); // Clear old data immediately
@@ -88,52 +103,49 @@ export default function Category() {
         })
         .catch(() => setLoading(false));
     } else {
-      console.log('selected', selected);
       getItems()
         .then(res => {
           setFood(res);
           setLoading(false);
         })
         .catch(() => setLoading(false));
-      console.log('food', food);
     }
   }, [selected]);
 
   const renderItem = ({ item, index }: { item: any; index: number }) => {
     const isFirstColumn = index % 2 === 0;
-    console.log('item', item);
     const hasImage =
       typeof item?.image === 'string' && item.image.trim() !== '';
 
     const normalizedThumb = hasImage ? item.image.replace(/^\/+/, '') : null;
+
     return (
       <TouchableOpacity
         onPress={() => {
-          if (selected === 'All') {
-            navigation.navigate('DetailScreen', {
-              productId: item.id,
-            });
-          } else {
-            navigation.navigate('DetailScreen', {
-              productId: item.id,
-            });
-          }
+          navigation.navigate('DetailScreen', {
+            productId: item.id,
+          });
         }}
         activeOpacity={0.7}
       >
         <View
-          className="bg-white rounded-2xl mb-2 mr-2"
+          className="rounded-2xl mb-2 mr-2"
           style={{
             width: CARD_WIDTH,
-            backgroundColor: 'white',
+            backgroundColor: colors.cardBg,
             borderRadius: 16,
-            shadowColor: '#888',
-            shadowOpacity: 0.13,
-            shadowRadius: 12,
+            // Shadow for Light Mode
+            shadowColor: '#000',
+            shadowOpacity: isDark ? 0 : 0.1,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: isDark ? 0 : 2,
+            // Border for Dark Mode (visibility)
+            borderWidth: isDark ? 1 : 0,
+            borderColor: colors.border,
             marginBottom: CARD_MARGIN,
             marginLeft: isFirstColumn ? CARD_MARGIN : CARD_MARGIN / 2,
             marginRight: isFirstColumn ? CARD_MARGIN / 2 : CARD_MARGIN,
-            elevation: 2,
           }}
         >
           <Image
@@ -148,12 +160,18 @@ export default function Category() {
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               resizeMode: 'cover',
+              backgroundColor: isDark ? '#404040' : '#e5e7eb', // Placeholder bg
             }}
           />
           <View className="px-3 pb-4 pt-3">
             <Text
-              className="font-bold text-gray-900 text-base mb-1"
               numberOfLines={2}
+              style={{
+                fontWeight: '700',
+                fontSize: 16,
+                marginBottom: 4,
+                color: colors.textPrimary,
+              }}
             >
               {item.name}
             </Text>
@@ -164,29 +182,35 @@ export default function Category() {
                 source={require('../../../assets/navIcons/star.png')}
                 style={{ width: 16, height: 16, tintColor: '#fcc419' }}
               />
-              <Text className="ml-1 text-[13px] font-semibold text-gray-800">
+              <Text
+                style={{
+                  marginLeft: 4,
+                  fontSize: 13,
+                  color: colors.textPrimary,
+                }}
+              >
                 {item.rate}
               </Text>
-              <Text className="ml-1 text-xs text-gray-500">({item.count})</Text>
+
+              <Text
+                style={{
+                  marginLeft: 4,
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                }}
+              >
+                ({item.count})
+              </Text>
             </View>
 
-            {/* Price + Add button */}
+            {/* Price */}
             <View className="flex-row items-center justify-between">
-              <Text className="text-[#2563eb] font-bold text-[15px]">
+              <Text
+                style={{ color: colors.price }}
+                className="font-bold text-[15px]"
+              >
                 Rs.{item.price ?? 'N/A'}
               </Text>
-              {/* <TouchableOpacity
-              className="rounded-full items-center justify-center"
-              style={{
-                backgroundColor: '#2563eb',
-                padding: 7,
-              }}
-            >
-              <Image
-                source={require('../../../assets/navIcons/plus.png')}
-                style={{ width: 16, height: 16, tintColor: '#fff' }}
-              />
-            </TouchableOpacity> */}
             </View>
           </View>
         </View>
@@ -195,7 +219,12 @@ export default function Category() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#f3f4f6]">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.screenBg }}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.screenBg}
+      />
+
       <View className="m-1">
         {/* Filter Row */}
         <ScrollView
@@ -210,16 +239,17 @@ export default function Category() {
               onPress={() => {
                 setSelected(filter.label);
               }}
-              className={`px-[18px] h-9 mr-2 rounded-full items-center justify-center `}
+              className="px-[18px] h-9 mr-2 rounded-full items-center justify-center"
               style={{
                 backgroundColor:
-                  selected === filter.label ? '#2563eb' : '#e0e7ef',
+                  selected === filter.label ? colors.chipActive : colors.chipBg,
               }}
             >
               <Text
                 className="font-medium text-lg"
                 style={{
-                  color: selected === filter.label ? 'white' : '#374151',
+                  color:
+                    selected === filter.label ? '#fff' : colors.textPrimary,
                 }}
               >
                 {filter.label}
@@ -233,7 +263,7 @@ export default function Category() {
       <View className="flex-1">
         {loading ? (
           <View className="flex-1 justify-center items-center py-10">
-            <ActivityIndicator size="large" color="#2563eb" />
+            <ActivityIndicator size="large" color={colors.chipActive} />
           </View>
         ) : (
           <FlatList
@@ -246,15 +276,20 @@ export default function Category() {
               justifyContent: 'flex-start',
             }}
             contentContainerStyle={{
-              paddingRight: CARD_MARGIN, // extra space on the right
+              paddingRight: CARD_MARGIN,
             }}
             ListEmptyComponent={() => (
               <View className="items-center mt-10">
                 <Image
                   source={require('../../../assets/navIcons/empty.png')}
-                  style={{ width: 80, height: 80, marginBottom: 12 }}
+                  style={{
+                    width: 80,
+                    height: 80,
+                    marginBottom: 12,
+                    tintColor: colors.textSecondary,
+                  }}
                 />
-                <Text className="text-gray-500 text-base">
+                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>
                   No products found
                 </Text>
               </View>

@@ -48,3 +48,14 @@ export const getAllOrderToday = async () => {
     return []; // or handle error properly
   }
 };
+export const orderReceivedByUser = async (orderId: number) => {
+  try {
+    const response = await apiAuth.get(
+      `api/order/orderReceivedByUser/${orderId}`,
+    );
+    return response.data.data; // Return the cart data
+  } catch (err) {
+    console.error(err);
+    return []; // or handle error properly
+  }
+};

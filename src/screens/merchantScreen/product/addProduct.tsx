@@ -9,20 +9,20 @@ import {
   Alert,
   ActivityIndicator,
   useColorScheme,
+  StatusBar,
+  PermissionsAndroid,
+  Platform,
 } from 'react-native';
 import {
   launchImageLibrary,
   launchCamera,
   ImageLibraryOptions,
-  CameraOptions,
 } from 'react-native-image-picker';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { API_BASE_URL } from '@env';
 import { createProduct } from '../../../api/merchantOrder/merchantProductApi';
 import { Camera, Video } from 'lucide-react-native';
 import { createThumbnail } from 'react-native-create-thumbnail';
 import { Picker } from '@react-native-picker/picker';
-import apiAuth from '../../../api/indexAuth';
+
 export enum categoryType {
   DELIVERY = 'Delivery',
   SHOP = 'Shop',
@@ -33,7 +33,6 @@ export enum categoryType {
   LIHAMOTO = 'LiHaMoto',
   BUYSELL = 'BuySell',
 }
-import { PermissionsAndroid, Platform } from 'react-native';
 
 export async function requestCameraPermission() {
   if (Platform.OS === 'android') {
@@ -49,6 +48,22 @@ export async function requestCameraPermission() {
 }
 
 export default function ProductCreateScreen({ navigation }: any) {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  // Dynamic Theme Colors
+  const colors = {
+    screenBg: isDarkMode ? '#171717' : '#f9fafb',
+    cardBg: isDarkMode ? '#262626' : '#ffffff',
+    textPrimary: isDarkMode ? '#ffffff' : '#111827',
+    textSecondary: isDarkMode ? '#a3a3a3' : '#4b5563',
+    inputBg: isDarkMode ? '#404040' : '#f3f4f6',
+    inputText: isDarkMode ? '#ffffff' : '#000000',
+    placeholder: isDarkMode ? '#a3a3a3' : '#9ca3af',
+    iconColor: isDarkMode ? '#d4d4d4' : '#6b7280',
+    border: isDarkMode ? '#404040' : '#e5e7eb',
+  };
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -56,16 +71,14 @@ export default function ProductCreateScreen({ navigation }: any) {
   const [count, setCount] = useState('');
   const [type, setType] = useState('');
   const [category, setCategory] = useState('');
-  const colorScheme = useColorScheme();
 
-  const isDarkMode = colorScheme === 'dark';
   const [images, setImages] = useState<any[]>([]);
   const [video, setVideo] = useState<any>(null);
-
   const [loading, setLoading] = useState(false);
+
   const normalizeUri = (uri: string) => {
     if (uri.startsWith('content://')) {
-      return uri; // Thumbnail library now supports content:// only on some devices
+      return uri;
     }
     if (!uri.startsWith('file://')) {
       return 'file://' + uri;
@@ -115,7 +128,6 @@ export default function ProductCreateScreen({ navigation }: any) {
       const asset = result.assets?.[0];
       if (!asset?.uri) return;
 
-      // Normalize for Android
       const videoUri = normalizeUri(asset.uri);
 
       const thumb = await createThumbnail({
@@ -157,6 +169,7 @@ export default function ProductCreateScreen({ navigation }: any) {
       thumbnail: thumb.path,
     });
   };
+
   const handleSubmit = async () => {
     if (!name || !description || !price || !rate || !count || !category) {
       return Alert.alert('Missing fields', 'Please fill all required fields.');
@@ -192,9 +205,6 @@ export default function ProductCreateScreen({ navigation }: any) {
         } as any);
       }
 
-      console.log('FormData contents:', (formData as any)._parts);
-
-      // Call your API function
       const response = await createProduct(formData);
 
       setLoading(false);
@@ -207,273 +217,378 @@ export default function ProductCreateScreen({ navigation }: any) {
     }
   };
 
-  return (
-    <ScrollView
-      className={`flex-1 p-5 ${isDarkMode ? 'bg-neutral-900' : 'bg-gray-50'}`}
-      showsVerticalScrollIndicator={false}
+  const Label = ({ text }: { text: string }) => (
+    <Text
+      style={{ color: colors.textSecondary }}
+      className="font-semibold mb-2"
     >
-      {/* FORM CARD */}
-      <View
-        className={`p-5 rounded-2xl mb-6 ${
-          isDarkMode ? 'bg-[#1b1b1b]' : 'bg-white'
-        } shadow-sm`}
-        style={{ elevation: 3 }}
-      >
-        {/* Name */}
-        <Text className="font-semibold mb-2 text-gray-700">Product Name *</Text>
-        <TextInput
-          className={`rounded-xl px-4 py-3 mb-4 ${
-            isDarkMode ? 'bg-neutral-800 text-white' : 'bg-gray-100'
-          }`}
-          placeholder="Enter product name"
-          placeholderTextColor="#999"
-          value={name}
-          onChangeText={setName}
-        />
+      {text}
+    </Text>
+  );
 
-        {/* Category */}
-        <Text className="font-semibold mb-2 text-gray-700">Category *</Text>
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.screenBg}
+      />
+
+      <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
+        {/* FORM CARD */}
         <View
-          className="border rounded-xl bg-gray-100 mb-4 justify-center"
-          style={{ height: 55 }}
+          style={{ backgroundColor: colors.cardBg, elevation: 3 }}
+          className="p-5 rounded-2xl mb-6 shadow-sm"
         >
-          <Picker
-            selectedValue={category}
-            onValueChange={itemValue => setCategory(itemValue)}
-            mode="dropdown"
-            dropdownIconColor="#000"
-            style={{ width: '100%', height: 55 }}
-          >
-            <Picker.Item label="Select category..." value="" />
-            <Picker.Item label="Delivery" value={categoryType.DELIVERY} />
-            <Picker.Item label="Shop" value={categoryType.SHOP} />
-            <Picker.Item label="Games" value={categoryType.GAMES} />
-            <Picker.Item label="Food" value={categoryType.FOOD} />
-            <Picker.Item label="Job" value={categoryType.JOB} />
-            <Picker.Item label="Home" value={categoryType.HOME} />
-            <Picker.Item label="LiHaMoto" value={categoryType.LIHAMOTO} />
-            <Picker.Item label="BuySell" value={categoryType.BUYSELL} />
-          </Picker>
-        </View>
-
-        {/* Description */}
-        <Text className="font-semibold mt-4 mb-2 text-gray-700">
-          Description *
-        </Text>
-        <TextInput
-          className={`rounded-xl px-4 py-3 mb-4 ${
-            isDarkMode ? 'bg-neutral-800 text-white' : 'bg-gray-100'
-          }`}
-          placeholder="Write product description..."
-          placeholderTextColor="#999"
-          multiline
-          value={description}
-          onChangeText={setDescription}
-        />
-
-        {/* 3 Columns */}
-        <View className="flex-row gap-4 mt-2">
-          {/* Price */}
-          <View className="flex-1">
-            <Text className="font-semibold mb-2 text-gray-700">Price *</Text>
-            <TextInput
-              className={`rounded-xl px-3 py-3 ${
-                isDarkMode ? 'bg-neutral-800 text-white' : 'bg-gray-100'
-              }`}
-              placeholder="0"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-              value={price}
-              onChangeText={setPrice}
-            />
-          </View>
-
-          {/* Rate */}
-          <View className="flex-1">
-            <Text className="font-semibold mb-2 text-gray-700">Rate *</Text>
-            <TextInput
-              className={`rounded-xl px-3 py-3 ${
-                isDarkMode ? 'bg-neutral-800 text-white' : 'bg-gray-100'
-              }`}
-              placeholder="0"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-              value={rate}
-              onChangeText={setRate}
-            />
-          </View>
-
-          {/* Count */}
-          <View className="flex-1">
-            <Text className="font-semibold mb-2 text-gray-700">Count *</Text>
-            <TextInput
-              className={`rounded-xl px-3 py-3 ${
-                isDarkMode ? 'bg-neutral-800 text-white' : 'bg-gray-100'
-              }`}
-              placeholder="0"
-              placeholderTextColor="#999"
-              keyboardType="numeric"
-              value={count}
-              onChangeText={setCount}
-            />
-          </View>
-        </View>
-
-        {/* Type */}
-        <Text className="font-semibold mt-4 mb-2 text-gray-700">
-          Type (optional)
-        </Text>
-        <TextInput
-          className={`rounded-xl px-4 py-3 mb-2 ${
-            isDarkMode ? 'bg-neutral-800 text-white' : 'bg-gray-100'
-          }`}
-          placeholder="Enter type"
-          placeholderTextColor="#999"
-          value={type}
-          onChangeText={setType}
-        />
-      </View>
-
-      {/* IMAGE CARD */}
-      <View
-        className={`p-5 rounded-2xl mb-6 ${
-          isDarkMode ? 'bg-[#1b1b1b]' : 'bg-white'
-        } shadow-sm`}
-        style={{ elevation: 3 }}
-      >
-        <Text className="font-semibold text-lg mb-3 text-gray-700">
-          Product Image
-        </Text>
-
-        {images.length === 0 ? (
-          <TouchableOpacity
-            onPress={pickImage}
-            className={`h-36 rounded-xl items-center justify-center ${
-              isDarkMode ? 'bg-neutral-800' : 'bg-gray-200'
-            }`}
-          >
-            <Camera size={40} color="#777" />
-            <Text className="text-sm mt-2 text-gray-500">Tap to upload</Text>
-            <Text
-              className="text-sm mt-1
-             text-gray-500"
-            >
-              First image is the thumbnail
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <>
-            {/* Thumbnail */}
-            <Image
-              source={{ uri: images[0].uri }}
-              className="w-full h-40 rounded-xl"
-              resizeMode="cover"
-            />
-
-            {/* Gallery images */}
-            {images.length > 1 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                className="mt-3"
-              >
-                {images.slice(1).map((img, index) => (
-                  <Image
-                    key={index}
-                    source={{ uri: img.uri }}
-                    className="w-20 h-20 rounded-lg mr-2"
-                  />
-                ))}
-              </ScrollView>
-            )}
-          </>
-        )}
-
-        {/* Buttons */}
-        <View className="flex-row gap-3 mt-4">
-          <TouchableOpacity
-            onPress={pickImage}
-            className="flex-1 p-3 bg-blue-600 rounded-xl"
-          >
-            <Text className="text-center text-white font-semibold">
-              Gallery
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={captureImage}
-            className="p-3 rounded-xl bg-gray-300"
-          >
-            <Camera size={28} color="#000" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* VIDEO CARD */}
-      <View
-        className={`p-5 rounded-2xl mb-6 ${
-          isDarkMode ? 'bg-[#1b1b1b]' : 'bg-white'
-        } shadow-sm`}
-        style={{ elevation: 3 }}
-      >
-        <Text className="font-semibold text-lg mb-3 text-gray-700">
-          Product Video
-        </Text>
-
-        {!video ? (
-          <TouchableOpacity
-            onPress={pickVideo}
-            className={`h-36 rounded-xl items-center justify-center ${
-              isDarkMode ? 'bg-neutral-800' : 'bg-gray-200'
-            }`}
-          >
-            <Video size={42} color="#777" />
-            <Text className="text-sm mt-2 text-gray-500">Tap to upload</Text>
-          </TouchableOpacity>
-        ) : (
-          <Image
-            source={{ uri: video.thumbnail }}
-            className="w-full h-40 rounded-xl mt-1"
-            resizeMode="contain"
+          {/* Name */}
+          <Label text="Product Name *" />
+          <TextInput
+            style={{
+              backgroundColor: colors.inputBg,
+              color: colors.inputText,
+            }}
+            className="rounded-xl px-4 py-3 mb-4"
+            placeholder="Enter product name"
+            placeholderTextColor={colors.placeholder}
+            value={name}
+            onChangeText={setName}
           />
-        )}
 
-        {/* Buttons */}
-        <View className="flex-row gap-3 mt-4">
-          <TouchableOpacity
-            onPress={pickVideo}
-            className="flex-1 p-3 bg-blue-600 rounded-xl"
+          {/* Category */}
+          <Label text="Category *" />
+          <View
+            style={{
+              backgroundColor: colors.inputBg,
+              borderColor: colors.border,
+              borderWidth: 1,
+            }}
+            className="rounded-xl mb-4 justify-center"
           >
-            <Text className="text-center text-white font-semibold">
-              Gallery
-            </Text>
-          </TouchableOpacity>
+            <Picker
+              selectedValue={category}
+              onValueChange={itemValue => setCategory(itemValue)}
+              mode="dropdown"
+              dropdownIconColor={colors.textPrimary}
+              style={{ color: colors.textPrimary }}
+            >
+              <Picker.Item
+                label="Select category..."
+                value=""
+                style={{ color: colors.textSecondary }}
+              />
+              <Picker.Item
+                label="Delivery"
+                value={categoryType.DELIVERY}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+              <Picker.Item
+                label="Shop"
+                value={categoryType.SHOP}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+              <Picker.Item
+                label="Games"
+                value={categoryType.GAMES}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+              <Picker.Item
+                label="Food"
+                value={categoryType.FOOD}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+              <Picker.Item
+                label="Job"
+                value={categoryType.JOB}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+              <Picker.Item
+                label="Home"
+                value={categoryType.HOME}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+              <Picker.Item
+                label="LiHaMoto"
+                value={categoryType.LIHAMOTO}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+              <Picker.Item
+                label="BuySell"
+                value={categoryType.BUYSELL}
+                style={{
+                  color: colors.textPrimary,
+                  backgroundColor: colors.cardBg,
+                }}
+              />
+            </Picker>
+          </View>
 
-          <TouchableOpacity
-            onPress={captureVideo}
-            className="p-3 rounded-xl bg-gray-300"
-          >
-            <Video size={28} color="#000" />
-          </TouchableOpacity>
+          {/* Description */}
+          <Label text="Description *" />
+          <TextInput
+            style={{
+              backgroundColor: colors.inputBg,
+              color: colors.inputText,
+            }}
+            className="rounded-xl px-4 py-3 mb-4"
+            placeholder="Write product description..."
+            placeholderTextColor={colors.placeholder}
+            multiline
+            value={description}
+            onChangeText={setDescription}
+          />
+
+          {/* 3 Columns */}
+          <View className="flex-row gap-4 mt-2">
+            {/* Price */}
+            <View className="flex-1">
+              <Label text="Price *" />
+              <TextInput
+                style={{
+                  backgroundColor: colors.inputBg,
+                  color: colors.inputText,
+                }}
+                className="rounded-xl px-3 py-3"
+                placeholder="0"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="numeric"
+                value={price}
+                onChangeText={setPrice}
+              />
+            </View>
+
+            {/* Rate */}
+            <View className="flex-1">
+              <Label text="Rate *" />
+              <TextInput
+                style={{
+                  backgroundColor: colors.inputBg,
+                  color: colors.inputText,
+                }}
+                className="rounded-xl px-3 py-3"
+                placeholder="0"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="numeric"
+                value={rate}
+                onChangeText={setRate}
+              />
+            </View>
+
+            {/* Count */}
+            <View className="flex-1">
+              <Label text="Count *" />
+              <TextInput
+                style={{
+                  backgroundColor: colors.inputBg,
+                  color: colors.inputText,
+                }}
+                className="rounded-xl px-3 py-3"
+                placeholder="0"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="numeric"
+                value={count}
+                onChangeText={setCount}
+              />
+            </View>
+          </View>
+
+          {/* Type */}
+          <View className="mt-4">
+            <Label text="Type (optional)" />
+            <TextInput
+              style={{
+                backgroundColor: colors.inputBg,
+                color: colors.inputText,
+              }}
+              className="rounded-xl px-4 py-3 mb-2"
+              placeholder="Enter type"
+              placeholderTextColor={colors.placeholder}
+              value={type}
+              onChangeText={setType}
+            />
+          </View>
         </View>
-      </View>
 
-      {/* SUBMIT */}
-      <TouchableOpacity
-        onPress={handleSubmit}
-        disabled={loading}
-        className={`p-4 rounded-2xl mb-10 ${
-          loading ? 'bg-gray-400' : 'bg-black'
-        }`}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-center text-white text-lg font-semibold">
-            Create Product
+        {/* IMAGE CARD */}
+        <View
+          style={{ backgroundColor: colors.cardBg, elevation: 3 }}
+          className="p-5 rounded-2xl mb-6 shadow-sm"
+        >
+          <Text
+            style={{ color: colors.textPrimary }}
+            className="font-semibold text-lg mb-3"
+          >
+            Product Image
           </Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+
+          {images.length === 0 ? (
+            <TouchableOpacity
+              onPress={pickImage}
+              style={{ backgroundColor: colors.inputBg }}
+              className="h-36 rounded-xl items-center justify-center"
+            >
+              <Camera size={40} color={colors.iconColor} />
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="text-sm mt-2"
+              >
+                Tap to upload
+              </Text>
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="text-sm mt-1"
+              >
+                First image is the thumbnail
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              {/* Thumbnail */}
+              <Image
+                source={{ uri: images[0].uri }}
+                className="w-full h-40 rounded-xl bg-gray-200"
+                resizeMode="cover"
+              />
+
+              {/* Gallery images */}
+              {images.length > 1 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="mt-3"
+                >
+                  {images.slice(1).map((img, index) => (
+                    <Image
+                      key={index}
+                      source={{ uri: img.uri }}
+                      className="w-20 h-20 rounded-lg mr-2 bg-gray-200"
+                    />
+                  ))}
+                </ScrollView>
+              )}
+            </>
+          )}
+
+          {/* Buttons */}
+          <View className="flex-row gap-3 mt-4">
+            <TouchableOpacity
+              onPress={pickImage}
+              className="flex-1 p-3 bg-blue-600 rounded-xl"
+            >
+              <Text className="text-center text-white font-semibold">
+                Gallery
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={captureImage}
+              style={{ backgroundColor: colors.inputBg }}
+              className="p-3 rounded-xl border border-gray-300 dark:border-neutral-600"
+            >
+              <Camera size={28} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* VIDEO CARD */}
+        <View
+          style={{ backgroundColor: colors.cardBg, elevation: 3 }}
+          className="p-5 rounded-2xl mb-6 shadow-sm"
+        >
+          <Text
+            style={{ color: colors.textPrimary }}
+            className="font-semibold text-lg mb-3"
+          >
+            Product Video
+          </Text>
+
+          {!video ? (
+            <TouchableOpacity
+              onPress={pickVideo}
+              style={{ backgroundColor: colors.inputBg }}
+              className="h-36 rounded-xl items-center justify-center"
+            >
+              <Video size={42} color={colors.iconColor} />
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="text-sm mt-2"
+              >
+                Tap to upload
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Image
+              source={{ uri: video.thumbnail }}
+              className="w-full h-40 rounded-xl mt-1 bg-gray-200"
+              resizeMode="contain"
+            />
+          )}
+
+          {/* Buttons */}
+          <View className="flex-row gap-3 mt-4">
+            <TouchableOpacity
+              onPress={pickVideo}
+              className="flex-1 p-3 bg-blue-600 rounded-xl"
+            >
+              <Text className="text-center text-white font-semibold">
+                Gallery
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={captureVideo}
+              style={{ backgroundColor: colors.inputBg }}
+              className="p-3 rounded-xl border border-gray-300 dark:border-neutral-600"
+            >
+              <Video size={28} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* SUBMIT */}
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={loading}
+          style={{
+            backgroundColor: loading
+              ? colors.textSecondary
+              : isDarkMode
+              ? '#ffffff'
+              : '#000000',
+          }}
+          className="p-4 rounded-2xl mb-10"
+        >
+          {loading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text
+              style={{ color: isDarkMode ? '#000000' : '#ffffff' }}
+              className="text-center text-lg font-semibold"
+            >
+              Create Product
+            </Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }

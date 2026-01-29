@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
-  FlatList,
   Dimensions,
+  useColorScheme,
+  StatusBar,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import {
@@ -15,7 +16,7 @@ import {
   getOne,
   getAllImagePerProduct,
 } from '../../api/serviceList/productApi';
-import { API_BASE_URL } from '@env';
+// import { API_BASE_URL } from '@env'; // Uncomment if needed
 import { createCart } from '../../api/cartApi';
 import BuyNowPopup from '../popUp/buyNowPop';
 import { Share } from 'react-native';
@@ -27,7 +28,6 @@ interface ProductDataType {
   name: string;
   image: string | any;
   price: number;
-  // add other fields as needed
   video?: string;
   category?: string;
   description?: string;
@@ -46,7 +46,13 @@ export type ProductImage = { id: number; image: string; productId: number };
 
 const DetailScreen = () => {
   const insets = useSafeAreaInsets();
-  const screenWidth = Dimensions.get('window').width;
+  // const screenWidth = Dimensions.get('window').width; // Unused
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  // Dynamic colors for inline styles that NativeWind might miss (like Image tintColor)
+  const themeIconColor = isDarkMode ? '#FFFFFF' : '#000000';
+  const themeBackgroundColor = isDarkMode ? '#171717' : '#f9fafb'; // neutral-900 vs gray-50
 
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
@@ -54,6 +60,7 @@ const DetailScreen = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showBuyNowPopup, setShowBuyNowPopup] = useState(false);
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
+
   const handleShowPopup = () => setShowBuyNowPopup(true);
   const handleClosePopup = () => setShowBuyNowPopup(false);
 
@@ -76,31 +83,30 @@ const DetailScreen = () => {
       setTimeout(() => setShowSuccess(false), 1000);
     }
   };
+
   const productImagesArray = async () => {
     if (productId) {
       const res = await getAllImagePerProduct(productId);
       if (res?.status === 'success' && Array.isArray(res.data)) {
-        setProductImages(res.data); // set only the array
+        setProductImages(res.data);
       } else {
-        setProductImages([]); // fallback
+        setProductImages([]);
       }
     }
   };
 
   const handleShare = async () => {
     try {
-      const url = `https://yourdomain.com/product/${product.id}`; // Replace with your actual domain and product path
+      const url = `https://dudusoftware.com/services/${product.category}/${product.id}`;
       const message = `Check out this product: ${product.name}\n${url}`;
-      console.log('message', message);
       const result = await Share.share({
         message,
         url,
         title: product.name,
       });
-      // Optional: handle different share actions
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
-          // shared with activity type of result.activityType
+          // shared with activity type
         } else {
           // shared successfully
         }
@@ -111,8 +117,9 @@ const DetailScreen = () => {
       console.log('Error sharing:', error);
     }
   };
+
   let getItems: () => Promise<ApiResponse<ProductDataType> | null>;
-  console.log('productId', productId);
+
   if (productId) {
     getItems = async () => {
       try {
@@ -123,13 +130,10 @@ const DetailScreen = () => {
         return null;
       }
     };
-    console.log('getItems', getItems);
   } else {
-    console.log('productName', productName);
     getItems = async () => {
       try {
         const data = await getByName(productName);
-        console.log('dataaaaaaaaaaa', data);
         return data || null;
       } catch (err) {
         console.log(err);
@@ -138,14 +142,13 @@ const DetailScreen = () => {
     };
   }
 
-  const normalizedImage = product?.image ? product.image : '';
+  // const normalizedImage = product?.image ? product.image : ''; // Unused
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       const item = await getItems();
-      const iimage = await productImagesArray();
-      console.log('item', item);
+      await productImagesArray();
 
       if (item) {
         setProduct(item.data);
@@ -154,30 +157,35 @@ const DetailScreen = () => {
     };
     fetchData();
   }, [productId, productName]);
-  console.log('iteiimagem!!!!!!', productImages);
-  // Assuming productImages.data is your API response array
+
   const galleryImages = productImages
-    ? productImages
-        .map(img => img.image) // get only image paths
-        .filter(img => img !== product?.image) // remove main image
+    ? productImages.map(img => img.image).filter(img => img !== product?.image)
     : [];
 
-  const allImages = product
-    ? [product.image, ...galleryImages] // main image first
-    : [];
+  const allImages = product ? [product.image, ...galleryImages] : [];
+
   return (
     <SafeAreaView
-      className="flex-1 bg-white -mb-2"
+      // Added dark:bg-neutral-900 for dark mode background
+      className="flex-1 bg-gray-50 dark:bg-neutral-900 -mb-2"
       style={{
         flex: 1,
-        backgroundColor: '#f9fafb',
-        paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
+        // Using dynamic variable for inline background style to match className
+        backgroundColor: themeBackgroundColor,
+        paddingBottom: insets.bottom || 10,
       }}
     >
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text className="mt-2">Loading...</Text>
+          <ActivityIndicator
+            size="large"
+            color={isDarkMode ? '#ffffff' : '#007AFF'}
+          />
+          <Text className="mt-2 text-gray-800 dark:text-gray-200">
+            Loading...
+          </Text>
         </View>
       ) : product ? (
         <View className="flex-1">
@@ -185,81 +193,105 @@ const DetailScreen = () => {
           <View className="absolute top-10 left-4 z-10">
             <TouchableOpacity
               onPress={() => navigation.goBack()}
-              className="w-9 h-9 rounded-full bg-white/50 items-center justify-center"
+              // Added dark:bg-neutral-800/50
+              className="w-9 h-9 rounded-full bg-white/50 dark:bg-neutral-800/50 items-center justify-center"
             >
               <Image
                 source={require('../../../assets/navIcons/left-arrow.png')}
-                style={{ width: 16, height: 16, tintColor: '#000000ff' }}
+                // Dynamic tint color
+                style={{ width: 16, height: 16, tintColor: themeIconColor }}
               />
             </TouchableOpacity>
           </View>
 
           <ProductImageCarousel allImages={allImages} />
 
-          {/* Content */}
+          {/* Content Container */}
           <View
-            className="mt-7 mb-4 mx-2 bg-white rounded-[48px] p-5 shadow-md flex-1"
+            // bg-white -> dark:bg-neutral-800 (Card color)
+            className="mt-7 mb-4 mx-2 bg-white dark:bg-neutral-800 rounded-[48px] p-5 shadow-md flex-1"
             style={{
-              shadowColor: '#000000', // black shadow color
+              shadowColor: isDarkMode ? '#ffffff' : '#000000', // Subtler shadow in dark mode
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.5, // medium opacity
-              elevation: 3, // Android shadow elevation
+              shadowOpacity: isDarkMode ? 0.1 : 0.5,
+              elevation: 3,
             }}
           >
-            <Text className="text-xl font-semibold text-gray-800 mb-2">
+            {/* Product Name */}
+            <Text className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
               {product.name?.trim()}
             </Text>
+
             {/* Right Icons */}
             <View className="absolute right-8 top-12 flex-row">
+              {/* Like Button (Commented out in original) */}
               {/* <TouchableOpacity>
                 <Image
                   source={require('../../../assets/navIcons/heart.png')}
-                  style={{ width: 20, height: 20, tintColor: '#000000' }}
+                  style={{ width: 20, height: 20, tintColor: themeIconColor }}
                 />
               </TouchableOpacity> */}
+
               <TouchableOpacity onPress={handleShare} className="ml-7">
                 <Image
                   source={require('../../../assets/navIcons/send.png')}
-                  style={{ width: 20, height: 20, tintColor: '#000000' }}
+                  style={{ width: 20, height: 20, tintColor: themeIconColor }}
                 />
               </TouchableOpacity>
             </View>
+
+            {/* Price */}
             <View className="flex-row items-center mb-2">
-              <Text className="text-lg font-bold text-blue-500">
+              <Text className="text-lg font-bold text-blue-500 dark:text-blue-400">
                 Rs.{product.price ?? 0}
               </Text>
             </View>
+
             {/* Quantity Controls */}
             <View className="flex-row items-center my-3">
               <TouchableOpacity
                 onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-8 h-8 rounded-md bg-gray-200 items-center justify-center"
+                // bg-gray-200 -> dark:bg-neutral-700
+                className="w-8 h-8 rounded-md bg-gray-200 dark:bg-neutral-700 items-center justify-center"
               >
-                <Text className="text-2xl text-gray-700">-</Text>
+                <Text className="text-2xl text-gray-700 dark:text-gray-200">
+                  -
+                </Text>
               </TouchableOpacity>
-              <Text className="mx-4 text-lg font-medium">{quantity}</Text>
+
+              <Text className="mx-4 text-lg font-medium text-black dark:text-white">
+                {quantity}
+              </Text>
+
               <TouchableOpacity
                 onPress={() => setQuantity(quantity + 1)}
-                className="w-8 h-8 rounded-md bg-gray-200 items-center justify-center"
+                className="w-8 h-8 rounded-md bg-gray-200 dark:bg-neutral-700 items-center justify-center"
               >
-                <Text className="text-2xl text-gray-700">+</Text>
+                <Text className="text-2xl text-gray-700 dark:text-gray-200">
+                  +
+                </Text>
               </TouchableOpacity>
             </View>
+
             {/* Description */}
-            <Text className="font-bold mt-3 mb-1.5 text-base">Description</Text>
-            <Text className="text-gray-600 text-sm mb-5">
+            <Text className="font-bold mt-3 mb-1.5 text-base text-black dark:text-white">
+              Description
+            </Text>
+            <Text className="text-gray-600 dark:text-gray-400 text-sm mb-5">
               {product.description || 'No description available.'}
             </Text>
           </View>
 
+          {/* Action Buttons */}
           <View className="absolute bottom-8 right-5 flex-row">
             <TouchableOpacity
-              onPress={handleShowPopup} // Show popup on press
+              onPress={handleShowPopup}
               activeOpacity={0.8}
               className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 mr-3 shadow-2xl"
               style={{
                 shadowOffset: { width: 0, height: 8 },
                 elevation: 10,
+                shadowColor: '#000', // Keep shadow black even in dark mode for buttons
               }}
             >
               <Text className="text-white font-semibold text-base mr-2">
@@ -271,14 +303,15 @@ const DetailScreen = () => {
                 style={{ tintColor: 'white' }}
               />
             </TouchableOpacity>
+
             <TouchableOpacity
               onPress={handleAddToCart}
               activeOpacity={0.8}
               className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 shadow-2xl"
               style={{
                 shadowOffset: { width: 0, height: 8 },
-
                 elevation: 10,
+                shadowColor: '#000',
               }}
             >
               <Text className="text-white font-semibold text-base mr-2">
@@ -319,7 +352,9 @@ const DetailScreen = () => {
         </View>
       ) : (
         <View className="flex-1 justify-center items-center">
-          <Text>No Product Found</Text>
+          <Text className="text-gray-800 dark:text-white">
+            No Product Found
+          </Text>
         </View>
       )}
     </SafeAreaView>

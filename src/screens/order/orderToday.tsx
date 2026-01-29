@@ -9,6 +9,7 @@ import {
   useColorScheme,
   RefreshControl,
   FlatList,
+  StatusBar,
 } from 'react-native';
 import { getAllOrders, getAllOrderToday } from '../../api/orderApi';
 import OrderCard from './orderCard';
@@ -54,8 +55,6 @@ type Order = {
   _orderItems_: OrderItem[];
 };
 
-/* -------------------- CONSTANTS -------------------- */
-
 /* -------------------- COMPONENT -------------------- */
 
 export default function OrderTodayScreen() {
@@ -63,7 +62,17 @@ export default function OrderTodayScreen() {
   const isDarkMode = colorScheme === 'dark';
   const { isLoggedIn } = useContext(AuthContext);
 
-  const [orders, setOrders] = useState<Order[]>([]); // 🔑 ALL ORDERS
+  // Dynamic Theme Colors
+  const colors = {
+    screenBg: isDarkMode ? '#171717' : '#ffffff',
+    headerBg: isDarkMode ? '#171717' : '#ffffff',
+    textPrimary: isDarkMode ? '#ffffff' : '#111827',
+    textSecondary: isDarkMode ? '#9ca3af' : '#6b7280',
+    border: isDarkMode ? '#262626' : '#e5e7eb',
+    overlay: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.6)',
+  };
+
+  const [orders, setOrders] = useState<Order[]>([]);
   const [displayOrders, setDisplayOrders] = useState<Order[]>([]);
   const [selected, setSelected] = useState('All Orders');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -82,7 +91,6 @@ export default function OrderTodayScreen() {
 
   /* -------------------- API -------------------- */
 
-  // ⚠️ ALWAYS fetch ALL orders (no filter here)
   const fetchOrders = async (showLoader = true) => {
     if (showLoader) setLoading(true);
 
@@ -98,16 +106,14 @@ export default function OrderTodayScreen() {
 
   /* -------------------- EFFECTS -------------------- */
 
-  // Initial load
   useFocusEffect(
     useCallback(() => {
       if (isLoggedIn) {
-        fetchOrders(); // no loader, smoother UX
+        fetchOrders();
       }
     }, [isLoggedIn]),
   );
 
-  // Socket updates
   useEffect(() => {
     const socket = connectSocket();
 
@@ -122,7 +128,6 @@ export default function OrderTodayScreen() {
     };
   }, []);
 
-  // Filter + sort (derived state)
   useEffect(() => {
     const filtered =
       selected === 'All Orders'
@@ -144,20 +149,12 @@ export default function OrderTodayScreen() {
 
   if (!isLoggedIn) {
     return (
-      <View
-        className={`flex-1 items-center justify-center ${
-          isDarkMode ? 'bg-gray-900' : 'bg-white'
-        }`}
-      >
+      <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Image
           source={require('../../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200 dark:bg-neutral-800"
         />
-        <Text
-          className={`font-bold text-lg mb-2 ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}
-        >
+        <Text className="font-bold text-lg mb-2 text-gray-900 dark:text-white">
           Please login first
         </Text>
       </View>
@@ -167,7 +164,15 @@ export default function OrderTodayScreen() {
   /* -------------------- UI -------------------- */
 
   return (
-    <View className="flex-1 relative">
+    <View
+      className="flex-1 relative"
+      style={{ backgroundColor: colors.screenBg }}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.headerBg}
+      />
+
       {/* Header */}
       <View
         style={{
@@ -177,16 +182,16 @@ export default function OrderTodayScreen() {
           paddingTop: 50,
           paddingHorizontal: 16,
           paddingVertical: 15,
-          backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+          backgroundColor: colors.headerBg,
           borderBottomWidth: 1,
-          borderBottomColor: isDarkMode ? '#1f2933' : '#e5e7eb',
+          borderBottomColor: colors.border,
         }}
       >
         <Text
           style={{
             fontSize: 22,
             fontWeight: '700',
-            color: isDarkMode ? '#ffffff' : '#111827',
+            color: colors.textPrimary,
           }}
         >
           Orders Today
@@ -195,27 +200,26 @@ export default function OrderTodayScreen() {
         <TouchableOpacity
           onPress={() => {
             setLoading(true);
-
             setTimeout(() => {
               setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'));
               setLoading(false);
-            }, 300); // ⏳ short UX delay
+            }, 300);
           }}
           style={{ padding: 8 }}
         >
           {sortOrder === 'asc' ? (
-            <SortAsc color={isDarkMode ? 'white' : 'black'} size={22} />
+            <SortAsc color={colors.textPrimary} size={22} />
           ) : (
-            <SortDesc color={isDarkMode ? 'white' : 'black'} size={22} />
+            <SortDesc color={colors.textPrimary} size={22} />
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Filter Bar */}
+      {/* Filter Bar (Hidden / Placeholder logic preserved from original code) */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 7, marginVertical: -12 }}
+        contentContainerStyle={{ paddingHorizontal: 7, marginVertical: -15 }}
       >
         <View style={{ flexDirection: 'row' }}>
           <TouchableOpacity
@@ -230,10 +234,10 @@ export default function OrderTodayScreen() {
         data={displayOrders}
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => <OrderCard order={item} />}
-        scrollEnabled={displayOrders.length > 0} // ✅ ADD THIS
+        scrollEnabled={displayOrders.length > 0}
         ListEmptyComponent={
           !loading ? (
-            <Text className="text-center text-gray-500 mt-10">
+            <Text className="text-center mt-10 text-gray-500 dark:text-gray-400">
               No orders today.
             </Text>
           ) : null
@@ -247,10 +251,11 @@ export default function OrderTodayScreen() {
           />
         }
         contentContainerStyle={
-          displayOrders.length === 0
-            ? { flexGrow: 1 } // center empty state, no scroll
-            : { paddingBottom: 60 }
+          displayOrders.length === 1
+            ? { paddingBottom: 600 }
+            : { paddingBottom: 250 }
         }
+        style={{ backgroundColor: colors.screenBg }}
       />
 
       {/* Loading Overlay */}
@@ -259,7 +264,7 @@ export default function OrderTodayScreen() {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'rgba(255,255,255,0.6)',
+            backgroundColor: colors.overlay,
             justifyContent: 'center',
             alignItems: 'center',
           }}

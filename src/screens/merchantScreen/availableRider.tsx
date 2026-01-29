@@ -3,9 +3,12 @@ import {
   View,
   Text,
   FlatList,
-  Alert,
   TouchableOpacity,
   Linking,
+  Modal,
+  ActivityIndicator,
+  useColorScheme,
+  StatusBar,
 } from 'react-native';
 import {
   AssignOrderToRider,
@@ -20,17 +23,20 @@ import {
   getCurrentLocation,
   requestLocationPermission,
 } from '../../hooks/useFCM';
-interface Rider {
-  id: number;
-  username: string;
-  email: string | null;
-  distance?: number;
-}
+import {
+  CheckCircle,
+  MapPin,
+  Navigation,
+  User,
+  AlertCircle,
+  Info,
+} from 'lucide-react-native';
 
 interface Rider {
   id: number;
   username: string;
   email: string | null;
+  distance?: number;
 }
 
 interface AcceptedRider {
@@ -49,16 +55,12 @@ type OrderDetailRouteProp = RouteProp<
   RootStackParamList,
   'AvaliableRidersScreen'
 >;
+
 export const openMap = (lat: number, lng: number) => {
   const url = `https://www.google.com/maps?q=${lat},${lng}`;
   Linking.openURL(url);
 };
-export const openMapWithPlace = (placeName: string) => {
-  const encoded = encodeURIComponent(placeName);
-  const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-  Linking.openURL(url);
-};
-// Calculate distance in km between two coordinates
+
 const getDistanceFromLatLonInKm = (
   lat1: number,
   lon1: number,
@@ -66,8 +68,7 @@ const getDistanceFromLatLonInKm = (
   lon2: number,
 ) => {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
-
-  const R = 6371; // Radius of the earth in km
+  const R = 6371;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a =
@@ -77,51 +78,30 @@ const getDistanceFromLatLonInKm = (
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distance in km
-  return distance;
+  return R * c;
 };
 
-// GOOGLE REVERSE GEOCODE
 export const googleReverseGeocode = async (lat: number, lng: number) => {
   try {
     const API_KEY = GOOGLE_API_KEY;
-
     const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${API_KEY}`;
-
-    console.log('📡 Fetching:', url);
-
     const response = await fetch(url);
     const text = await response.text();
-
-    // console.log('🔍 RAW GOOGLE RESPONSE:', text);
-
-    // If Google returned HTML → API key restriction / not enabled / billing issue
-    if (text.trim().startsWith('<')) {
-      console.log('❌ Google returned HTML. API key issue.');
-      return 'Google API error (HTML response). Check API Key / Restrictions.';
-    }
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (jsonError) {
-      console.log('❌ JSON Parse Error:', jsonError);
-      return 'Google API response invalid.';
-    }
-
-    // Successful result
+    if (text.trim().startsWith('<')) return 'Google API error.';
+    const data = JSON.parse(text);
     if (data.status === 'OK' && data.results.length > 0) {
       return data.results[0].formatted_address;
-    } else {
-      console.log('⚠ Google returned error:', data.status);
-      return 'Unknown location';
     }
+    return 'Unknown location';
   } catch (error) {
-    console.log('❌ Google reverse geocoding error:', error);
     return 'Unknown location';
   }
 };
+
 export default function AvaliableRidersScreen() {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const [riders, setRiders] = useState<Rider[]>([]);
   const [accepted, setAccepted] = useState<AcceptedRider[]>([]);
   const [locations, setLocations] = useState<Record<number, string>>({});
@@ -133,35 +113,31 @@ export default function AvaliableRidersScreen() {
   const [loading, setLoading] = useState(false);
   const route = useRoute<OrderDetailRouteProp>();
   const { order } = route.params;
-  // const [userLocation, setUserLocation] = useState<{
-  //   latitude: number;
-  //   longitude: number;
-  // } | null>(null);
 
+  // --- MODAL STATES ---
   const [uniqueKey, setUniqueKey] = useState('');
-  // useEffect(() => {
-  //   (async () => {
-  //     const hasPermission = await requestLocationPermission();
-  //     if (!hasPermission) return;
-  //     const location = await getCurrentLocation();
-  //     setUserLocation(location);
-  //   })();
-  // }, []);
-  // Fetch all riders
-  // const fetchRiders = async () => {
-  //   setLoading(true);
-  //   try {
-  //     const data = await getAllRider(); // backend returns { data: [...], uniqueKey: 'xxx' }
-  //     if (Array.isArray(data.data)) setRiders(data.data);
 
-  //     if (data.uniqueKey) setUniqueKey(data.uniqueKey); // triggers fetchAcceptedRiders
-  //   } catch (err) {
-  //     Alert.alert('Error', 'Something went wrong');
-  //   }
-  //   setLoading(false);
-  // };
+  // 1. Assign Modal State
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [selectedRider, setSelectedRider] = useState<Rider | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
 
-  // Fetch accepted riders
+  // 2. Generic Status Modal State
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    type: 'info' as 'success' | 'error' | 'info',
+    title: '',
+    message: '',
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    type: 'success' | 'error' | 'info' = 'info',
+  ) => {
+    setStatusModal({ visible: true, title, message, type });
+  };
+
   const fetchAcceptedRiders = async () => {
     try {
       const data = await getRiderWhoAccepted(uniqueKey);
@@ -171,44 +147,38 @@ export default function AvaliableRidersScreen() {
     }
   };
 
-  // Load initial data
-  // useEffect(() => {
-  //   fetchRiders();
-  //   // fetchAcceptedRiders();
-  // }, []);
   useEffect(() => {
     const getLocationAndFetchRiders = async () => {
       try {
         const hasPermission = await requestLocationPermission();
         if (!hasPermission) {
-          Alert.alert('Permission Denied', 'Location permission is required.');
+          showAlert(
+            'Permission Denied',
+            'Location permission is required.',
+            'error',
+          );
           setLoading(false);
           return;
         }
 
         const location = await getCurrentLocation();
         if (!location) {
-          Alert.alert('Error', 'Could not get user location');
+          showAlert('Error', 'Could not get user location', 'error');
           setLoading(false);
           return;
         }
 
         setSellerLocations(location);
-
-        const sellerAddress = await googleReverseGeocode(
-          location.latitude,
-          location.longitude,
-        );
-        console.log('Seller location >>>', sellerAddress);
+        await googleReverseGeocode(location.latitude, location.longitude);
 
         const data = await getAllRider(location.latitude, location.longitude);
         if (Array.isArray(data.data)) setRiders(data.data);
         if (data.uniqueKey) setUniqueKey(data.uniqueKey);
       } catch (err) {
         console.error(err);
-        Alert.alert('Error', 'Something went wrong while fetching data');
+        showAlert('Error', 'Something went wrong while fetching data', 'error');
       } finally {
-        setLoading(false); // done loading in all cases
+        setLoading(false);
       }
     };
 
@@ -223,122 +193,115 @@ export default function AvaliableRidersScreen() {
     }
   }, [uniqueKey]);
 
-  // Load addresses for accepted riders
   useEffect(() => {
     const loadLocations = async () => {
       const promises = accepted.map(async a => {
         const address = await googleReverseGeocode(a.lat, a.lng);
         return { id: a.partnerId, address };
       });
-
       const results = await Promise.all(promises);
-
       const newLocations: Record<number, string> = {};
       results.forEach(r => {
         newLocations[r.id] = r.address;
       });
-
       setLocations(newLocations);
     };
-
-    if (accepted.length > 0) {
-      loadLocations();
-    }
+    if (accepted.length > 0) loadLocations();
   }, [accepted]);
+
+  const handleAssignOrder = async () => {
+    if (!selectedRider) return;
+
+    setIsAssigning(true);
+    try {
+      const hasPermission = await requestLocationPermission();
+      if (!hasPermission) {
+        setIsAssigning(false);
+        return;
+      }
+      const address = await googleReverseGeocode(
+        sellerlocations!.latitude,
+        sellerlocations!.longitude,
+      );
+
+      await AssignOrderToRider(
+        selectedRider.id,
+        order.id,
+        sellerlocations!.latitude,
+        sellerlocations!.longitude,
+        address,
+      );
+
+      await rejectOrderToRider(selectedRider.id, uniqueKey);
+
+      setAssignModalVisible(false);
+
+      setTimeout(() => {
+        showAlert('Success', 'Order assigned successfully!', 'success');
+      }, 300);
+    } catch (error) {
+      console.error(error);
+      showAlert('Error', 'Failed to assign order.', 'error');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const isAccepted = (riderId: number) => {
     return accepted.some(item => item.partnerId === riderId);
   };
+
   useEffect(() => {
     if (!sellerlocations || accepted.length === 0) return;
-
     setRiders(prevRiders => {
       const updated = prevRiders.map(rider => {
         const match = accepted.find(a => a.partnerId === rider.id);
-
         if (!match) return { ...rider, distance: undefined };
-
         const distance = getDistanceFromLatLonInKm(
           sellerlocations.latitude,
           sellerlocations.longitude,
           match.lat,
           match.lng,
         );
-
         return { ...rider, distance };
       });
-
-      // 🔥 SORT BY DISTANCE (ASCENDING)
       updated.sort((a, b) => {
-        if (a.distance == null) return 1; // non-accepted riders go down
+        if (a.distance == null) return 1;
         if (b.distance == null) return -1;
         return a.distance - b.distance;
       });
-
       return updated;
     });
   }, [accepted, sellerlocations]);
 
   const handlePress = (rider: Rider) => {
+    console.log('Rider pressed:', rider);
     const acceptedStatus = isAccepted(rider.id);
-
-    const matchedLocation = accepted.find(a => a.partnerId === rider.id);
-
     if (!acceptedStatus) {
-      // Rider is NOT accepted
-      Alert.alert(
+      showAlert(
         'Rider Detail',
-        `ID: ${rider.id}\nUsername: ${rider.username}\nEmail: ${
+        `Username: ${rider.username}\nEmail: ${
           rider.email ?? 'No email'
-        }`,
+        }\n(Waiting for acceptance)`,
+        'info',
       );
       return;
     }
-
-    // Rider has accepted
-    Alert.alert(
-      'Accepted Rider',
-      `ID: ${rider.id}
-        Username: ${rider.username}
-        Email: ${rider.email ?? 'No email'}
-        Location: ${locations[rider.id] ?? 'Loading...'}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'View on Map',
-          onPress: () => {
-            if (matchedLocation)
-              openMap(matchedLocation.lat, matchedLocation.lng);
-          },
-        },
-        {
-          text: 'Assign Order',
-          onPress: async () => {
-            const hasPermission = await requestLocationPermission();
-            if (!hasPermission) return;
-            const address = await googleReverseGeocode(
-              sellerlocations!.latitude,
-              sellerlocations!.longitude,
-            );
-
-            await AssignOrderToRider(
-              rider.id,
-              order.id,
-              sellerlocations!.latitude,
-              sellerlocations!.longitude,
-              address,
-            );
-            await rejectOrderToRider(rider.id, uniqueKey);
-          },
-        },
-      ],
-    );
+    setSelectedRider(rider);
+    setAssignModalVisible(true);
   };
 
   return (
-    <View className="flex-1 p-4 bg-white">
+    <View className="flex-1 p-4 bg-white dark:bg-neutral-900">
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={isDarkMode ? '#171717' : '#ffffff'}
+      />
+
       {loading && (
-        <Text className="text-center mb-2 text-gray-600">Loading...</Text>
+        <Text className="text-center mb-2 text-gray-600 dark:text-gray-400">
+          Loading...
+        </Text>
       )}
 
       <FlatList
@@ -346,26 +309,22 @@ export default function AvaliableRidersScreen() {
         keyExtractor={item => item.id.toString()}
         renderItem={({ item }) => {
           const acceptedStatus = isAccepted(item.id);
-          const matchedLocation = accepted.find(a => a.partnerId === item.id);
-
           return (
             <TouchableOpacity onPress={() => handlePress(item)}>
-              <View className="flex-row justify-between items-center p-3 border-b border-gray-300">
+              <View className="flex-row justify-between items-center p-3 border-b border-gray-200 dark:border-neutral-700">
                 <View>
-                  <Text className="text-lg font-semibold text-gray-900">
+                  <Text className="text-lg font-semibold text-gray-900 dark:text-white">
                     {item.username}
                   </Text>
-
-                  <Text className="text-sm text-gray-600">
+                  <Text className="text-sm text-gray-600 dark:text-gray-400">
                     {item.email || 'No email'}
                   </Text>
-
                   {acceptedStatus && locations[item.id] && (
                     <>
-                      <Text className="text-sm text-green-600 mt-1">
+                      <Text className="text-sm text-green-600 dark:text-green-400 mt-1">
                         📍 {locations[item.id]}
                       </Text>
-                      <Text className="text-sm text-gray-500">
+                      <Text className="text-sm text-gray-500 dark:text-gray-400">
                         🚗{' '}
                         {item.distance != null
                           ? `${item.distance.toFixed(2)} km away`
@@ -374,7 +333,6 @@ export default function AvaliableRidersScreen() {
                     </>
                   )}
                 </View>
-
                 {acceptedStatus && (
                   <View className="w-4 h-4 rounded-full bg-green-500" />
                 )}
@@ -384,14 +342,171 @@ export default function AvaliableRidersScreen() {
         }}
         ListEmptyComponent={() =>
           !loading ? (
-            <View className="flex-1 justify-center items-center bg-white">
-              <Text className="text-gray-600 text-lg">
-                Loading location & riders...
+            <View className="flex-1 justify-center items-center mt-10">
+              <Text className="text-gray-600 dark:text-gray-400 text-lg">
+                No riders found yet.
               </Text>
             </View>
           ) : null
         }
       />
+
+      {/* ============================================== */}
+      {/* 1. ASSIGN CONFIRMATION MODAL                   */}
+      {/* ============================================== */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={assignModalVisible}
+        onRequestClose={() => setAssignModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-4">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-2xl">
+            <View className="items-center mb-5">
+              <View className="bg-green-100 dark:bg-green-900/30 p-4 rounded-full mb-3">
+                <CheckCircle size={32} color="#16a34a" strokeWidth={2.5} />
+              </View>
+              <Text className="text-xl font-bold text-gray-900 dark:text-white text-center">
+                Accept Rider?
+              </Text>
+              <Text className="text-gray-500 dark:text-gray-400 text-center mt-1">
+                Are you sure you want to assign this order to{' '}
+                {selectedRider?.username}?
+              </Text>
+            </View>
+
+            <View className="bg-gray-50 dark:bg-neutral-700/50 p-4 rounded-xl mb-6 space-y-2">
+              <View className="flex-row items-center">
+                <User size={18} color={isDarkMode ? '#d1d5db' : '#6b7280'} />
+                <Text className="ml-2 text-gray-700 dark:text-gray-200 font-semibold">
+                  {selectedRider?.username}
+                </Text>
+              </View>
+              <View className="flex-row items-center mt-2">
+                <MapPin size={18} color={isDarkMode ? '#d1d5db' : '#6b7280'} />
+                <Text
+                  className="ml-2 text-gray-600 dark:text-gray-400 text-xs flex-1"
+                  numberOfLines={2}
+                >
+                  {selectedRider
+                    ? locations[selectedRider.id] ?? 'Loading...'
+                    : ''}
+                </Text>
+              </View>
+            </View>
+
+            <View className="gap-3">
+              <TouchableOpacity
+                onPress={handleAssignOrder}
+                disabled={isAssigning}
+                className="w-full bg-green-600 py-4 rounded-2xl flex-row justify-center items-center shadow-md shadow-green-200 dark:shadow-none"
+              >
+                {isAssigning ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-bold text-lg">
+                    Confirm & Assign
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  if (selectedRider) {
+                    const matchedLocation = accepted.find(
+                      a => a.partnerId === selectedRider.id,
+                    );
+                    if (matchedLocation)
+                      openMap(matchedLocation.lat, matchedLocation.lng);
+                  }
+                }}
+                className="w-full bg-white dark:bg-neutral-700 border border-gray-200 dark:border-neutral-600 py-4 rounded-2xl flex-row justify-center items-center"
+              >
+                <Navigation
+                  size={20}
+                  color={isDarkMode ? '#ffffff' : '#4b5563'}
+                  style={{ marginRight: 8 }}
+                />
+                <Text className="text-gray-700 dark:text-white font-bold text-lg">
+                  View on Map
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setAssignModalVisible(false)}
+                className="py-2 mt-1"
+              >
+                <Text className="text-gray-400 font-semibold text-center">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ============================================== */}
+      {/* 2. GENERIC STATUS MODAL (Success / Error / Info) */}
+      {/* ============================================== */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() =>
+                setStatusModal(prev => ({ ...prev, visible: false }))
+              }
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

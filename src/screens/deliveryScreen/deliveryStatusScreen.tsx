@@ -1,4 +1,3 @@
-// screens/DeliveryStatusScreen.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -7,12 +6,15 @@ import {
   TouchableOpacity,
   useColorScheme,
   Alert,
+  StatusBar,
+  ScrollView,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DeliveryTaskItem } from './deliveryhome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { editDeliveryOrder } from '../../api/deliveryOrderApi';
+import { CheckCircle, Circle } from 'lucide-react-native';
 
 type RootStackParamList = {
   DeliveryStatusScreen: { deliveryItem: DeliveryTaskItem };
@@ -32,125 +34,196 @@ const STATUS_OPTIONS = ['accepted', 'picked_up', 'delivered'];
 
 const DeliveryStatusScreen: React.FC = () => {
   const scheme = useColorScheme();
-  const dark = scheme === 'dark';
-  const insets = useSafeAreaInsets(); // detects notch + gesture area space
+  const isDarkMode = scheme === 'dark';
+  const insets = useSafeAreaInsets();
 
   const navigation = useNavigation<deliveryStatusNavigationProp>();
   const route = useRoute<deliveryStatusRouteProp>();
   const { deliveryItem } = route.params;
 
+  // Dynamic Theme Colors
+  const colors = {
+    screenBg: isDarkMode ? '#171717' : '#ffffff',
+    cardBg: isDarkMode ? '#262626' : '#f9fafb',
+    textPrimary: isDarkMode ? '#ffffff' : '#111827',
+    textSecondary: isDarkMode ? '#9ca3af' : '#6b7280',
+    border: isDarkMode ? '#404040' : '#e5e7eb',
+    activeBg: isDarkMode ? '#15803d' : '#dcfce7', // Green 700 vs Green 100
+    activeBorder: isDarkMode ? '#22c55e' : '#16a34a',
+    activeText: isDarkMode ? '#ffffff' : '#14532d',
+    inactiveBg: isDarkMode ? '#262626' : '#ffffff',
+  };
+
   const [selectedStatus, setSelectedStatus] = useState<string>(
     deliveryItem.status,
   );
 
-  const handleSave = () => {
-    // Here you would call your API to update the status
-    // e.g., await updateDeliveryStatus(deliveryItem.id, selectedStatus)
-
-    editDeliveryOrder(deliveryItem.id, selectedStatus);
-    Alert.alert(
-      'Status Updated',
-      `Delivery #${deliveryItem.id} is now ${selectedStatus}`,
-    );
-    navigation.goBack();
+  const handleSave = async () => {
+    try {
+      await editDeliveryOrder(deliveryItem.id, selectedStatus);
+      Alert.alert(
+        'Status Updated',
+        `Delivery #${deliveryItem.id} is now ${selectedStatus}`,
+      );
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update status');
+    }
   };
 
   return (
-    <SafeAreaView className={`flex-1 ${dark ? 'bg-gray-900' : 'bg-white'}`}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.screenBg }}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.screenBg}
+      />
+
+      {/* Header */}
       <View
-        className="px-4 py-3 border-b border-gray-200 dark:border-gray-700"
-        style={{ paddingTop: insets.top + 10 }} // add safe area inset + extra spacing
+        style={{
+          paddingTop: insets.top + 10,
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          backgroundColor: colors.screenBg,
+        }}
       >
         <Text
-          className={`text-2xl font-bold ${
-            dark ? 'text-white' : 'text-gray-800'
-          }`}
+          style={{
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: colors.textPrimary,
+          }}
         >
           Delivery Status
         </Text>
       </View>
-      <View className="p-4">
+
+      <ScrollView contentContainerStyle={{ padding: 16 }}>
         <Text
-          className={`${
-            dark ? 'text-white' : 'text-black'
-          } text-xl font-bold mb-4`}
+          style={{
+            fontSize: 18,
+            fontWeight: 'bold',
+            marginBottom: 16,
+            color: colors.textPrimary,
+          }}
         >
           Update Delivery Status
         </Text>
 
-        <View className="p-4 rounded-xl shadow-md bg-gray-100 dark:bg-gray-800">
+        {/* Info Card */}
+        <View
+          style={{
+            backgroundColor: colors.cardBg,
+            padding: 16,
+            borderRadius: 12,
+            marginBottom: 24,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
           <Text
-            className={`${
-              dark ? 'text-gray-300' : 'text-gray-600'
-            } text-sm mb-2`}
+            style={{
+              color: colors.textSecondary,
+              fontSize: 12,
+              marginBottom: 8,
+            }}
           >
-            Delivery #{deliveryItem.id}
+            DELIVERY #{deliveryItem.id}
           </Text>
-          <Text
-            className={`${dark ? 'text-white' : 'text-black'} font-semibold`}
-          >
-            Pickup: {deliveryItem.pickupAddress}
-          </Text>
-          <Text
-            className={`${
-              dark ? 'text-white' : 'text-black'
-            } font-semibold mt-1`}
-          >
-            Delivery: {deliveryItem.deliveryAddress}
-          </Text>
+          <View style={{ marginBottom: 8 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+              PICKUP
+            </Text>
+            <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>
+              {deliveryItem.pickupAddress}
+            </Text>
+          </View>
+          <View>
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+              DROPOFF
+            </Text>
+            <Text style={{ color: colors.textPrimary, fontWeight: '600' }}>
+              {deliveryItem.deliveryAddress}
+            </Text>
+          </View>
         </View>
 
-        <View className="mt-6">
-          <Text
-            className={`${
-              dark ? 'text-gray-300' : 'text-gray-600'
-            } text-sm mb-2`}
-          >
-            Select Status
-          </Text>
+        {/* Status Options */}
+        <Text
+          style={{
+            fontSize: 14,
+            color: colors.textSecondary,
+            marginBottom: 12,
+            fontWeight: '600',
+          }}
+        >
+          SELECT NEW STATUS
+        </Text>
 
-          {STATUS_OPTIONS.map(status => (
+        {STATUS_OPTIONS.map(status => {
+          const isSelected = selectedStatus === status;
+          return (
             <TouchableOpacity
               key={status}
               onPress={() => setSelectedStatus(status)}
-              className={`p-4 rounded-lg mb-2 border ${
-                selectedStatus === status
-                  ? dark
-                    ? 'border-green-400 bg-green-700'
-                    : 'border-green-600 bg-green-100'
-                  : dark
-                  ? 'border-gray-600 bg-gray-800'
-                  : 'border-gray-300 bg-gray-100'
-              }`}
+              activeOpacity={0.7}
+              style={{
+                backgroundColor: isSelected
+                  ? colors.activeBg
+                  : colors.inactiveBg,
+                borderColor: isSelected ? colors.activeBorder : colors.border,
+                borderWidth: 1,
+                padding: 16,
+                borderRadius: 12,
+                marginBottom: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
             >
               <Text
-                className={`font-semibold text-center ${
-                  selectedStatus === status
-                    ? dark
-                      ? 'text-white'
-                      : 'text-black'
-                    : dark
-                    ? 'text-gray-300'
-                    : 'text-gray-700'
-                }`}
+                style={{
+                  fontSize: 16,
+                  fontWeight: '600',
+                  textTransform: 'capitalize',
+                  color: isSelected ? colors.activeText : colors.textPrimary,
+                }}
               >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {status.replace('_', ' ')}
               </Text>
-            </TouchableOpacity>
-          ))}
 
-          <TouchableOpacity
-            onPress={handleSave}
-            className={`mt-6 p-4 rounded-lg ${
-              dark ? 'bg-blue-600' : 'bg-blue-500'
-            }`}
-          >
-            <Text className="text-white text-center font-bold text-lg">
-              Save Status
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+              {isSelected ? (
+                <CheckCircle size={20} color={colors.activeText} />
+              ) : (
+                <Circle size={20} color={colors.textSecondary} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+
+        {/* Save Button */}
+        <TouchableOpacity
+          onPress={handleSave}
+          style={{
+            marginTop: 24,
+            backgroundColor: '#2563eb', // Blue-600
+            padding: 16,
+            borderRadius: 12,
+            alignItems: 'center',
+            shadowColor: '#2563eb',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 4,
+          }}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>
+            Save Status
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };

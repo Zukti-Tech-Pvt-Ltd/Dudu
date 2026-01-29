@@ -5,7 +5,9 @@ import { AuthContext } from '../helper/authContext';
 
 export const useNotification = () => {
   const { setFcmToken } = useContext(AuthContext);
-
+  console.log(
+    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FCM TOKEN IN USE NOTIFICATION',
+  );
   const requestUserPermission = async () => {
     const granted = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,

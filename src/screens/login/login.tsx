@@ -9,21 +9,39 @@ import {
   Platform,
   Alert,
   ScrollView,
+  useColorScheme,
+  StatusBar,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import { login } from '../../api/login/loginApi';
 import { AuthContext } from '../../helper/authContext';
+
+// 1. Import icons from lucide-react-native
+import { Eye, EyeOff } from 'lucide-react-native';
 
 export default function LoginScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+  // Dark Mode Logic
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  // Dynamic Theme Colors
+  const colors = {
+    screenBg: isDarkMode ? '#171717' : '#ffffff', // Neutral 900 vs White
+    inputBg: isDarkMode ? '#262626' : '#ffffff', // Neutral 800 vs White
+    textPrimary: isDarkMode ? '#ffffff' : '#000000',
+    border: isDarkMode ? '#404040' : '#e5e7eb', // Neutral 700 vs Gray 200
+    placeholder: isDarkMode ? '#9ca3af' : '#6b7280',
+    icon: isDarkMode ? '#9ca3af' : '#6b7280',
+    buttonDisabled: isDarkMode ? '#525252' : '#9ca3af',
+  };
+
   const [loading, setLoading] = useState(false);
   const { setToken, fcmToken } = useContext(AuthContext);
-  console.log(
-    'fcmToken!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
-    fcmToken,
-  );
+
   const handleLogin = async () => {
     if (!username || !password) {
       Alert.alert('Error', 'Username and password are required.');
@@ -33,12 +51,8 @@ export default function LoginScreen({ navigation }: any) {
     setLoading(true);
     try {
       const response = await login(username, password, fcmToken!);
-      console.log('response-------', response);
       if (response.status === 'success' && response.token) {
-        await setToken(response.token); //update context + AsyncStorage
-
-        // await AsyncStorage.setItem('token', response.token);
-        // Navigate to MainTabs after successful login
+        await setToken(response.token);
         navigation.reset({
           index: 0,
           routes: [{ name: 'maintab' }],
@@ -47,11 +61,8 @@ export default function LoginScreen({ navigation }: any) {
         Alert.alert('Login Failed', 'Invalid response from server.');
       }
     } catch (error: any) {
-      if (error.response?.data?.message) {
-        Alert.alert('Login Failed', error.response.message);
-      } else {
-        Alert.alert('Login Failed', 'An error occurred.');
-      }
+      const msg = error.response?.data?.message || 'An error occurred.';
+      Alert.alert('Login Failed', msg);
     } finally {
       setLoading(false);
     }
@@ -59,9 +70,14 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: colors.screenBg }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.screenBg}
+      />
+
       <ScrollView
         contentContainerStyle={{
           flexGrow: 1,
@@ -76,36 +92,75 @@ export default function LoginScreen({ navigation }: any) {
           className="w-32 h-32 mb-8"
           resizeMode="contain"
         />
+
+        {/* Username Input */}
         <TextInput
           placeholder="Username"
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
-          className="w-full border border-gray-300 rounded-md px-4 py-3 mb-4"
+          placeholderTextColor={colors.placeholder}
+          style={{
+            backgroundColor: colors.inputBg,
+            borderColor: colors.border,
+            color: colors.textPrimary,
+          }}
+          className="w-full border rounded-lg px-4 py-3 mb-4"
         />
-        <TextInput
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          className="w-full border border-gray-300 rounded-md px-4 py-3 mb-6"
-        />
+
+        {/* Password Input Container */}
+        <View
+          style={{
+            backgroundColor: colors.inputBg,
+            borderColor: colors.border,
+          }}
+          className="w-full flex-row items-center border rounded-lg px-4 mb-6"
+        >
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!isPasswordVisible}
+            placeholderTextColor={colors.placeholder}
+            style={{ color: colors.textPrimary }}
+            className="flex-1 py-3"
+            autoCapitalize="none"
+          />
+          <TouchableOpacity
+            onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+            className="ml-2"
+          >
+            {isPasswordVisible ? (
+              <EyeOff size={24} color={colors.icon} />
+            ) : (
+              <Eye size={24} color={colors.icon} />
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Login Button */}
         <TouchableOpacity
-          className={`w-full py-3 rounded-md items-center ${
-            loading ? 'bg-gray-400' : 'bg-[#3b82f6]'
-          }`}
+          style={{
+            backgroundColor: loading ? colors.buttonDisabled : '#3b82f6',
+          }}
+          className="w-full py-3 rounded-lg items-center"
           disabled={loading}
           onPress={handleLogin}
+          activeOpacity={0.8}
         >
           <Text className="text-white font-semibold text-lg">
             {loading ? 'Logging in...' : 'Login'}
           </Text>
         </TouchableOpacity>
+
+        {/* Sign Up Link */}
         <TouchableOpacity
-          className="mt-4"
+          className="mt-6"
           onPress={() => navigation.navigate('Signup')}
         >
-          <Text className="text-[#3b82f6]">Don't have an account? Sign up</Text>
+          <Text className="text-blue-500 font-medium">
+            Don't have an account? Sign up
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>

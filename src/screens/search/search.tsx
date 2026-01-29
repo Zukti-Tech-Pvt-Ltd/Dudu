@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -8,13 +8,10 @@ import {
   StyleSheet,
   Pressable,
   Image,
+  useColorScheme,
+  StatusBar,
 } from 'react-native';
-import {
-  useRoute,
-  RouteProp,
-  useNavigation,
-  useFocusEffect,
-} from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,6 +30,22 @@ type SearchNavigationProp = NativeStackNavigationProp<
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+
+  // Dark Mode Logic
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
+  // Dynamic Colors
+  const colors = {
+    screenBg: isDarkMode ? '#171717' : '#f9fafb',
+    textPrimary: isDarkMode ? '#ffffff' : '#000000',
+    textSecondary: isDarkMode ? '#9ca3af' : 'gray',
+    inputBg: isDarkMode ? '#262626' : '#e5e7eb',
+    inputText: isDarkMode ? '#ffffff' : '#000000',
+    border: isDarkMode ? '#404040' : '#e5e7eb',
+    iconTint: isDarkMode ? '#ffffff' : '#000000',
+    placeholder: isDarkMode ? '#a1a1aa' : '#6b7280',
+  };
 
   const route = useRoute<SearchRouteProp>();
   const navigation = useNavigation<SearchNavigationProp>();
@@ -73,13 +86,18 @@ export default function SearchScreen() {
       edges={['top', 'bottom']}
       style={{
         flex: 1,
-        backgroundColor: '#f9fafb',
+        backgroundColor: colors.screenBg,
         paddingBottom: insets.bottom || 10,
       }}
     >
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.screenBg}
+      />
+
       {/* Search bar */}
       <View style={{ flexDirection: 'row', padding: 16, alignItems: 'center' }}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={10}>
           <Image
             source={require('../../../assets/navIcons/left-arrow.png')}
             style={{
@@ -87,6 +105,7 @@ export default function SearchScreen() {
               height: 25,
               resizeMode: 'contain',
               marginRight: 12,
+              tintColor: colors.iconTint,
             }}
           />
         </Pressable>
@@ -95,14 +114,17 @@ export default function SearchScreen() {
           style={{
             flex: 1,
             height: 40,
-            backgroundColor: '#e5e7eb',
+            backgroundColor: colors.inputBg,
             borderRadius: 8,
             paddingHorizontal: 10,
+            color: colors.inputText,
           }}
           placeholder="Search for products..."
+          placeholderTextColor={colors.placeholder}
           value={searchText}
           onChangeText={setSearchText}
           autoFocus={true}
+          selectionColor={isDarkMode ? '#60a5fa' : '#2563eb'}
         />
       </View>
 
@@ -116,10 +138,12 @@ export default function SearchScreen() {
             style={{
               padding: 12,
               borderBottomWidth: 1,
-              borderBottomColor: '#e5e7eb',
+              borderBottomColor: colors.border,
             }}
           >
-            <Text>{item.name}</Text>
+            <Text style={{ color: colors.textPrimary, fontSize: 16 }}>
+              {item.name}
+            </Text>
           </TouchableOpacity>
         )}
         ListEmptyComponent={() => (
@@ -127,20 +151,22 @@ export default function SearchScreen() {
             style={{
               textAlign: 'center',
               marginTop: 20,
-              color: 'gray',
+              color: colors.textSecondary,
             }}
           >
-            No results found
+            {loading ? 'Searching...' : 'No results found'}
           </Text>
         )}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16 }}
+        keyboardShouldPersistTaps="handled"
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  // Legacy styles preserved if needed, though mostly using inline dynamic styles now
   input: {
     borderWidth: 1,
     borderColor: '#ccc',

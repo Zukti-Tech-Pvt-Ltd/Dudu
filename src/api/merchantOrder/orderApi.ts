@@ -33,7 +33,16 @@ export const getAllRider = async (lat: number, lng: number) => {
     return []; // or handle error properly
   }
 };
-
+export const getOneOrder = async (orderId: number) => {
+  try {
+    const response = await apiAuth.get(`api/order/getOne/${orderId}`);
+    console.log('r1111111111111112121212121212esponse00000', response);
+    return response.data; // Return the cart data
+  } catch (err) {
+    console.error(err);
+    return []; // or handle error properly
+  }
+};
 export const getRiderWhoAccepted = async (key: string) => {
   try {
     console.log('111111!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ', key);

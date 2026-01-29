@@ -3,6 +3,14 @@ export const getDeliveryOrder = async () => {
   const response = await apiAuth.get('api/deliveryOrder/getPerRider', {});
   return response.data;
 };
+
+export const getDeliveryOrderPerOrder = async (orderId: number) => {
+  const response = await apiAuth.get(
+    `api/deliveryOrder/getPerOrder/${orderId}`,
+  );
+  console.log('Delivery Order Response:', response.data);
+  return response.data;
+};
 export const editDeliveryOrder = async (id: number, status: string) => {
   const response = await apiAuth.put(`api/deliveryOrder/edit/${id}`, {
     status,

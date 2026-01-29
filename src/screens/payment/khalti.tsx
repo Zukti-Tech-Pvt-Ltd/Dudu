@@ -79,8 +79,9 @@ const KhaltiPayment = () => {
         const pidx = response.pidx;
 
         // const checkoutUrl = `https://test-pay.khalti.com/?pidx=${pidx}`;
+        console.log('Pidx received:', pidx);
         const checkoutUrl = `${KHALTI_CHECKOUT_URL}?pidx=${pidx}`; //live Khalti
-
+        console.log('checkoutUrl', checkoutUrl);
         setKhaltiCheckoutUrl(checkoutUrl);
       } catch (error) {
         console.error('Error fetching Pidx:', error);

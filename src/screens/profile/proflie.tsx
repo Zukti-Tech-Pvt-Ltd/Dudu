@@ -1,5 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  useColorScheme,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import LogoutButton from './logoutButton'; // Adjust the import path
@@ -19,15 +26,18 @@ type AccountActionProps = {
   description: string;
   navigation: any;
   route?: string;
+  isDarkMode: boolean; // Pass theme prop
 };
 
 export default function ProfileScreen({ navigation }: any) {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const [username, setUsername] = useState<string | null>(null);
   const [email, setEmail] = useState<string>('sadhubasnet@gmail.com');
   const [phone, setPhone] = useState<string>('+1 (555) 123-4567');
   const [userType, setUserType] = useState<string | null>(null);
 
-  // const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const { isLoggedIn, token } = useContext(AuthContext);
 
   useEffect(() => {
@@ -35,7 +45,6 @@ export default function ProfileScreen({ navigation }: any) {
       if (token) {
         const decoded = await decodeToken();
         const userData = await getUser(decoded!.userId);
-        console.log('userData', userData);
         setUsername(userData.data.username);
         setUserType(userData.data.userType);
         setEmail(userData.data.email);
@@ -43,10 +52,8 @@ export default function ProfileScreen({ navigation }: any) {
       }
     };
 
-    // Fetch initially
     fetchUser();
 
-    // Refetch on screen focus
     const unsubscribe = navigation.addListener('focus', () => {
       fetchUser();
     });
@@ -54,37 +61,18 @@ export default function ProfileScreen({ navigation }: any) {
     return unsubscribe;
   }, [navigation, token]);
 
-  //   const fetchToken = async () => {
-  //     if (token) {
-  //       try {
-  //         const decoded = jwtDecode<JwtPayload>(token);
-  //         setUsername(decoded.username || null);
-  //         setEmail(decoded.email || 'sadhubasnet@gmail.com');
-  //         setPhone(decoded.phone || '+1 (555) 123-4567');
-  //         setIsLoggedIn(true);
-
-  //       } catch (e) {
-  //         setIsLoggedIn(false);
-  //       }
-  //     }else{
-  //               setIsLoggedIn(false);
-
-  //     }
-  //   };
-  //   fetchToken();
-  // }, []);
   if (!isLoggedIn) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Image
           source={require('../../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200 dark:bg-neutral-800"
         />
-        <Text className="font-bold text-lg text-gray-900 mb-2">
+        <Text className="font-bold text-lg text-gray-900 dark:text-white mb-2">
           Welcome, Guest
         </Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate('Login')} // Navigate to your login screen
+          onPress={() => navigation.navigate('Login')}
           className="bg-blue-500 px-6 py-3 rounded-lg"
         >
           <Text className="text-white font-medium text-base">Login</Text>
@@ -92,43 +80,54 @@ export default function ProfileScreen({ navigation }: any) {
       </View>
     );
   }
+
   return (
-    <ScrollView className="flex-1 bg-white px-4">
+    <ScrollView
+      className="flex-1 bg-white dark:bg-neutral-900 px-4"
+      contentContainerStyle={{ paddingTop: 20 }}
+    >
       {/* Profile Card */}
-      <View className="flex-row items-center bg-white rounded-2xl p-4 shadow mb-3">
+      <View className="flex-row items-center bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow mb-3">
         <View className="flex-1">
-          <Text className="font-bold text-lg text-gray-900">
+          <Text className="font-bold text-lg text-gray-900 dark:text-white">
             {username ?? 'User name'}
           </Text>
-          <Text className="text-gray-600 text-sm">{email}</Text>
-          <Text className="text-gray-600 text-sm">{phone}</Text>
+          <Text className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+            {email}
+          </Text>
+          <Text className="text-gray-600 dark:text-gray-400 text-sm">
+            {phone}
+          </Text>
         </View>
       </View>
 
       {/* Account Actions */}
-      <View className="bg-white rounded-2xl shadow mb-3">
+      <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3">
         <AccountAction
           icon={require('../../../assets/navIcons/profile.png')}
           label="Edit Profile"
           description="Edit your personal information"
           navigation={navigation}
           route="EditProfileScreen"
+          isDarkMode={isDarkMode}
         />
       </View>
+
       {userType === 'customer' && (
-        <View className="bg-white rounded-2xl shadow mb-3">
+        <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3">
           <AccountAction
             icon={require('../../../assets/navIcons/profile.png')}
             label="Order History"
             description="View your order history"
             navigation={navigation}
             route="OrdersScreen"
+            isDarkMode={isDarkMode}
           />
         </View>
       )}
 
       {/* Sign Out Button */}
-      <View className="flex-1 justify-end items-center pb-10">
+      <View className="flex-1 justify-end items-center pb-10 mt-6">
         <LogoutButton />
       </View>
     </ScrollView>
@@ -142,25 +141,34 @@ function AccountAction({
   description,
   navigation,
   route,
+  isDarkMode,
 }: AccountActionProps) {
   return (
     <TouchableOpacity
-      className="flex-row items-center justify-between py-4 px-3 border-b border-gray-100"
+      className="flex-row items-center justify-between py-4 px-3 border-b border-gray-100 dark:border-neutral-700"
       activeOpacity={0.7}
       onPress={() => {
-        if (navigation) {
+        if (navigation && route) {
           navigation.navigate(route);
         }
       }}
     >
       <View className="flex-row items-center">
-        <Image source={icon} className="w-6 h-6 mr-3" />
+        <Image
+          source={icon}
+          className="w-6 h-6 mr-3"
+          style={{ tintColor: isDarkMode ? '#ffffff' : '#000000' }}
+        />
         <View>
-          <Text className="font-bold text-base text-gray-900">{label}</Text>
-          <Text className="text-gray-500 text-xs">{description}</Text>
+          <Text className="font-bold text-base text-gray-900 dark:text-white">
+            {label}
+          </Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-xs">
+            {description}
+          </Text>
         </View>
       </View>
-      <Text className="text-lg text-gray-300">{'>'}</Text>
+      <Text className="text-lg text-gray-300 dark:text-gray-600">{'>'}</Text>
     </TouchableOpacity>
   );
 }

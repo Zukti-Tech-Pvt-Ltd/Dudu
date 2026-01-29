@@ -1,5 +1,3 @@
-// screens/ActiveDeliveries.tsx
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -7,21 +5,46 @@ import {
   ScrollView,
   ActivityIndicator,
   SafeAreaView,
+  useColorScheme,
+  StatusBar,
 } from 'react-native';
-import { useColorScheme } from 'nativewind';
-// import { DeliveryCard } from './deliveryhome';
-import { getDeliveryOrder } from '../../api/deliveryOrderApi';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { getDeliveryOrder } from '../../api/deliveryOrderApi';
 import { DeliveryCard } from './deliveryCard';
+import { DeliveryTaskItem } from './deliveryhome';
+
+type RootStackParamList = {
+  ActiveDelivery: undefined;
+  CompletedDelivery: undefined;
+  DeliveryStatusScreen: { deliveryItem: DeliveryTaskItem };
+  DeliveryMapsScreen: undefined;
+};
+
+type completedDeliveryNavigationProp = NativeStackNavigationProp<
+  RootStackParamList,
+  'CompletedDelivery'
+>;
 
 export default function CompletedDelivery() {
-  const { colorScheme } = useColorScheme();
-  const dark = colorScheme === 'dark';
-  const insets = useSafeAreaInsets(); // detects notch + gesture area space
-  const isDarkMode = colorScheme === 'dark';
+  const scheme = useColorScheme();
+  const isDarkMode = scheme === 'dark';
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<completedDeliveryNavigationProp>();
+
+  // Dynamic Theme Colors
+  const colors = {
+    screenBg: isDarkMode ? '#171717' : '#F9FAFB',
+    textPrimary: isDarkMode ? '#FFFFFF' : '#111827',
+    textSecondary: isDarkMode ? '#9CA3AF' : '#6B7280',
+    border: isDarkMode ? '#404040' : '#E5E7EB',
+    loading: isDarkMode ? '#FFFFFF' : '#333333',
+  };
 
   const [loading, setLoading] = useState(true);
-  const [deliveryData, setDeliveryData] = useState([]);
+  const [deliveryData, setDeliveryData] = useState<DeliveryTaskItem[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -29,12 +52,17 @@ export default function CompletedDelivery() {
       const response = await getDeliveryOrder();
 
       if (response && response.data) {
-        // Keep only ACTIVE deliveries
-        const active = response.data.filter(
+        // Keep only COMPLETED/DELIVERED deliveries
+        const completed = response.data.filter(
           (item: any) => item.status?.toLowerCase() === 'delivered',
         );
+        // Sort by newest first
+        completed.sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
 
-        setDeliveryData(active);
+        setDeliveryData(completed);
       } else {
         setDeliveryData([]);
       }
@@ -51,48 +79,74 @@ export default function CompletedDelivery() {
   }, []);
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: isDarkMode ? '#0f172a' : '#f9fafb',
-        paddingBottom: insets.bottom || 10, // ensures content never goes behind navbar
-      }}
-    >
-      {/* --- START OF ADDED HEADER --- */}
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.screenBg }}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.screenBg}
+      />
+
+      {/* --- HEADER --- */}
       <View
-        className="px-4 py-3 border-b border-gray-200 dark:border-gray-700"
-        style={{ paddingTop: insets.top + 10 }} // add safe area inset + extra spacing
+        style={{
+          paddingTop: insets.top + 10,
+          paddingHorizontal: 16,
+          paddingBottom: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+          backgroundColor: colors.screenBg,
+        }}
       >
         <Text
-          className={`text-2xl font-bold ${
-            dark ? 'text-white' : 'text-gray-800'
-          }`}
+          style={{
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: colors.textPrimary,
+          }}
         >
           Completed Deliveries
         </Text>
       </View>
-      {/* --- END OF ADDED HEADER --- */}
 
+      {/* --- CONTENT --- */}
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color={dark ? '#fff' : '#333'}
-          className="mt-20"
-        />
+        <View
+          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <ActivityIndicator size="large" color={colors.loading} />
+        </View>
       ) : deliveryData.length === 0 ? (
-        <View className="items-center justify-center mt-20">
-          <Text
-            className={`${dark ? 'text-gray-300' : 'text-gray-700'} text-lg`}
-          >
-            No active deliveries assigned.
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginTop: -50,
+          }}
+        >
+          <Text style={{ fontSize: 18, color: colors.textSecondary }}>
+            No completed deliveries yet.
           </Text>
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 40,
+          }}
+          showsVerticalScrollIndicator={false}
         >
-          {deliveryData.map((item: any) => (
-            <DeliveryCard key={item.id} item={item} dark={dark} />
+          {deliveryData.map(item => (
+            <DeliveryCard
+              key={item.id}
+              item={item}
+              dark={isDarkMode}
+              onPress={() =>
+                navigation.navigate('DeliveryStatusScreen', {
+                  deliveryItem: item,
+                })
+              }
+            />
           ))}
         </ScrollView>
       )}

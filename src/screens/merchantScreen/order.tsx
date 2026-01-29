@@ -9,6 +9,7 @@ import {
   useColorScheme,
   ScrollView,
   RefreshControl,
+  StatusBar,
 } from 'react-native';
 import { API_BASE_URL } from '@env';
 import { getAllMerchantOrders } from '../../api/merchantOrder/orderApi';
@@ -73,37 +74,46 @@ export default function OrderList() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const { isLoggedIn } = useContext(AuthContext);
+
+  // Dynamic Theme Colors
+  const colors = {
+    screenBg: isDarkMode ? '#171717' : '#ffffff',
+    textPrimary: isDarkMode ? '#ffffff' : '#111827',
+    textSecondary: isDarkMode ? '#9ca3af' : '#6b7280',
+    chipActiveBg: '#2563eb',
+    chipInactiveBg: isDarkMode ? '#262626' : '#e0e7ef',
+    chipActiveText: '#ffffff',
+    chipInactiveText: isDarkMode ? '#d1d5db' : '#374151',
+    overlay: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.6)',
+    iconColor: isDarkMode ? '#ffffff' : '#000000',
+  };
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected] = useState('All Orders');
 
   //refresh
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchOrders();
-
     setRefreshing(false);
   };
 
   useEffect(() => {
     const socket = connectSocket();
 
-    socket.on('orderUpdated', (data: any) => {
+    socket.on('orderUpdated', async (data: any) => {
       console.log('Realtime order update:', data);
-
-      // Update orders list in state
-      setOrders(prevOrders =>
-        prevOrders.map(order =>
-          order.id === data.orderId ? { ...order, status: data.status } : order,
-        ),
-      );
+      const dataa = await getAllMerchantOrders('');
+      setOrders(dataa);
     });
 
     return () => {
       socket.off('orderUpdated');
     };
   }, []);
+
   // 🔥 Sorting State (default ascending)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -117,6 +127,7 @@ export default function OrderList() {
 
   // State for filtered & sorted list
   const [displayOrders, setDisplayOrders] = useState<Order[]>([]);
+
   const fetchOrders = async () => {
     try {
       const data = await getAllMerchantOrders('');
@@ -133,6 +144,7 @@ export default function OrderList() {
       console.log(err);
     }
   };
+
   useFocusEffect(
     useCallback(() => {
       if (!isLoggedIn) return;
@@ -141,6 +153,20 @@ export default function OrderList() {
       fetchOrders().finally(() => setLoading(false));
     }, [isLoggedIn]),
   );
+
+  // ✅ New function: Handle filter switching with artificial loading
+  const handleFilterSelect = (label: string) => {
+    if (label === selected) return;
+
+    setLoading(true); // 1. Start loading
+
+    // 2. Wait 500ms
+    setTimeout(() => {
+      setSelected(label); // 3. Change selection
+      setLoading(false); // 4. Stop loading
+    }, 500);
+  };
+
   // Whenever filter or sort changes, just update displayOrders locally
   useEffect(() => {
     const filtered = orders.filter(order =>
@@ -153,20 +179,12 @@ export default function OrderList() {
 
   if (!isLoggedIn) {
     return (
-      <View
-        className={`flex-1 items-center justify-center ${
-          isDarkMode ? 'bg-gray-900' : 'bg-white'
-        }`}
-      >
+      <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
         <Image
           source={require('../../../assets/images/user.png')}
-          className="w-20 h-20 rounded-full mb-4 bg-gray-200"
+          className="w-20 h-20 rounded-full mb-4 bg-gray-200 dark:bg-neutral-800"
         />
-        <Text
-          className={`font-bold text-lg mb-2 ${
-            isDarkMode ? 'text-white' : 'text-gray-900'
-          }`}
-        >
+        <Text className="font-bold text-lg mb-2 text-gray-900 dark:text-white">
           Please login first
         </Text>
       </View>
@@ -174,23 +192,32 @@ export default function OrderList() {
   }
 
   return (
-    <View className="flex-1 relative">
+    <View
+      className="flex-1 relative"
+      style={{ backgroundColor: colors.screenBg }}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.screenBg}
+      />
+
       <TouchableOpacity
         onPress={() => setSortOrder(prev => (prev === 'asc' ? 'desc' : 'asc'))}
         style={{
           position: 'absolute',
-          top: -45,
+          top: -45, // Adjust based on your header layout context
           right: 10,
           padding: 10,
           zIndex: 20,
         }}
       >
         {sortOrder === 'asc' ? (
-          <SortAsc color={isDarkMode ? 'white' : 'black'} size={22} />
+          <SortAsc color={colors.iconColor} size={22} />
         ) : (
-          <SortDesc color={isDarkMode ? 'white' : 'black'} size={22} />
+          <SortDesc color={colors.iconColor} size={22} />
         )}
       </TouchableOpacity>
+
       {/* Filter Bar */}
       <ScrollView
         horizontal
@@ -201,17 +228,23 @@ export default function OrderList() {
           {filters.map((filter, idx) => (
             <TouchableOpacity
               key={idx}
-              onPress={() => setSelected(filter.label)}
+              onPress={() => handleFilterSelect(filter.label)} // ✅ Updated Handler
               className="px-[10px] h-9 mr-2 rounded-full items-center justify-center"
               style={{
                 backgroundColor:
-                  selected === filter.label ? '#2563eb' : '#e0e7ef',
+                  selected === filter.label
+                    ? colors.chipActiveBg
+                    : colors.chipInactiveBg,
               }}
             >
               <Text
-                className="font-medium text-lg"
                 style={{
-                  color: selected === filter.label ? 'white' : '#374151',
+                  fontSize: 16,
+                  fontWeight: '500',
+                  color:
+                    selected === filter.label
+                      ? colors.chipActiveText
+                      : colors.chipInactiveText,
                 }}
               >
                 {filter.label}
@@ -220,33 +253,41 @@ export default function OrderList() {
           ))}
         </View>
       </ScrollView>
+
       {/* Orders List */}
       <FlatList
         data={displayOrders}
         keyExtractor={item => item.id.toString()}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDarkMode ? '#fff' : '#000'}
+            colors={['#2563eb']}
+          />
         }
         renderItem={({ item }) => <OrderMerchantCard order={item} />}
         ListEmptyComponent={
           !loading ? (
-            <Text className="text-center text-gray-500 mt-10">
+            <Text className="text-center mt-10 text-gray-500 dark:text-gray-400">
               No orders found.
             </Text>
           ) : null
         }
-        contentContainerStyle={{ paddingBottom: 50 }}
+        contentContainerStyle={
+          displayOrders.length === 1
+            ? { paddingBottom: 600 }
+            : { paddingBottom: 250 }
+        }
       />
+
       {/* Loading Overlay */}
       {loading && (
         <View
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(255,255,255,0.6)',
+            inset: 0,
+            backgroundColor: colors.overlay,
             justifyContent: 'center',
             alignItems: 'center',
           }}
