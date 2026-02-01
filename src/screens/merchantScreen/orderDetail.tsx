@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   Alert,
+  Modal,
 } from 'react-native';
 import {
   RouteProp,
@@ -22,7 +23,15 @@ import {
   editMerchantOrder,
   getOneOrder,
 } from '../../api/merchantOrder/orderApi';
-import { User, Phone, Bike, CheckCircle, ArrowLeft } from 'lucide-react-native';
+import {
+  User,
+  Phone,
+  Bike,
+  CheckCircle,
+  ArrowLeft,
+  AlertCircle,
+  Info,
+} from 'lucide-react-native';
 import { getDeliveryOrderPerOrder } from '../../api/deliveryOrderApi';
 import { connectSocket } from '../../helper/socket';
 
@@ -47,7 +56,23 @@ const OrderDetail: React.FC = () => {
   const [currentOrder, setCurrentOrder] = useState<Order>(order);
   const [deliveryOrder, setDeliveryOrder] = useState<any[]>([]);
   const [status, setStatus] = useState(order.status);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   // 1. REUSABLE FETCH FUNCTION
   const refreshData = useCallback(async () => {
     try {
@@ -106,12 +131,11 @@ const OrderDetail: React.FC = () => {
       if (response.status !== 'success') {
         throw new Error('Failed to update status');
       }
-      Alert.alert('Success', 'Order status updated!');
-      // Update local state immediately
+      showStatus('success', 'Success', 'Order status updated successfully!'); // Update local state immediately
       setCurrentOrder(prev => ({ ...prev, status: newStatus }));
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Could not update order status');
+      showStatus('error', 'Error', 'Could not update order status');
     }
   };
 
@@ -302,6 +326,69 @@ const OrderDetail: React.FC = () => {
           </View>
         </View>
       )}
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
+              }}
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };

@@ -8,12 +8,19 @@ import {
   useColorScheme,
   StatusBar,
   View,
+  Modal,
 } from 'react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { createThumbnail } from 'react-native-create-thumbnail';
 import { API_BASE_URL } from '@env';
 import VideoPlayer from 'react-native-video';
-import { Video as VideoIcon, X } from 'lucide-react-native';
+import {
+  AlertCircle,
+  CheckCircle,
+  Info,
+  Video as VideoIcon,
+  X,
+} from 'lucide-react-native';
 
 // Import local components and utils
 import {
@@ -60,7 +67,23 @@ export default function ProductEditScreen({ route, navigation }: any) {
   const [video, setVideo] = useState<any>(product.video ?? null);
   const [imagesToDelete, setImagesToDelete] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   // --- Initial Data Fetch ---
   useEffect(() => {
     const fetchData = async () => {
@@ -105,6 +128,9 @@ export default function ProductEditScreen({ route, navigation }: any) {
     const result = await launchImageLibrary({
       mediaType: 'photo',
       selectionLimit: 10,
+      quality: 0.6, // <--- Add this (60% quality)
+      maxWidth: 800, // Smaller width is usually enough for mobile
+      maxHeight: 800,
     });
     if (!result.didCancel && result.assets?.length) {
       setImages(prev => {
@@ -116,9 +142,20 @@ export default function ProductEditScreen({ route, navigation }: any) {
   };
 
   const handleCaptureImage = async () => {
-    if (!(await requestCameraPermission()))
-      return Alert.alert('Permission required');
-    const result = await launchCamera({ mediaType: 'photo' });
+    if (!(await requestCameraPermission())) {
+      showStatus(
+        'error',
+        'Permission Required',
+        'Camera permission is required to take photos.',
+      );
+      return;
+    }
+    const result = await launchCamera({
+      mediaType: 'photo',
+      quality: 0.6, // <--- Add this
+      maxWidth: 800, // Smaller width is usually enough for mobile
+      maxHeight: 800,
+    });
     if (!result.didCancel && result.assets?.[0]) {
       setImages(prev => {
         const newImgs = [...prev, result.assets![0]];
@@ -129,13 +166,23 @@ export default function ProductEditScreen({ route, navigation }: any) {
   };
 
   const handleRemoveImage = (index: number, img: any) => {
-    if (thumbnail?.uri === img.uri) setThumbnail(null); // Simple reset, or find next available
-    setImages(prev => prev.filter((_, i) => i !== index));
-    if (img?.id || img?.fromServer || img?.uri?.includes(API_BASE_URL)) {
+    const isRemovingThumbnail = thumbnail?.uri === img.uri;
+
+    setImages(prev => {
+      const filtered = prev.filter((_, i) => i !== index);
+
+      // Automatically pick the next image as thumbnail if the current one is deleted
+      if (isRemovingThumbnail) {
+        setThumbnail(filtered.length > 0 ? filtered[0] : null);
+      }
+
+      return filtered;
+    });
+
+    if (img?.id || img?.fromServer) {
       setImagesToDelete(prev => [...prev, img]);
     }
   };
-
   // --- Handlers: Video ---
   const handleMediaVideo = async (source: 'gallery' | 'camera') => {
     if (source === 'camera' && !(await requestCameraPermission())) return;
@@ -159,38 +206,50 @@ export default function ProductEditScreen({ route, navigation }: any) {
   };
 
   // --- Submit ---
+  // --- Submit ---
   const handleSubmit = async () => {
     const { name, description, price, rate, count, category, type } = form;
     if (!name || !description || !price || !rate || !count || !category) {
-      return Alert.alert('Missing fields', 'Please fill all required fields.');
+      showStatus('error', 'Missing Fields', 'Please fill all required fields.');
+      return;
     }
 
     setLoading(true);
     try {
       const formData = new FormData();
-      Object.keys(form).forEach(key =>
-        formData.append(key, form[key as keyof typeof form]),
-      );
 
-      // Thumbnail logic
-      if (thumbnail) {
-        formData.append(
-          'thumbNail',
-          String(thumbnail.uri.replace(/^https?:\/\/[^/]+\//, '')),
-        );
-        if (!thumbnail.fromServer && !thumbnail.uri.includes('http')) {
-          formData.append('image', {
-            uri: normalizeUri(thumbnail.uri),
-            type: thumbnail.type || 'image/jpeg',
-            name: thumbnail.fileName || `thumbnail.jpg`,
-          } as any);
+      // --- FIX 1: EXCLUDE thumbNail FROM THE INITIAL LOOP ---
+      Object.keys(form).forEach(key => {
+        if (key !== 'thumbNail') {
+          // <--- SKIP THE OLD KEY
+          formData.append(key, form[key as keyof typeof form]);
         }
+      });
+
+      // --- FIX 2: YOUR LOGIC NOW HAS FULL CONTROL ---
+      const isNewThumbnail =
+        thumbnail && !thumbnail.fromServer && !thumbnail.uri.includes('http');
+
+      if (isNewThumbnail) {
+        // Backend sees this and knows to check req.files.image[0]
+        formData.append('thumbNail', 'NEW_IMAGE_0');
+
+        formData.append('image', {
+          uri: normalizeUri(thumbnail.uri),
+          type: thumbnail.type || 'image/jpeg',
+          name: thumbnail.fileName || `thumbnail_${Date.now()}.jpg`,
+        } as any);
+      } else if (thumbnail?.fromServer) {
+        // Just send the relative path for server-side images
+        const relativePath = thumbnail.uri.replace(`${API_BASE_URL}/`, '');
+        formData.append('thumbNail', relativePath);
       }
 
-      // Remaining Images
+      // Remaining Images (exactly as you have it)
       images.forEach((img, idx) => {
         if (thumbnail && img.uri === thumbnail.uri && !thumbnail.fromServer)
           return;
+
         if (!img.fromServer && !img.uri.includes('http')) {
           formData.append('image', {
             uri: normalizeUri(img.uri),
@@ -200,7 +259,7 @@ export default function ProductEditScreen({ route, navigation }: any) {
         }
       });
 
-      // Video
+      // Video (exactly as you have it)
       if (video && typeof video !== 'string' && !video.uri.includes('http')) {
         formData.append('video', {
           uri: normalizeUri(video.uri),
@@ -216,142 +275,267 @@ export default function ProductEditScreen({ route, navigation }: any) {
         if (img?.id) await deleteImage({ imageId: Number(img.id) });
       }
 
-      Alert.alert('Success', 'Product updated!');
-      navigation.goBack();
+      setLoading(false);
+      // Show success modal, then navigate back on close
+      showStatus(
+        'success',
+        'Product Updated',
+        'Your product has been updated successfully!',
+        () => navigation.goBack(),
+      );
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Update failed');
+      showStatus(
+        'error',
+        'Update Failed',
+        err.message || 'Failed to update product.',
+      );
     } finally {
       setLoading(false);
     }
   };
-
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: colors.screenBg }}
-      showsVerticalScrollIndicator={false}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={colors.screenBg}
-      />
+    <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.screenBg }}
+        showsVerticalScrollIndicator={false}
+      >
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.screenBg}
+        />
 
-      {/* 1. Inputs */}
-      <InputSection form={form} setForm={setForm} colors={colors} />
+        {/* 1. Inputs */}
+        <InputSection form={form} setForm={setForm} colors={colors} />
 
-      {/* 2. Images */}
-      <ImageManager
-        images={images}
-        thumbnail={thumbnail}
-        setThumbnail={setThumbnail}
-        onPick={handlePickImage}
-        onCapture={handleCaptureImage}
-        onRemove={handleRemoveImage}
-        colors={colors}
-      />
+        {/* 2. Images */}
+        <ImageManager
+          images={images}
+          thumbnail={thumbnail}
+          setThumbnail={setThumbnail}
+          onPick={handlePickImage}
+          onCapture={handleCaptureImage}
+          onRemove={handleRemoveImage}
+          colors={colors}
+        />
 
-      {/* 3. Video */}
-      <View style={{ paddingHorizontal: 20, marginBottom: 30 }}>
-        <Text
+        {/* 3. Video */}
+        <View style={{ paddingHorizontal: 20, marginBottom: 30 }}>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontWeight: '600',
+              marginBottom: 5,
+            }}
+          >
+            Product Video
+          </Text>
+          {video ? (
+            <View>
+              <VideoPlayer
+                source={{
+                  uri:
+                    typeof video === 'string'
+                      ? `${API_BASE_URL}/${video}`
+                      : video.uri,
+                }}
+                style={{
+                  width: '100%',
+                  height: 200,
+                  borderRadius: 10,
+                  backgroundColor: '#000',
+                }}
+                resizeMode="cover"
+                paused={true}
+                controls={true}
+              />
+              <TouchableOpacity
+                onPress={handleRemoveVideo}
+                style={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  padding: 5,
+                  borderRadius: 20,
+                }}
+              >
+                <X size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => handleMediaVideo('gallery')}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#007bff',
+                  padding: 10,
+                  borderRadius: 10,
+                }}
+              >
+                <Text style={{ color: '#fff', textAlign: 'center' }}>
+                  Add Video (Gallery)
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleMediaVideo('camera')}
+                style={{
+                  padding: 10,
+                  borderRadius: 10,
+                  backgroundColor: colors.inputBg,
+                }}
+              >
+                <VideoIcon size={28} color={colors.iconColor} />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* 4. Submit */}
+        <TouchableOpacity
+          onPress={handleSubmit}
+          disabled={loading}
           style={{
-            color: colors.textSecondary,
-            fontWeight: '600',
-            marginBottom: 5,
+            backgroundColor: loading
+              ? colors.textSecondary
+              : isDarkMode
+              ? '#ffffff'
+              : '#000000',
+            padding: 15,
+            borderRadius: 15,
+            marginBottom: 30,
+            marginHorizontal: 20,
           }}
         >
-          Product Video
-        </Text>
-        {video ? (
-          <View>
-            <VideoPlayer
-              source={{
-                uri:
-                  typeof video === 'string'
-                    ? `${API_BASE_URL}/${video}`
-                    : video.uri,
+          {loading ? (
+            <ActivityIndicator color={isDarkMode ? '#000' : '#fff'} />
+          ) : (
+            <Text
+              style={{
+                color: isDarkMode ? '#000000' : '#ffffff',
+                textAlign: 'center',
+                fontWeight: '600',
+              }}
+            >
+              Update Product
+            </Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 24,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: 'white',
+              width: '100%',
+              borderRadius: 24,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              alignItems: 'center',
+            }}
+          >
+            {/* Dynamic Icon */}
+            <View
+              style={{
+                padding: 16,
+                borderRadius: 9999,
+                marginBottom: 16,
+                backgroundColor:
+                  statusModal.type === 'success'
+                    ? '#dcfce7' // green-100
+                    : statusModal.type === 'error'
+                    ? '#fee2e2' // red-100
+                    : '#dbeafe', // blue-100
+              }}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#111827',
+                textAlign: 'center',
+                marginBottom: 8,
+              }}
+            >
+              {statusModal.title}
+            </Text>
+            <Text
+              style={{
+                color: '#6b7280',
+                textAlign: 'center',
+                marginBottom: 24,
+                lineHeight: 20,
+              }}
+            >
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
               }}
               style={{
                 width: '100%',
-                height: 200,
-                borderRadius: 10,
-                backgroundColor: '#000',
-              }}
-              resizeMode="cover"
-              paused={true}
-              controls={true}
-            />
-            <TouchableOpacity
-              onPress={handleRemoveVideo}
-              style={{
-                position: 'absolute',
-                top: 10,
-                right: 10,
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                padding: 5,
-                borderRadius: 20,
+                paddingVertical: 14,
+                borderRadius: 16,
+                backgroundColor:
+                  statusModal.type === 'success'
+                    ? '#22c55e'
+                    : statusModal.type === 'error'
+                    ? '#ef4444'
+                    : '#3b82f6',
               }}
             >
-              <X size={20} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity
-              onPress={() => handleMediaVideo('gallery')}
-              style={{
-                flex: 1,
-                backgroundColor: '#007bff',
-                padding: 10,
-                borderRadius: 10,
-              }}
-            >
-              <Text style={{ color: '#fff', textAlign: 'center' }}>
-                Add Video (Gallery)
+              <Text
+                style={{
+                  color: 'white',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  fontSize: 18,
+                }}
+              >
+                Okay
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => handleMediaVideo('camera')}
-              style={{
-                padding: 10,
-                borderRadius: 10,
-                backgroundColor: colors.inputBg,
-              }}
-            >
-              <VideoIcon size={28} color={colors.iconColor} />
-            </TouchableOpacity>
           </View>
-        )}
-      </View>
-
-      {/* 4. Submit */}
-      <TouchableOpacity
-        onPress={handleSubmit}
-        disabled={loading}
-        style={{
-          backgroundColor: loading
-            ? colors.textSecondary
-            : isDarkMode
-            ? '#ffffff'
-            : '#000000',
-          padding: 15,
-          borderRadius: 15,
-          marginBottom: 30,
-          marginHorizontal: 20,
-        }}
-      >
-        {loading ? (
-          <ActivityIndicator color={isDarkMode ? '#000' : '#fff'} />
-        ) : (
-          <Text
-            style={{
-              color: isDarkMode ? '#000000' : '#ffffff',
-              textAlign: 'center',
-              fontWeight: '600',
-            }}
-          >
-            Update Product
-          </Text>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+        </View>
+      </Modal>
+    </View>
   );
 }

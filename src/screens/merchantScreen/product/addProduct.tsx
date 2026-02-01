@@ -12,6 +12,7 @@ import {
   StatusBar,
   PermissionsAndroid,
   Platform,
+  Modal,
 } from 'react-native';
 import {
   launchImageLibrary,
@@ -19,10 +20,16 @@ import {
   ImageLibraryOptions,
 } from 'react-native-image-picker';
 import { createProduct } from '../../../api/merchantOrder/merchantProductApi';
-import { Camera, Video } from 'lucide-react-native';
+import {
+  AlertCircle,
+  Camera,
+  CheckCircle,
+  Info,
+  Video,
+} from 'lucide-react-native';
 import { createThumbnail } from 'react-native-create-thumbnail';
 import { Picker } from '@react-native-picker/picker';
-
+import { Video as VideoCompressor } from 'react-native-compressor';
 export enum categoryType {
   DELIVERY = 'Delivery',
   SHOP = 'Shop',
@@ -75,13 +82,27 @@ export default function ProductCreateScreen({ navigation }: any) {
   const [images, setImages] = useState<any[]>([]);
   const [video, setVideo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-
+  // --- CUSTOM ALERT STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+  });
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+  ) => {
+    setStatusModal({ visible: true, type, title, message });
+  };
   const normalizeUri = (uri: string) => {
-    if (uri.startsWith('content://')) {
-      return uri;
-    }
-    if (!uri.startsWith('file://')) {
-      return 'file://' + uri;
+    if (!uri) return '';
+    if (Platform.OS === 'android') {
+      // Ensure it starts with file:// if it's a local path and not a content:// path
+      if (!uri.startsWith('file://') && !uri.startsWith('content://')) {
+        return `file://${uri}`;
+      }
     }
     return uri;
   };
@@ -92,7 +113,10 @@ export default function ProductCreateScreen({ navigation }: any) {
   const pickImage = async () => {
     const options: ImageLibraryOptions = {
       mediaType: 'photo',
-      selectionLimit: 10, // allow multiple
+      selectionLimit: 10,
+      quality: 0.6, // <--- Add this (60% quality)
+      maxWidth: 800, // Smaller width is usually enough for mobile
+      maxHeight: 800,
     };
     const result = await launchImageLibrary(options);
     if (!result.didCancel && result.assets?.length) {
@@ -106,11 +130,20 @@ export default function ProductCreateScreen({ navigation }: any) {
   const captureImage = async () => {
     const ok = await requestCameraPermission();
     if (!ok) {
-      Alert.alert('Permission required', 'Please allow camera access.');
+      showStatus(
+        'error',
+        'Permission Denied',
+        'Camera access is required to take photos.',
+      );
       return;
     }
 
-    const result = await launchCamera({ mediaType: 'photo' });
+    const result = await launchCamera({
+      mediaType: 'photo',
+      quality: 0.6, // <--- Add this
+      maxWidth: 800, // Smaller width is usually enough for mobile
+      maxHeight: 800,
+    });
     if (!result.didCancel && result.assets?.[0]) {
       setImages(prev => [...prev, result.assets![0]]);
     }
@@ -122,27 +155,34 @@ export default function ProductCreateScreen({ navigation }: any) {
   const pickVideo = async () => {
     try {
       const result = await launchImageLibrary({ mediaType: 'video' });
+      if (result.didCancel || !result.assets?.[0]?.uri) return;
 
-      if (result.didCancel) return;
+      setLoading(true); // Show spinner during compression
 
-      const asset = result.assets?.[0];
-      if (!asset?.uri) return;
+      // --- COMPRESS ON PHONE ---
+      const compressedUri = await VideoCompressor.compress(
+        result.assets[0].uri,
+        {
+          compressionMethod: 'manual',
+          maxSize: 720,
+          bitrate: 2000000, // 2Mbps is plenty for mobile
+        },
+      );
 
-      const videoUri = normalizeUri(asset.uri);
-
-      const thumb = await createThumbnail({
-        url: videoUri,
-        timeStamp: 1000,
-      });
+      const videoUri = normalizeUri(compressedUri);
+      const thumb = await createThumbnail({ url: videoUri, timeStamp: 1000 });
 
       setVideo({
         uri: videoUri,
-        type: asset.type || 'video/mp4',
-        fileName: asset.fileName || 'video.mp4',
+        type: 'video/mp4',
+        fileName: 'compressed_video.mp4',
         thumbnail: thumb.path,
       });
     } catch (err) {
-      console.log('Thumbnail Error:', err);
+      showStatus('error', 'Video Error', 'Failed to compress video.');
+      console.log('Video Compression Error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -172,7 +212,8 @@ export default function ProductCreateScreen({ navigation }: any) {
 
   const handleSubmit = async () => {
     if (!name || !description || !price || !rate || !count || !category) {
-      return Alert.alert('Missing fields', 'Please fill all required fields.');
+      showStatus('error', 'Missing Fields', 'Please fill all required fields.');
+      return;
     }
 
     try {
@@ -189,31 +230,47 @@ export default function ProductCreateScreen({ navigation }: any) {
 
       if (images && images.length > 0) {
         images.forEach((image, index) => {
+          // Generate a fallback name if fileName is missing
+          const extension = image.type ? image.type.split('/')[1] : 'jpg';
+          const fileName =
+            image.fileName || `photo_${index}_${Date.now()}.${extension}`;
+
           formData.append('image', {
             uri: normalizeUri(image.uri),
             type: image.type || 'image/jpeg',
-            name: image.fileName || `photo_${index}.jpg`,
+            name: fileName,
           } as any);
         });
       }
 
-      if (video) {
+      // 2. Improved Video Handling
+      if (video && video.uri) {
+        const videoName = video.fileName || `video_${Date.now()}.mp4`;
+
         formData.append('video', {
           uri: normalizeUri(video.uri),
           type: video.type || 'video/mp4',
-          name: video.fileName || 'video.mp4',
+          name: videoName,
         } as any);
       }
 
       const response = await createProduct(formData);
 
       setLoading(false);
-      Alert.alert('Success', 'Product created successfully!');
-      navigation.goBack();
+      showStatus(
+        'success',
+        'Product Created',
+        'Your product has been successfully added to the marketplace!',
+      );
+      // navigation.goBack();
     } catch (err: any) {
       setLoading(false);
       console.log('API Error:', err.message || err);
-      Alert.alert('Error', err.message || 'Failed to create product.');
+      showStatus(
+        'error',
+        'Submission Failed',
+        err.message || 'Failed to create product. Please try again.',
+      );
     }
   };
 
@@ -589,6 +646,69 @@ export default function ProductCreateScreen({ navigation }: any) {
           )}
         </TouchableOpacity>
       </ScrollView>
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                // If it was a success message, navigate back after closing
+                if (statusModal.type === 'success') {
+                  navigation.goBack();
+                }
+              }}
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

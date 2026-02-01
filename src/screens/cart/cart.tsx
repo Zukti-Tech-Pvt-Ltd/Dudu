@@ -12,6 +12,7 @@ import {
   Keyboard,
   useColorScheme,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
@@ -22,6 +23,7 @@ import { API_BASE_URL } from '@env';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../helper/authContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 
 const StyledView = styled(View);
 const StyledText = styled(Text);
@@ -71,7 +73,23 @@ export default function CartScreen() {
   const { isLoggedIn, token } = useContext(AuthContext);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   if (!isLoggedIn) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-neutral-900">
@@ -167,7 +185,11 @@ export default function CartScreen() {
 
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
-      Alert.alert('Please select at least one item to checkout.');
+      showStatus(
+        'error',
+        'Selection Required',
+        'Please select at least one item to checkout.',
+      );
       return;
     }
     navigation.navigate('CheckoutScreen', {
@@ -201,7 +223,7 @@ export default function CartScreen() {
           .filter(group => group.items.length > 0),
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to delete place');
+      showStatus('error', 'Delete Failed', 'Failed to remove item from cart.');
       console.error(error);
     } finally {
       setLoading(false);
@@ -429,6 +451,69 @@ export default function CartScreen() {
             />
           </View>
         )}
+        {/* --- CUSTOM STATUS MODAL --- */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={statusModal.visible}
+          onRequestClose={() =>
+            setStatusModal(prev => ({ ...prev, visible: false }))
+          }
+        >
+          <View className="flex-1 bg-black/60 justify-center items-center px-6">
+            <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+              {/* Dynamic Icon */}
+              <View
+                className={`p-4 rounded-full mb-4 ${
+                  statusModal.type === 'success'
+                    ? 'bg-green-100 dark:bg-green-900/30'
+                    : statusModal.type === 'error'
+                    ? 'bg-red-100 dark:bg-red-900/30'
+                    : 'bg-blue-100 dark:bg-blue-900/30'
+                }`}
+              >
+                {statusModal.type === 'success' && (
+                  <CheckCircle size={32} color="#16a34a" />
+                )}
+                {statusModal.type === 'error' && (
+                  <AlertCircle size={32} color="#ef4444" />
+                )}
+                {statusModal.type === 'info' && (
+                  <Info size={32} color="#3b82f6" />
+                )}
+              </View>
+
+              {/* Content */}
+              <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+                {statusModal.title}
+              </Text>
+              <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+                {statusModal.message}
+              </Text>
+
+              {/* Close Button */}
+              <TouchableOpacity
+                onPress={() => {
+                  setStatusModal(prev => ({ ...prev, visible: false }));
+                  if (statusModal.onClose) {
+                    statusModal.onClose();
+                  }
+                }}
+                className={`w-full py-3.5 rounded-2xl ${
+                  statusModal.type === 'success'
+                    ? 'bg-green-500'
+                    : statusModal.type === 'error'
+                    ? 'bg-red-500'
+                    : 'bg-blue-500'
+                }`}
+              >
+                <Text className="text-white font-bold text-center text-lg">
+                  Okay
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </StyledView>
     </TouchableWithoutFeedback>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
   Dimensions,
   useColorScheme,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+
 import {
   getByName,
   getOne,
@@ -22,6 +24,8 @@ import BuyNowPopup from '../popUp/buyNowPop';
 import { Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProductImageCarousel from './productImageCarousel';
+import { AuthContext } from '../../helper/authContext';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 
 interface ProductDataType {
   id: number;
@@ -49,6 +53,7 @@ const DetailScreen = () => {
   // const screenWidth = Dimensions.get('window').width; // Unused
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const { isLoggedIn, token } = useContext(AuthContext);
 
   // Dynamic colors for inline styles that NativeWind might miss (like Image tintColor)
   const themeIconColor = isDarkMode ? '#FFFFFF' : '#000000';
@@ -60,8 +65,37 @@ const DetailScreen = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showBuyNowPopup, setShowBuyNowPopup] = useState(false);
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
-  const handleShowPopup = () => setShowBuyNowPopup(true);
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
+  const handleShowPopup = () => {
+    // 🔒 CHECK LOGIN
+    if (!isLoggedIn) {
+      showStatus(
+        'error',
+        'Login Required',
+        'You must be logged in to purchase items.',
+        // Optional: Redirect to login on close
+        // () => navigation.navigate('LoginScreen')
+      );
+      return;
+    }
+    setShowBuyNowPopup(true);
+  };
   const handleClosePopup = () => setShowBuyNowPopup(false);
 
   const navigation = useNavigation();
@@ -77,10 +111,29 @@ const DetailScreen = () => {
   const { productName = '' } = route.params ?? {};
 
   const handleAddToCart = async () => {
-    const response = await createCart(product.id, quantity);
-    if (response.status === 'success') {
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 1000);
+    // 🔒 CHECK LOGIN
+    if (!isLoggedIn) {
+      showStatus(
+        'error',
+        'Login Required',
+        'You must be logged in to add items to your cart.',
+      );
+      return;
+    }
+
+    try {
+      const response = await createCart(product.id, quantity);
+      if (response.status === 'success') {
+        showStatus(
+          'success',
+          'Added to Cart',
+          'Item added to your cart successfully!',
+        );
+      } else {
+        showStatus('error', 'Error', 'Failed to add item to cart.');
+      }
+    } catch (error) {
+      showStatus('error', 'Error', 'Something went wrong.');
     }
   };
 
@@ -288,11 +341,11 @@ const DetailScreen = () => {
               onPress={handleShowPopup}
               activeOpacity={0.8}
               className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 mr-3 shadow-2xl"
-              style={{
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 10,
-                shadowColor: '#000', // Keep shadow black even in dark mode for buttons
-              }}
+              // style={{
+              //   shadowOffset: { width: 0, height: 8 },
+              //   elevation: 10,
+              //   shadowColor: '#000', // Keep shadow black even in dark mode for buttons
+              // }}
             >
               <Text className="text-white font-semibold text-base mr-2">
                 Buy Now
@@ -308,11 +361,11 @@ const DetailScreen = () => {
               onPress={handleAddToCart}
               activeOpacity={0.8}
               className="bg-blue-500 rounded-2xl flex-row items-center px-4 py-2 shadow-2xl"
-              style={{
-                shadowOffset: { width: 0, height: 8 },
-                elevation: 10,
-                shadowColor: '#000',
-              }}
+              // style={{
+              //   shadowOffset: { width: 0, height: 8 },
+              //   elevation: 10,
+              //   shadowColor: '#000',
+              // }}
             >
               <Text className="text-white font-semibold text-base mr-2">
                 Add to Cart
@@ -357,6 +410,69 @@ const DetailScreen = () => {
           </Text>
         </View>
       )}
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
+              }}
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

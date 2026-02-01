@@ -1,4 +1,10 @@
 # Resolve react_native_pods.rb with node to allow for hoisting
+
+# Define the permissions you need here
+$RNPermissionsUsePhotoLibrary = 1
+$RNPermissionsUseCamera = 1
+$RNPermissionsUseLocationAlways = 1
+$RNPermissionsUseLocationWhenInUse = 1
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
     "react-native/scripts/react_native_pods.rb",

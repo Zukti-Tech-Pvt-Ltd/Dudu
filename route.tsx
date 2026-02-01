@@ -25,7 +25,7 @@ import CompletedDelivery from './src/screens/deliveryScreen/completeDelivery';
 import DeliveryStatusScreen from './src/screens/deliveryScreen/deliveryStatusScreen';
 import OrderDetail from './src/screens/merchantScreen/orderDetail';
 import ProductCreateScreen from './src/screens/merchantScreen/product/addProduct';
-import ProductEditScreen from './src/screens/merchantScreen/product/editProduct/productEditScreen';
+import ProductEditScreen from './src/screens/merchantScreen/product/editProduct';
 
 import AvaliableRidersScreen from './src/screens/merchantScreen/availableRider';
 import EditProfileScreen from './src/screens/profile/editProfile';

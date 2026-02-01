@@ -7,12 +7,36 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
   ScrollView,
   useColorScheme,
   StatusBar,
+  Modal, // <--- Added Modal import
 } from 'react-native';
 import { signUp } from '../../api/login/loginApi';
+// <--- Added Icons
+import { CheckCircle, AlertCircle, Info } from 'lucide-react-native';
+
+// ---------------------------------------------------------
+// ✅ FormInput Component
+// ---------------------------------------------------------
+const FormInput = ({ label, isDarkMode, ...props }: any) => {
+  const colors = {
+    placeholder: isDarkMode ? '#9ca3af' : '#9ca3af',
+  };
+
+  return (
+    <View className="mb-4">
+      <Text className="w-full text-gray-700 dark:text-gray-300 mb-1.5 font-medium text-sm">
+        {label}
+      </Text>
+      <TextInput
+        placeholderTextColor={colors.placeholder}
+        className="w-full border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-lg px-4 py-3 text-black dark:text-white"
+        {...props}
+      />
+    </View>
+  );
+};
 
 export default function SignupScreen({ navigation }: any) {
   const colorScheme = useColorScheme();
@@ -20,14 +44,7 @@ export default function SignupScreen({ navigation }: any) {
 
   // Dynamic colors configuration
   const colors = {
-    screenBg: isDarkMode ? '#171717' : '#f9fafb', // neutral-900 vs gray-50
-    cardBg: isDarkMode ? '#262626' : '#ffffff', // neutral-800 vs white
-    textPrimary: isDarkMode ? '#ffffff' : '#111827', // white vs gray-900
-    textSecondary: isDarkMode ? '#a3a3a3' : '#6b7280', // neutral-400 vs gray-500
-    inputBg: isDarkMode ? '#262626' : '#ffffff',
-    inputBorder: isDarkMode ? '#404040' : '#e5e7eb',
-    placeholder: isDarkMode ? '#9ca3af' : '#9ca3af',
-    primary: '#2563eb', // Blue-600
+    screenBg: isDarkMode ? '#171717' : '#f9fafb',
   };
 
   const [step, setStep] = useState<'select' | 'form'>('select');
@@ -49,8 +66,32 @@ export default function SignupScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
+
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
+
   const handleSignup = async () => {
     if (!userType) return;
+
+    // Simple validation (Optional but recommended)
+    if (password !== confirmPassword) {
+      showStatus('error', 'Password Mismatch', 'Passwords do not match.');
+      return;
+    }
 
     let payload: any = {
       username,
@@ -73,29 +114,18 @@ export default function SignupScreen({ navigation }: any) {
     try {
       setLoading(true);
       const response = await signUp(payload);
-      Alert.alert('Success', 'Account created successfully!');
-      navigation.goBack();
+
+      setLoading(false);
+      // Show success modal; navigate back when user clicks "Okay"
+      showStatus('success', 'Success', 'Account created successfully!', () =>
+        navigation.goBack(),
+      );
     } catch (error) {
       console.log(error);
-      Alert.alert('Error', 'Signup failed. Please try again.');
-    } finally {
       setLoading(false);
+      showStatus('error', 'Error', 'Signup failed. Please try again.');
     }
   };
-
-  // --- Helper Component for Inputs ---
-  const FormInput = ({ label, ...props }: any) => (
-    <View className="mb-4">
-      <Text className="w-full text-gray-700 dark:text-gray-300 mb-1.5 font-medium text-sm">
-        {label}
-      </Text>
-      <TextInput
-        placeholderTextColor={colors.placeholder}
-        className="w-full border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 rounded-lg px-4 py-3 text-black dark:text-white"
-        {...props}
-      />
-    </View>
-  );
 
   // --- User Type Selection Screen ---
   if (step === 'select') {
@@ -117,7 +147,6 @@ export default function SignupScreen({ navigation }: any) {
           </Text>
         </View>
         <View className="w-8 h-8 rounded-full bg-gray-100 dark:bg-neutral-700 items-center justify-center">
-          {/* Simple chevron icon using text for minimal dependency */}
           <Text className="text-gray-400 dark:text-gray-300 font-bold">
             {'>'}
           </Text>
@@ -189,6 +218,7 @@ export default function SignupScreen({ navigation }: any) {
             placeholder="Choose a username"
             value={username}
             onChangeText={setUsername}
+            isDarkMode={isDarkMode}
           />
 
           <FormInput
@@ -198,6 +228,7 @@ export default function SignupScreen({ navigation }: any) {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            isDarkMode={isDarkMode}
           />
 
           <FormInput
@@ -206,6 +237,7 @@ export default function SignupScreen({ navigation }: any) {
             value={phoneNumber}
             onChangeText={setPhoneNumber}
             keyboardType="phone-pad"
+            isDarkMode={isDarkMode}
           />
 
           <FormInput
@@ -213,6 +245,7 @@ export default function SignupScreen({ navigation }: any) {
             placeholder="Current location"
             value={address}
             onChangeText={setAddress}
+            isDarkMode={isDarkMode}
           />
 
           {/* DELIVERY ONLY FIELDS */}
@@ -223,6 +256,7 @@ export default function SignupScreen({ navigation }: any) {
                 placeholder="e.g. Bike, Scooter"
                 value={vehicleType}
                 onChangeText={setVehicleType}
+                isDarkMode={isDarkMode}
               />
 
               <FormInput
@@ -230,6 +264,7 @@ export default function SignupScreen({ navigation }: any) {
                 placeholder="e.g. BA 2 PA 0000"
                 value={vehicleNumber}
                 onChangeText={setVehicleNumber}
+                isDarkMode={isDarkMode}
               />
             </>
           )}
@@ -243,6 +278,7 @@ export default function SignupScreen({ navigation }: any) {
                 value={khaltiId}
                 onChangeText={setKhaltiId}
                 keyboardType="phone-pad"
+                isDarkMode={isDarkMode}
               />
 
               <FormInput
@@ -251,6 +287,7 @@ export default function SignupScreen({ navigation }: any) {
                 value={esewaId}
                 onChangeText={setEsewaId}
                 keyboardType="phone-pad"
+                isDarkMode={isDarkMode}
               />
             </>
           )}
@@ -262,6 +299,7 @@ export default function SignupScreen({ navigation }: any) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            isDarkMode={isDarkMode}
           />
 
           <FormInput
@@ -270,6 +308,7 @@ export default function SignupScreen({ navigation }: any) {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
+            isDarkMode={isDarkMode}
           />
 
           <TouchableOpacity
@@ -293,7 +332,6 @@ export default function SignupScreen({ navigation }: any) {
           <TouchableOpacity
             className="mt-6 mb-10 self-center"
             onPress={() => {
-              // If on form step, go back to select step, else go back to login
               if (step === 'form') setStep('select');
               else navigation.goBack();
             }}
@@ -307,6 +345,70 @@ export default function SignupScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
+              }}
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

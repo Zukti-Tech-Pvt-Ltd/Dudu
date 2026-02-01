@@ -69,9 +69,23 @@ export default function MainTabs() {
             headerShown: false,
             tabBarShowLabel: true,
             tabBarStyle: {
-              height: 40 + (Platform.OS === 'android' ? insets.bottom : 0),
-              backgroundColor: isDark ? '#000' : '#fff',
-              borderTopColor: isDark ? '#333' : '#ddd',
+              backgroundColor: isDark ? '#111' : '#fff',
+              borderTopWidth: 1,
+              borderTopColor: isDark ? '#333' : '#eee',
+
+              // 1. Explicit Height that works for both Gestures and Buttons
+              height: Platform.OS === 'ios' ? 88 : 110,
+
+              // 2. Padding to push icons AWAY from the very bottom edge
+              paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
+              paddingTop: 10,
+
+              // 3. Remove absolute positioning if it's currently blocking touches
+              position: 'relative',
+
+              // 4. Force elevation to ensure it's on top of other views
+              elevation: 20,
+              zIndex: 1000,
             },
             tabBarActiveTintColor: isDark ? '#60a5fa' : '#2563eb', // blue but lighter in dark mode
             tabBarInactiveTintColor: isDark ? '#888' : 'gray',
@@ -122,9 +136,23 @@ export default function MainTabs() {
             headerShown: false,
             tabBarShowLabel: true,
             tabBarStyle: {
-              height: 40 + (Platform.OS === 'android' ? insets.bottom : 0),
-              backgroundColor: isDark ? '#000' : '#fff',
-              borderTopColor: isDark ? '#333' : '#ddd',
+              backgroundColor: isDark ? '#111' : '#fff',
+              borderTopWidth: 1,
+              borderTopColor: isDark ? '#333' : '#eee',
+
+              // 1. Explicit Height that works for both Gestures and Buttons
+              height: Platform.OS === 'ios' ? 88 : 110,
+
+              // 2. Padding to push icons AWAY from the very bottom edge
+              paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
+              paddingTop: 10,
+
+              // 3. Remove absolute positioning if it's currently blocking touches
+              position: 'relative',
+
+              // 4. Force elevation to ensure it's on top of other views
+              elevation: 20,
+              zIndex: 1000,
             },
             tabBarActiveTintColor: isDark ? '#60a5fa' : '#2563eb', // blue but lighter in dark mode
             tabBarInactiveTintColor: isDark ? '#888' : 'gray',
@@ -191,9 +219,23 @@ export default function MainTabs() {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarStyle: {
-          height: 50 + (Platform.OS === 'android' ? insets.bottom : 0),
-          backgroundColor: tabColors.background,
-          borderTopColor: tabColors.border,
+          backgroundColor: isDark ? '#111' : '#fff',
+          borderTopWidth: 1,
+          borderTopColor: isDark ? '#333' : '#eee',
+
+          // 1. Explicit Height that works for both Gestures and Buttons
+          height: Platform.OS === 'ios' ? 88 : 110,
+
+          // 2. Padding to push icons AWAY from the very bottom edge
+          paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
+          paddingTop: 10,
+
+          // 3. Remove absolute positioning if it's currently blocking touches
+          position: 'relative',
+
+          // 4. Force elevation to ensure it's on top of other views
+          elevation: 20,
+          zIndex: 1000,
         },
 
         tabBarIcon: ({ focused, size }) => {

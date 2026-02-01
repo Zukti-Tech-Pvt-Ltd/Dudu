@@ -30,6 +30,7 @@ import Geolocation from '@react-native-community/geolocation';
 import { API_BASE_URL } from '@env';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { AuthContext } from '../helper/authContext';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 
 const destination = {
   latitude: 27.671044042129285,
@@ -84,7 +85,23 @@ export default function DeliveryMapsScreen() {
   >([]);
   const [isMapReady, setIsMapReady] = useState(false);
   const { isLoggedIn, token, setToken } = useContext(AuthContext);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   if (!isLoggedIn) {
     return (
       <View
@@ -138,7 +155,11 @@ export default function DeliveryMapsScreen() {
     const fetchDataAndLocation = async () => {
       const hasPermission = await requestLocationPermission();
       if (!hasPermission) {
-        console.warn('Location permission denied');
+        showStatus(
+          'error',
+          'Permission Denied',
+          'Location permission is required to use this feature.',
+        );
         return;
       }
 
@@ -173,11 +194,14 @@ export default function DeliveryMapsScreen() {
           console.error('Error getting location', error);
           // Optional: Show an alert to the user based on the error code
           if (error.code === 1) {
-            // Permission Denied
-            Alert.alert(
-              'Location Error',
-              'Location permission was denied. Please enable it in settings to see your position.',
+            // Permission Denied - Use Custom Modal
+            showStatus(
+              'error',
+              'Location Access Denied',
+              'Please enable location services in your device settings to see your current position.',
             );
+          } else {
+            showStatus('error', 'Location Error', error.message);
           }
           console.log(
             `Geolocation Error Code: ${error.code}. Message: ${error.message}`,
@@ -224,9 +248,17 @@ export default function DeliveryMapsScreen() {
             currentLocation={true}
             currentLocationLabel="Current location"
             enableHighAccuracyLocation={true}
-            onFail={() => console.warn('Gooxgle Places Autocomplete failed')}
+            onFail={() =>
+              showStatus(
+                'error',
+                'Search Failed',
+                'Google Places search failed. Please try again.',
+              )
+            }
             onNotFound={() => console.log('No results found')}
-            onTimeout={() => console.warn('Google Places request timeout')}
+            onTimeout={() =>
+              showStatus('error', 'Timeout', 'The search request timed out.')
+            }
             predefinedPlaces={[]}
             predefinedPlacesAlwaysVisible={false}
             styles={{
@@ -261,7 +293,7 @@ export default function DeliveryMapsScreen() {
             }}
             onPress={(data, details = null) => {
               if (!details?.geometry?.location) {
-                console.warn('Missing geometry details!');
+                showStatus('error', 'Error', 'Location details unavailable.');
                 return;
               }
 
@@ -362,6 +394,120 @@ export default function DeliveryMapsScreen() {
             />
           ))}
         </MapView>
+        {/* --- CUSTOM STATUS MODAL --- */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={statusModal.visible}
+          onRequestClose={() =>
+            setStatusModal(prev => ({ ...prev, visible: false }))
+          }
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 24,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: 'white',
+                width: '100%',
+                borderRadius: 24,
+                padding: 24,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                alignItems: 'center',
+              }}
+            >
+              {/* Dynamic Icon */}
+              <View
+                style={{
+                  padding: 16,
+                  borderRadius: 9999,
+                  marginBottom: 16,
+                  backgroundColor:
+                    statusModal.type === 'success'
+                      ? '#dcfce7' // green-100
+                      : statusModal.type === 'error'
+                      ? '#fee2e2' // red-100
+                      : '#dbeafe', // blue-100
+                }}
+              >
+                {statusModal.type === 'success' && (
+                  <CheckCircle size={32} color="#16a34a" />
+                )}
+                {statusModal.type === 'error' && (
+                  <AlertCircle size={32} color="#ef4444" />
+                )}
+                {statusModal.type === 'info' && (
+                  <Info size={32} color="#3b82f6" />
+                )}
+              </View>
+
+              {/* Content */}
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                {statusModal.title}
+              </Text>
+              <Text
+                style={{
+                  color: '#6b7280',
+                  textAlign: 'center',
+                  marginBottom: 24,
+                  lineHeight: 20,
+                }}
+              >
+                {statusModal.message}
+              </Text>
+
+              {/* Close Button */}
+              <TouchableOpacity
+                onPress={() => {
+                  setStatusModal(prev => ({ ...prev, visible: false }));
+                  if (statusModal.onClose) {
+                    statusModal.onClose();
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  paddingVertical: 14,
+                  borderRadius: 16,
+                  backgroundColor:
+                    statusModal.type === 'success'
+                      ? '#22c55e'
+                      : statusModal.type === 'error'
+                      ? '#ef4444'
+                      : '#3b82f6',
+                }}
+              >
+                <Text
+                  style={{
+                    color: 'white',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    fontSize: 18,
+                  }}
+                >
+                  Okay
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </TouchableWithoutFeedback>
   );

@@ -11,9 +11,10 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ArrowLeft } from 'lucide-react-native';
+import { AlertCircle, ArrowLeft, CheckCircle, Info } from 'lucide-react-native';
 import { getnotification } from '../../api/notificationApi';
 import { orderReceivedByUser } from '../../api/orderApi';
 import { connectSocket } from '../../helper/socket';
@@ -57,7 +58,23 @@ export default function NotificationScreen() {
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   // --- FETCH DATA ---
   const fetchNotifications = async () => {
     try {
@@ -108,8 +125,17 @@ export default function NotificationScreen() {
 
   // --- HANDLE ORDER BUTTON PRESS ---
   const handleOrderAction = async (item: ApiNotification) => {
-    await orderReceivedByUser(item.orderId);
-    Alert.alert('Order Accepted', `You clicked Yes for Order #${item.id}`);
+    try {
+      await orderReceivedByUser(item.orderId);
+      // Use Custom Modal instead of Alert
+      showStatus(
+        'success',
+        'Order Accepted',
+        `You successfully confirmed Order #${item.id}`,
+      );
+    } catch (error) {
+      showStatus('error', 'Error', 'Failed to update order status');
+    }
   };
 
   // --- FILTER LOGIC ---
@@ -248,6 +274,69 @@ export default function NotificationScreen() {
           }
         />
       )}
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
+              }}
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

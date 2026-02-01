@@ -5,6 +5,8 @@ import {
   Alert,
   Text,
   SafeAreaView,
+  Modal,
+  TouchableOpacity,
 } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +20,7 @@ import {
   KHALTI_TEST_PUBLIC_KEY,
 } from '@env';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 
 type RootStackParamList = {
   KhaltiPayment: {
@@ -41,7 +44,23 @@ const KhaltiPayment = () => {
   const [khaltiCheckoutUrl, setKhaltiCheckoutUrl] = useState<string | null>(
     null,
   );
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined, // Callback for navigation
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   const { selectedItems } = route.params;
   const { totalPrice } = route.params;
   const { orderId } = route.params;
@@ -85,8 +104,9 @@ const KhaltiPayment = () => {
         setKhaltiCheckoutUrl(checkoutUrl);
       } catch (error) {
         console.error('Error fetching Pidx:', error);
-        Alert.alert('Error', 'Failed to initiate Khalti payment');
-        navigation.goBack();
+        showStatus('error', 'Error', 'Failed to initiate Khalti payment', () =>
+          navigation.goBack(),
+        );
       }
     }
     fetchPidx();
@@ -130,33 +150,162 @@ const KhaltiPayment = () => {
                     url.split('status=')[1].split('&')[0].replace(/\+/g, '%20'),
                   )
                 : null;
+              // Define the navigation action (Reset to Main Tab)
+              const handleCompletion = () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'maintab' }],
+                });
+              };
               if (status === 'Completed') {
                 // successUrl;
                 console.log('Return URL completed:', url);
 
-                Alert.alert('Payment Success', 'Your payment was successful.');
+                showStatus(
+                  'success',
+                  'Payment Success',
+                  'Your payment was successful.',
+                  handleCompletion,
+                );
               } else if (status === 'User canceled') {
                 console.log('Return URL cancelled:', url);
                 // failureUrl;
-                Alert.alert(
+                showStatus(
+                  'error',
                   'Payment Cancelled',
                   'You have cancelled the payment.',
+                  handleCompletion,
                 );
               } else {
                 console.log('Return URL failed:', url);
 
-                Alert.alert('Payment Failed', 'Payment was not successful.');
-                // failureUrl;
+                showStatus(
+                  'error',
+                  'Payment Failed',
+                  'Payment was not successful.',
+                  handleCompletion,
+                ); // failureUrl;
               }
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'maintab' }],
-              });
             }
           }}
           startInLoadingState
         />
       </View>
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 24,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: 'white',
+              width: '100%',
+              borderRadius: 24,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              alignItems: 'center',
+            }}
+          >
+            {/* Dynamic Icon */}
+            <View
+              style={{
+                padding: 16,
+                borderRadius: 9999,
+                marginBottom: 16,
+                backgroundColor:
+                  statusModal.type === 'success'
+                    ? '#dcfce7' // green-100
+                    : statusModal.type === 'error'
+                    ? '#fee2e2' // red-100
+                    : '#dbeafe', // blue-100
+              }}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#111827',
+                textAlign: 'center',
+                marginBottom: 8,
+              }}
+            >
+              {statusModal.title}
+            </Text>
+            <Text
+              style={{
+                color: '#6b7280',
+                textAlign: 'center',
+                marginBottom: 24,
+                lineHeight: 20,
+              }}
+            >
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                // Trigger the callback (Navigation) if it exists
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
+              }}
+              style={{
+                width: '100%',
+                paddingVertical: 14,
+                borderRadius: 16,
+                backgroundColor:
+                  statusModal.type === 'success'
+                    ? '#22c55e'
+                    : statusModal.type === 'error'
+                    ? '#ef4444'
+                    : '#3b82f6',
+              }}
+            >
+              <Text
+                style={{
+                  color: 'white',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  fontSize: 18,
+                }}
+              >
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

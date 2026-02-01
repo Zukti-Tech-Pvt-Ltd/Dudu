@@ -6,12 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   useColorScheme,
+  Modal,
 } from 'react-native';
 import { AuthContext } from '../../helper/authContext';
 import { decodeToken } from '../../api/indexAuth';
 import { getUser, editUser } from '../../api/userApi';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 
 export default function EditProfileScreen({ navigation }: any) {
   const { token, isLoggedIn } = useContext(AuthContext);
@@ -31,7 +32,21 @@ export default function EditProfileScreen({ navigation }: any) {
   });
 
   const [userId, setUserId] = useState<number | null>(null);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+  ) => {
+    setStatusModal({ visible: true, type, title, message });
+  };
   useEffect(() => {
     if (!token) return;
 
@@ -55,7 +70,7 @@ export default function EditProfileScreen({ navigation }: any) {
           khaltiNumber: user.khaltiNumber ?? '',
         });
       } catch (err) {
-        Alert.alert('Error', 'Failed to load profile');
+        showStatus('error', 'Error', 'Failed to load profile data.');
       } finally {
         setLoading(false);
       }
@@ -74,10 +89,11 @@ export default function EditProfileScreen({ navigation }: any) {
     try {
       setLoading(true);
       await editUser(userId, form);
-      Alert.alert('Success', 'Profile updated successfully');
+
+      showStatus('success', 'Success', 'Profile updated successfully');
       navigation.goBack();
     } catch (err) {
-      Alert.alert('Error', 'Failed to update profile');
+      showStatus('error', 'Update Failed', 'Failed to update profile details.');
     } finally {
       setLoading(false);
     }
@@ -105,72 +121,138 @@ export default function EditProfileScreen({ navigation }: any) {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-white dark:bg-neutral-900 px-8 py-6"
-      contentContainerStyle={{ paddingBottom: 40 }}
-    >
-      <Text className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-        Edit your profile
-      </Text>
-
-      <Input
-        label="Username"
-        value={form.username}
-        onChange={v => handleChange('username', v)}
-        isDarkMode={isDarkMode}
-      />
-      <Input
-        label="Email"
-        value={form.email}
-        onChange={v => handleChange('email', v)}
-        isDarkMode={isDarkMode}
-      />
-      <Input
-        label="Phone Number"
-        value={form.phoneNumber}
-        onChange={v => handleChange('phoneNumber', v)}
-        isDarkMode={isDarkMode}
-      />
-      <Input
-        label="Address"
-        value={form.address}
-        onChange={v => handleChange('address', v)}
-        isDarkMode={isDarkMode}
-      />
-      <Input
-        label="Vehicle Type"
-        value={form.vehicleType}
-        onChange={v => handleChange('vehicleType', v)}
-        isDarkMode={isDarkMode}
-      />
-      <Input
-        label="Vehicle Number"
-        value={form.vehicleNumber}
-        onChange={v => handleChange('vehicleNumber', v)}
-        isDarkMode={isDarkMode}
-      />
-      <Input
-        label="eSewa Number"
-        value={form.esewaNumber}
-        onChange={v => handleChange('esewaNumber', v)}
-        isDarkMode={isDarkMode}
-      />
-      <Input
-        label="Khalti Number"
-        value={form.khaltiNumber}
-        onChange={v => handleChange('khaltiNumber', v)}
-        isDarkMode={isDarkMode}
-      />
-
-      <TouchableOpacity
-        className="bg-blue-600 dark:bg-blue-500 py-3 rounded-lg mt-6 mb-10"
-        onPress={handleSave}
+    <View className="flex-1 bg-white dark:bg-neutral-900">
+      <ScrollView
+        className="flex-1 bg-white dark:bg-neutral-900 px-8 py-6"
+        contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <Text className="text-white text-center font-bold text-base">
-          Save Changes
+        <Text className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+          Edit your profile
         </Text>
-      </TouchableOpacity>
-    </ScrollView>
+
+        <Input
+          label="Username"
+          value={form.username}
+          onChange={v => handleChange('username', v)}
+          isDarkMode={isDarkMode}
+        />
+        <Input
+          label="Email"
+          value={form.email}
+          onChange={v => handleChange('email', v)}
+          isDarkMode={isDarkMode}
+        />
+        <Input
+          label="Phone Number"
+          value={form.phoneNumber}
+          onChange={v => handleChange('phoneNumber', v)}
+          isDarkMode={isDarkMode}
+        />
+        <Input
+          label="Address"
+          value={form.address}
+          onChange={v => handleChange('address', v)}
+          isDarkMode={isDarkMode}
+        />
+        <Input
+          label="Vehicle Type"
+          value={form.vehicleType}
+          onChange={v => handleChange('vehicleType', v)}
+          isDarkMode={isDarkMode}
+        />
+        <Input
+          label="Vehicle Number"
+          value={form.vehicleNumber}
+          onChange={v => handleChange('vehicleNumber', v)}
+          isDarkMode={isDarkMode}
+        />
+        <Input
+          label="eSewa Number"
+          value={form.esewaNumber}
+          onChange={v => handleChange('esewaNumber', v)}
+          isDarkMode={isDarkMode}
+        />
+        <Input
+          label="Khalti Number"
+          value={form.khaltiNumber}
+          onChange={v => handleChange('khaltiNumber', v)}
+          isDarkMode={isDarkMode}
+        />
+
+        <TouchableOpacity
+          className="bg-blue-600 dark:bg-blue-500 py-3 rounded-lg mt-6 mb-10"
+          onPress={handleSave}
+        >
+          <Text className="text-white text-center font-bold text-base">
+            Save Changes
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                // If success, go back
+                if (statusModal.type === 'success') {
+                  navigation.goBack();
+                }
+              }}
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 

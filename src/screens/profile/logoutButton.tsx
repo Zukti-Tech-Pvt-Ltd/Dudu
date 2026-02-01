@@ -2,14 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useContext, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { AuthContext } from '../../helper/authContext';
 import { decodeToken } from '../../api/indexAuth';
 import { removeDeviceToken } from '../../api/login/loginApi';

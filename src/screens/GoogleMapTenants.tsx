@@ -29,6 +29,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { PermissionsAndroid } from 'react-native';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import { Linking } from 'react-native';
+import { AlertCircle, CheckCircle, Info } from 'lucide-react-native';
 
 export default function MapsScreenTenants() {
   type MapTabParamsList = {
@@ -50,6 +51,23 @@ export default function MapsScreenTenants() {
 
   const mapRef = useRef<MapView | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
+
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   const requestStoragePermission = async (): Promise<boolean> => {
     try {
       if (Platform.OS === 'android') {
@@ -81,19 +99,19 @@ export default function MapsScreenTenants() {
         if (granted === PermissionsAndroid.RESULTS.GRANTED) {
           return true;
         } else if (granted === PermissionsAndroid.RESULTS.DENIED) {
-          Alert.alert(
+          showStatus(
+            'error',
             'Permission Denied',
             'Please allow storage/photo access to pick images from gallery.',
           );
           return false;
         } else if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
-          Alert.alert(
+          // Pass openSettings as callback so "Okay" opens settings
+          showStatus(
+            'error',
             'Permission Required',
             'Please allow photo access from settings.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Open Settings', onPress: () => Linking.openSettings() },
-            ],
+            () => Linking.openSettings(),
           );
           return false;
         }
@@ -118,7 +136,11 @@ export default function MapsScreenTenants() {
       console.log('User cancelled image picker');
     } else if (result.errorCode) {
       console.log('ImagePicker Error: ', result.errorMessage);
-      Alert.alert('Error', result.errorMessage || 'Failed to pick image');
+      showStatus(
+        'error',
+        'Image Picker Error',
+        result.errorMessage || 'Failed to pick image',
+      );
     } else if (result.assets) {
       const uris = result.assets.map(a => a.uri).filter(Boolean) as string[];
       console.log('Selected images:', uris);
@@ -166,10 +188,22 @@ export default function MapsScreenTenants() {
       const imageResponse = await createTenantImage(formData);
       console.log('Tenant images uploaded:', imageResponse);
       setLoading(false);
-
-      navigation.goBack();
+      // Close the upload modal first
+      SetIsDone(false);
+      // Show success status then go back
+      showStatus(
+        'success',
+        'Success',
+        'Tenant and images added successfully!',
+        () => navigation.goBack(),
+      );
     } catch (err) {
       console.error('Error editing tenant:', err);
+      showStatus(
+        'error',
+        'Upload Failed',
+        'Failed to create tenant or upload images.',
+      );
     }
   };
   // Handler for tap
@@ -458,6 +492,120 @@ export default function MapsScreenTenants() {
               )}
             </Animated.View>
           </SafeAreaView>
+        </Modal>
+        {/* --- CUSTOM STATUS MODAL --- */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={statusModal.visible}
+          onRequestClose={() =>
+            setStatusModal(prev => ({ ...prev, visible: false }))
+          }
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 24,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: 'white',
+                width: '100%',
+                borderRadius: 24,
+                padding: 24,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                alignItems: 'center',
+              }}
+            >
+              {/* Dynamic Icon */}
+              <View
+                style={{
+                  padding: 16,
+                  borderRadius: 9999,
+                  marginBottom: 16,
+                  backgroundColor:
+                    statusModal.type === 'success'
+                      ? '#dcfce7' // green-100
+                      : statusModal.type === 'error'
+                      ? '#fee2e2' // red-100
+                      : '#dbeafe', // blue-100
+                }}
+              >
+                {statusModal.type === 'success' && (
+                  <CheckCircle size={32} color="#16a34a" />
+                )}
+                {statusModal.type === 'error' && (
+                  <AlertCircle size={32} color="#ef4444" />
+                )}
+                {statusModal.type === 'info' && (
+                  <Info size={32} color="#3b82f6" />
+                )}
+              </View>
+
+              {/* Content */}
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                {statusModal.title}
+              </Text>
+              <Text
+                style={{
+                  color: '#6b7280',
+                  textAlign: 'center',
+                  marginBottom: 24,
+                  lineHeight: 20,
+                }}
+              >
+                {statusModal.message}
+              </Text>
+
+              {/* Close Button */}
+              <TouchableOpacity
+                onPress={() => {
+                  setStatusModal(prev => ({ ...prev, visible: false }));
+                  if (statusModal.onClose) {
+                    statusModal.onClose();
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  paddingVertical: 14,
+                  borderRadius: 16,
+                  backgroundColor:
+                    statusModal.type === 'success'
+                      ? '#22c55e'
+                      : statusModal.type === 'error'
+                      ? '#ef4444'
+                      : '#3b82f6',
+                }}
+              >
+                <Text
+                  style={{
+                    color: 'white',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    fontSize: 18,
+                  }}
+                >
+                  Okay
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </Modal>
       </View>
     </TouchableWithoutFeedback>

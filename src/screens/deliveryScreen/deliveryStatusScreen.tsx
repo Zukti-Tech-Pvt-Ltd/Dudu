@@ -8,13 +8,14 @@ import {
   Alert,
   StatusBar,
   ScrollView,
+  Modal,
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { DeliveryTaskItem } from './deliveryhome';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { editDeliveryOrder } from '../../api/deliveryOrderApi';
-import { CheckCircle, Circle } from 'lucide-react-native';
+import { AlertCircle, CheckCircle, Circle, Info } from 'lucide-react-native';
 
 type RootStackParamList = {
   DeliveryStatusScreen: { deliveryItem: DeliveryTaskItem };
@@ -57,17 +58,35 @@ const DeliveryStatusScreen: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>(
     deliveryItem.status,
   );
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   const handleSave = async () => {
     try {
       await editDeliveryOrder(deliveryItem.id, selectedStatus);
-      Alert.alert(
+      // Show success modal, then navigate back on close
+      showStatus(
+        'success',
         'Status Updated',
         `Delivery #${deliveryItem.id} is now ${selectedStatus}`,
+        () => navigation.goBack(),
       );
-      navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update status');
+      showStatus('error', 'Error', 'Failed to update delivery status');
     }
   };
 
@@ -224,6 +243,120 @@ const DeliveryStatusScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: 24,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: 'white',
+              width: '100%',
+              borderRadius: 24,
+              padding: 24,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              alignItems: 'center',
+            }}
+          >
+            {/* Dynamic Icon */}
+            <View
+              style={{
+                padding: 16,
+                borderRadius: 9999,
+                marginBottom: 16,
+                backgroundColor:
+                  statusModal.type === 'success'
+                    ? '#dcfce7' // green-100
+                    : statusModal.type === 'error'
+                    ? '#fee2e2' // red-100
+                    : '#dbeafe', // blue-100
+              }}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: '#111827',
+                textAlign: 'center',
+                marginBottom: 8,
+              }}
+            >
+              {statusModal.title}
+            </Text>
+            <Text
+              style={{
+                color: '#6b7280',
+                textAlign: 'center',
+                marginBottom: 24,
+                lineHeight: 20,
+              }}
+            >
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
+              }}
+              style={{
+                width: '100%',
+                paddingVertical: 14,
+                borderRadius: 16,
+                backgroundColor:
+                  statusModal.type === 'success'
+                    ? '#22c55e'
+                    : statusModal.type === 'error'
+                    ? '#ef4444'
+                    : '#3b82f6',
+              }}
+            >
+              <Text
+                style={{
+                  color: 'white',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  fontSize: 18,
+                }}
+              >
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

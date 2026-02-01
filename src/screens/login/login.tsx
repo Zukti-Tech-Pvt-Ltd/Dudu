@@ -11,12 +11,19 @@ import {
   ScrollView,
   useColorScheme,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { login } from '../../api/login/loginApi';
 import { AuthContext } from '../../helper/authContext';
 
 // 1. Import icons from lucide-react-native
-import { Eye, EyeOff } from 'lucide-react-native';
+import {
+  AlertCircle,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Info,
+} from 'lucide-react-native';
 
 export default function LoginScreen({ navigation }: any) {
   const [username, setUsername] = useState('');
@@ -41,10 +48,30 @@ export default function LoginScreen({ navigation }: any) {
 
   const [loading, setLoading] = useState(false);
   const { setToken, fcmToken } = useContext(AuthContext);
+  // --- CUSTOM MODAL STATE ---
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+    onClose: undefined as (() => void) | undefined,
+  });
 
+  const showStatus = (
+    type: 'success' | 'error' | 'info',
+    title: string,
+    message: string,
+    onClose?: () => void,
+  ) => {
+    setStatusModal({ visible: true, type, title, message, onClose });
+  };
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('Error', 'Username and password are required.');
+      showStatus(
+        'error',
+        'Missing Credentials',
+        'Username and password are required.',
+      );
       return;
     }
 
@@ -58,11 +85,16 @@ export default function LoginScreen({ navigation }: any) {
           routes: [{ name: 'maintab' }],
         });
       } else {
-        Alert.alert('Login Failed', 'Invalid response from server.');
+        showStatus(
+          'error',
+          'Login Failed',
+          'Invalid credentials or server response.',
+        );
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || 'An error occurred.';
-      Alert.alert('Login Failed', msg);
+      const msg =
+        error.response?.data?.message || 'An error occurred during login.';
+      showStatus('error', 'Login Failed', msg);
     } finally {
       setLoading(false);
     }
@@ -163,6 +195,69 @@ export default function LoginScreen({ navigation }: any) {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      {/* --- CUSTOM STATUS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={statusModal.visible}
+        onRequestClose={() =>
+          setStatusModal(prev => ({ ...prev, visible: false }))
+        }
+      >
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="bg-white dark:bg-neutral-800 w-full rounded-3xl p-6 shadow-xl items-center">
+            {/* Dynamic Icon */}
+            <View
+              className={`p-4 rounded-full mb-4 ${
+                statusModal.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-100 dark:bg-red-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}
+            >
+              {statusModal.type === 'success' && (
+                <CheckCircle size={32} color="#16a34a" />
+              )}
+              {statusModal.type === 'error' && (
+                <AlertCircle size={32} color="#ef4444" />
+              )}
+              {statusModal.type === 'info' && (
+                <Info size={32} color="#3b82f6" />
+              )}
+            </View>
+
+            {/* Content */}
+            <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+              {statusModal.title}
+            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-center mb-6 leading-5">
+              {statusModal.message}
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => {
+                setStatusModal(prev => ({ ...prev, visible: false }));
+                if (statusModal.onClose) {
+                  statusModal.onClose();
+                }
+              }}
+              className={`w-full py-3.5 rounded-2xl ${
+                statusModal.type === 'success'
+                  ? 'bg-green-500'
+                  : statusModal.type === 'error'
+                  ? 'bg-red-500'
+                  : 'bg-blue-500'
+              }`}
+            >
+              <Text className="text-white font-bold text-center text-lg">
+                Okay
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
