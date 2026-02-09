@@ -23,9 +23,8 @@ type RootStackParamList = {
   PaymentMethodScreen: {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
-    orderId: number[];
+    orderId: number; // Changed from number[] to number based on your navigation usage
   };
-  // other screens...
 };
 
 export default function OrderCard({ order }: any) {
@@ -35,7 +34,11 @@ export default function OrderCard({ order }: any) {
   const isDarkMode = colorScheme === 'dark';
 
   const iconSource = statusIconMap[order.status] || null;
-  // console.log('order', order);
+
+  // 1. Check if any product in this order is soft-deleted
+  const hasDeletedProduct = order.__orderItems__?.some(
+    (item: any) => item.__product__?.isDeleted === true,
+  );
 
   const selectedItems =
     order.__orderItems__?.map((item: any) => ({
@@ -48,7 +51,7 @@ export default function OrderCard({ order }: any) {
     <View
       className="mt-0.5 p-4 bg-white dark:bg-neutral-800 mb-3 rounded-xl shadow-xl"
       style={{
-        shadowColor: isDarkMode ? '#000' : '#000',
+        shadowColor: '#000',
         shadowOpacity: isDarkMode ? 0.3 : 0.1,
         elevation: 3,
       }}
@@ -64,7 +67,7 @@ export default function OrderCard({ order }: any) {
             source={iconSource}
             className="w-5 h-5 mr-2"
             resizeMode="contain"
-            style={{ tintColor: isDarkMode ? '#4ade80' : '#16a34a' }} // Light green vs Dark green tint
+            style={{ tintColor: isDarkMode ? '#4ade80' : '#16a34a' }}
           />
         )}
 
@@ -85,21 +88,33 @@ export default function OrderCard({ order }: any) {
         Total: Rs:{order.price}
       </Text>
 
-      {/* Pay Button */}
+      {/* Pay Button Logic:
+         Show ONLY if status is 'Pending' AND NO products are deleted.
+      */}
       {order.status === 'Pending' && (
-        <TouchableOpacity
-          className="bg-blue-600 dark:bg-blue-500 rounded-lg p-3 mt-2 items-center"
-          activeOpacity={0.8}
-          onPress={() => {
-            navigation.navigate('PaymentMethodScreen', {
-              selectedItems: selectedItems,
-              totalPrice: order.price,
-              orderId: order.id,
-            });
-          }}
-        >
-          <Text className="text-white font-bold text-base">Pay</Text>
-        </TouchableOpacity>
+        <View className="mt-2">
+          {hasDeletedProduct ? (
+            <View className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 items-center opacity-70">
+              <Text className="text-gray-500 dark:text-gray-400 font-bold text-sm">
+                Unavailable: Items in this order were deleted
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              className="bg-blue-600 dark:bg-blue-500 rounded-lg p-3 items-center"
+              activeOpacity={0.8}
+              onPress={() => {
+                navigation.navigate('PaymentMethodScreen', {
+                  selectedItems: selectedItems,
+                  totalPrice: order.price,
+                  orderId: order.id,
+                });
+              }}
+            >
+              <Text className="text-white font-bold text-base">Pay Now</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
     </View>
   );

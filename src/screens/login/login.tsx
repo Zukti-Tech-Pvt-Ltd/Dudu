@@ -66,7 +66,10 @@ export default function LoginScreen({ navigation }: any) {
     setStatusModal({ visible: true, type, title, message, onClose });
   };
   const handleLogin = async () => {
-    if (!username || !password) {
+    const cleanUsername = username.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanUsername || !cleanPassword) {
       showStatus(
         'error',
         'Missing Credentials',
@@ -77,7 +80,7 @@ export default function LoginScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      const response = await login(username, password, fcmToken!);
+      const response = await login(cleanUsername, cleanPassword, fcmToken!);
       if (response.status === 'success' && response.token) {
         await setToken(response.token);
         navigation.reset({

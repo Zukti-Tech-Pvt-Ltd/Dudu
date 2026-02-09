@@ -87,41 +87,47 @@ export default function SignupScreen({ navigation }: any) {
   const handleSignup = async () => {
     if (!userType) return;
 
-    // Simple validation (Optional but recommended)
-    if (password !== confirmPassword) {
+    const cleanUsername = username.trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPhoneNumber = phoneNumber.trim();
+    const cleanAddress = address.trim();
+    const cleanPassword = password.trim();
+    const cleanConfirmPassword = confirmPassword.trim();
+
+    // Password match check
+    if (cleanPassword !== cleanConfirmPassword) {
       showStatus('error', 'Password Mismatch', 'Passwords do not match.');
       return;
     }
 
     let payload: any = {
-      username,
-      password,
-      email,
-      phoneNumber,
+      username: cleanUsername,
+      password: cleanPassword,
+      email: cleanEmail,
+      phoneNumber: cleanPhoneNumber,
       userType,
-      address,
+      address: cleanAddress,
     };
 
     if (userType === 'delivery') {
-      payload.vehicleType = vehicleType;
-      payload.vehicleNumber = vehicleNumber;
+      payload.vehicleType = vehicleType.trim();
+      payload.vehicleNumber = vehicleNumber.trim();
     }
+
     if (userType === 'delivery' || userType === 'merchant') {
-      payload.khaltiNumber = khaltiId;
-      payload.esewaNumber = esewaId;
+      payload.khaltiNumber = khaltiId.trim();
+      payload.esewaNumber = esewaId.trim();
     }
 
     try {
       setLoading(true);
-      const response = await signUp(payload);
-
+      await signUp(payload);
       setLoading(false);
-      // Show success modal; navigate back when user clicks "Okay"
+
       showStatus('success', 'Success', 'Account created successfully!', () =>
         navigation.goBack(),
       );
     } catch (error) {
-      console.log(error);
       setLoading(false);
       showStatus('error', 'Error', 'Signup failed. Please try again.');
     }

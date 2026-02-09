@@ -32,6 +32,7 @@ type Product = {
   rate: number;
   count: number;
   type?: string | null;
+  isDeleted?: boolean;
   createdAt: string;
 };
 
