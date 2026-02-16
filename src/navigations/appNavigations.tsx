@@ -141,7 +141,7 @@ export default function MainTabs() {
               borderTopColor: isDark ? '#333' : '#eee',
 
               // 1. Explicit Height that works for both Gestures and Buttons
-              height: Platform.OS === 'ios' ? 88 : 110,
+              height: Platform.OS === 'ios' ? 88 : 104,
 
               // 2. Padding to push icons AWAY from the very bottom edge
               paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
@@ -220,11 +220,11 @@ export default function MainTabs() {
         tabBarShowLabel: true,
         tabBarStyle: {
           backgroundColor: isDark ? '#111' : '#fff',
-          borderTopWidth: 1,
+
           borderTopColor: isDark ? '#333' : '#eee',
 
           // 1. Explicit Height that works for both Gestures and Buttons
-          height: Platform.OS === 'ios' ? 88 : 110,
+          height: Platform.OS === 'ios' ? 88 : 104,
 
           // 2. Padding to push icons AWAY from the very bottom edge
           paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,

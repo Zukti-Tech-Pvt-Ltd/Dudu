@@ -13,6 +13,8 @@ import MainTabs from './src/navigations/appNavigations';
 import { useColorScheme } from 'react-native';
 import SearchScreen from './src/screens/search/search';
 import DetailScreen from './src/screens/productDetail/productDetail';
+import ChatScreen from './src/screens/message/chatScreen';
+
 import LoginScreen from './src/screens/login/login';
 import SignupScreen from './src/screens/login/signUp';
 import CheckoutScreen from './src/screens/checkOut/checkOutScreen';
@@ -91,6 +93,11 @@ export function AppInner() {
             name="DetailScreen"
             component={DetailScreen}
             options={{ title: 'Product Detail' }}
+          />
+          <Stack.Screen
+            name="ChatScreen"
+            component={ChatScreen}
+            options={{ title: 'Chat Screen' }}
           />
           <Stack.Screen
             name="SearchScreen"
