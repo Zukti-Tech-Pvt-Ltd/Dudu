@@ -31,6 +31,8 @@ import ProductEditScreen from './src/screens/merchantScreen/product/editProduct'
 
 import AvaliableRidersScreen from './src/screens/merchantScreen/availableRider';
 import EditProfileScreen from './src/screens/profile/editProfile';
+import MessageProfileScreen from './src/screens/profile/messageProfile';
+
 import { useNotification } from './src/notification/useNotification';
 import useFCM from './src/hooks/useFCM';
 import OrdersScreen from './src/screens/order/order';
@@ -163,6 +165,11 @@ export function AppInner() {
             name="EditProfileScreen"
             component={EditProfileScreen}
             options={{ title: 'Edit Profile', headerShown: true }}
+          />
+          <Stack.Screen
+            name="MessageProfileScreen"
+            component={MessageProfileScreen}
+            options={{ title: 'Message Profile', headerShown: true }}
           />
           <Stack.Screen
             name="ProductEditScreen"

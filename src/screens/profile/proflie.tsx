@@ -112,6 +112,16 @@ export default function ProfileScreen({ navigation }: any) {
           isDarkMode={isDarkMode}
         />
       </View>
+      <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3">
+        <AccountAction
+          icon={require('../../../assets/navIcons/message.png')}
+          label="Messages"
+          description="View your messages"
+          navigation={navigation}
+          route="MessageProfileScreen"
+          isDarkMode={isDarkMode}
+        />
+      </View>
 
       {userType === 'customer' && (
         <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3">
