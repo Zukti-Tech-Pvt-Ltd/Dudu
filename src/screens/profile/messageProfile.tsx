@@ -29,17 +29,17 @@ export default function MessageProfileScreen({ navigation }: any) {
         if (chatData && Array.isArray(chatData)) {
           setConversations(chatData);
 
-          // Fetch usernames for all unique receiverIds
+          // Fetch usernames for all unique partnerIds
           const nameMap: Record<number, string> = {};
           await Promise.all(
             chatData.map(async chat => {
               try {
-                const userRes = await getUser(chat.receiverId);
+                const userRes = await getUser(chat.partnerId);
                 if (userRes?.status === 'success') {
-                  nameMap[chat.receiverId] = userRes.data.username;
+                  nameMap[chat.partnerId] = userRes.data.username;
                 }
               } catch (err) {
-                nameMap[chat.receiverId] = `User ${chat.receiverId}`;
+                nameMap[chat.partnerId] = `User ${chat.partnerId}`;
               }
             }),
           );
@@ -58,7 +58,7 @@ export default function MessageProfileScreen({ navigation }: any) {
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       onPress={() =>
-        navigation.navigate('ChatScreen', { receiverId: item.receiverId })
+        navigation.navigate('ChatScreen', { receiverId: item.partnerId })
       }
       className="flex-row items-center p-4 mx-4 my-2 bg-gray-50 dark:bg-neutral-800 rounded-2xl border border-gray-100 dark:border-neutral-700"
     >
@@ -69,7 +69,7 @@ export default function MessageProfileScreen({ navigation }: any) {
       <View className="flex-1 ml-4">
         <View className="flex-row justify-between items-center">
           <Text className="text-lg font-bold text-gray-800 dark:text-gray-100">
-            {userNames[item.receiverId] || `User ${item.receiverId}`}
+            {userNames[item.partnerId] || `User ${item.partnerId}`}
           </Text>
           <Text className="text-xs text-gray-500">
             {new Date(item.latestMessageDate).toLocaleDateString()}
@@ -92,17 +92,17 @@ export default function MessageProfileScreen({ navigation }: any) {
   }
 
   return (
-    <View className="flex-1 bg-white dark:bg-neutral-900 pt-12">
-      <View className="px-6 mb-6">
+    <View className="flex-1 bg-white dark:bg-neutral-900 pt-2">
+      {/* <View className="px-6 mb-6">
         <Text className="text-3xl font-extrabold text-gray-900 dark:text-white">
           Messages
         </Text>
-      </View>
+      </View> */}
 
       <FlatList
         data={conversations}
         renderItem={renderItem}
-        keyExtractor={item => item.receiverId.toString()}
+        keyExtractor={item => item.partnerId.toString()}
         ListEmptyComponent={
           <View className="mt-20 items-center justify-center">
             <MessageCircle size={64} color="#d1d5db" />

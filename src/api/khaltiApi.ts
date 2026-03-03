@@ -20,3 +20,23 @@ export const khaltiPayment = async (
 
   return response.data;
 };
+
+
+
+export const khaltiTopUpPayment = async (
+  userId?: number,
+  totalPrice?: number,
+  deviceToken?: string | null,
+) => {
+  //   const selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
+
+  console.log('=========userId', userId);
+  const response = await api.post(`/api/khalti/topUp/initiate`, {
+    userId,
+    totalPrice,
+    deviceToken,
+  });
+  console.log('=========userId', userId);
+
+  return response.data;
+};

@@ -13,6 +13,8 @@ import LogoutButton from './logoutButton'; // Adjust the import path
 import { AuthContext } from '../../helper/authContext';
 import { decodeToken } from '../../api/indexAuth';
 import { getUser } from '../../api/userApi';
+import { getUserWallet } from '../../api/wallet/walletApi';
+import { Wallet } from 'lucide-react-native'; // Added Lucide icon for wallet
 
 interface JwtPayload {
   username?: string;
@@ -37,18 +39,39 @@ export default function ProfileScreen({ navigation }: any) {
   const [email, setEmail] = useState<string>('sadhubasnet@gmail.com');
   const [phone, setPhone] = useState<string>('+1 (555) 123-4567');
   const [userType, setUserType] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
 
   const { isLoggedIn, token } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchUser = async () => {
       if (token) {
-        const decoded = await decodeToken();
-        const userData = await getUser(decoded!.userId);
-        setUsername(userData.data.username);
-        setUserType(userData.data.userType);
-        setEmail(userData.data.email);
-        setPhone(userData.data.phoneNumber);
+        try {
+          const decoded = await decodeToken();
+
+          if (decoded && decoded.userId) {
+            // 1. Fetch User Details
+            const userData = await getUser(decoded.userId);
+            if (userData && userData.data) {
+              setUsername(userData.data.username);
+              setUserType(userData.data.userType);
+              setEmail(userData.data.email);
+              setPhone(userData.data.phoneNumber);
+            }
+
+            // 2. Fetch Wallet Balance Safely
+            const amountwallet = await getUserWallet();
+
+            // Check if the response contains the 'data' object and 'balance'
+            if (amountwallet && amountwallet.status === 'success' && amountwallet.data) {
+              setWalletBalance(amountwallet.data.balance);
+            } else {
+              setWalletBalance(0); // Fallback if API fails or returns []
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch user data or wallet:", error);
+        }
       }
     };
 
@@ -86,23 +109,38 @@ export default function ProfileScreen({ navigation }: any) {
       className="flex-1 bg-white dark:bg-neutral-900 px-4"
       contentContainerStyle={{ paddingTop: 20 }}
     >
-      {/* Profile Card */}
-      <View className="flex-row items-center bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow mb-3">
+      {/* --- Profile Card with Wallet Balance --- */}
+      <View className="flex-row items-center justify-between bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow mb-5 border border-gray-100 dark:border-neutral-700">
         <View className="flex-1">
-          <Text className="font-bold text-lg text-gray-900 dark:text-white">
+          <Text className="font-bold text-xl text-gray-900 dark:text-white mb-1">
             {username ?? 'User name'}
           </Text>
-          <Text className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+          <Text className="text-gray-500 dark:text-gray-400 text-xs">
             {email}
           </Text>
-          <Text className="text-gray-600 dark:text-gray-400 text-sm">
+          <Text className="text-gray-500 dark:text-gray-400 text-xs">
             {phone}
           </Text>
         </View>
+
+        {/* Display Wallet Balance Prominently on the Right */}
+        {userType === 'customer' && (
+          <View className="bg-blue-50 dark:bg-blue-900/30 px-4 py-3 rounded-xl items-center justify-center border border-blue-100 dark:border-blue-800/50">
+            <View className="flex-row items-center mb-1">
+              <Wallet size={14} color={isDarkMode ? '#60a5fa' : '#3b82f6'} />
+              <Text className="text-xs font-semibold text-blue-500 dark:text-blue-400 ml-1 uppercase tracking-wider">
+                Balance
+              </Text>
+            </View>
+            <Text className="font-bold text-lg text-blue-600 dark:text-blue-300">
+              Rs. {walletBalance}
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Account Actions */}
-      <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3">
+      <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3 border border-gray-100 dark:border-neutral-700 overflow-hidden">
         <AccountAction
           icon={require('../../../assets/navIcons/profile.png')}
           label="Edit Profile"
@@ -111,8 +149,6 @@ export default function ProfileScreen({ navigation }: any) {
           route="EditProfileScreen"
           isDarkMode={isDarkMode}
         />
-      </View>
-      <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3">
         <AccountAction
           icon={require('../../../assets/navIcons/message.png')}
           label="Messages"
@@ -121,20 +157,27 @@ export default function ProfileScreen({ navigation }: any) {
           route="MessageProfileScreen"
           isDarkMode={isDarkMode}
         />
-      </View>
-
-      {userType === 'customer' && (
-        <View className="bg-white dark:bg-neutral-800 rounded-2xl shadow mb-3">
+        {userType === 'customer' && (
           <AccountAction
-            icon={require('../../../assets/navIcons/profile.png')}
+            icon={require('../../../assets/navIcons/orders.png')}
             label="Order History"
             description="View your order history"
             navigation={navigation}
             route="OrdersScreen"
             isDarkMode={isDarkMode}
           />
-        </View>
-      )}
+        )}
+        {userType === 'customer' && (
+          <AccountAction
+            icon={require('../../../assets/navIcons/orders.png')}
+            label="TopUp"
+            description="TopUp your wallet"
+            navigation={navigation}
+            route="WalletScreen"
+            isDarkMode={isDarkMode}
+          />
+        )}
+      </View>
 
       {/* Sign Out Button */}
       <View className="flex-1 justify-end items-center pb-10 mt-6">
@@ -155,7 +198,7 @@ function AccountAction({
 }: AccountActionProps) {
   return (
     <TouchableOpacity
-      className="flex-row items-center justify-between py-4 px-3 border-b border-gray-100 dark:border-neutral-700"
+      className="flex-row items-center justify-between py-4 px-4 border-b border-gray-100 dark:border-neutral-700/50 last:border-b-0"
       activeOpacity={0.7}
       onPress={() => {
         if (navigation && route) {
@@ -164,21 +207,23 @@ function AccountAction({
       }}
     >
       <View className="flex-row items-center">
-        <Image
-          source={icon}
-          className="w-6 h-6 mr-3"
-          style={{ tintColor: isDarkMode ? '#ffffff' : '#000000' }}
-        />
+        <View className="w-10 h-10 rounded-full bg-gray-50 dark:bg-neutral-700 items-center justify-center mr-3">
+          <Image
+            source={icon}
+            className="w-5 h-5"
+            style={{ tintColor: isDarkMode ? '#ffffff' : '#000000' }}
+          />
+        </View>
         <View>
           <Text className="font-bold text-base text-gray-900 dark:text-white">
             {label}
           </Text>
-          <Text className="text-gray-500 dark:text-gray-400 text-xs">
+          <Text className="text-gray-500 dark:text-gray-400 text-xs mt-0.5">
             {description}
           </Text>
         </View>
       </View>
-      <Text className="text-lg text-gray-300 dark:text-gray-600">{'>'}</Text>
+      <Text className="text-xl font-light text-gray-300 dark:text-gray-600">{'>'}</Text>
     </TouchableOpacity>
   );
 }

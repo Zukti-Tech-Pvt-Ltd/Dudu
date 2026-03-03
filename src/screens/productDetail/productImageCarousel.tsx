@@ -6,36 +6,45 @@ import {
   Dimensions,
   TouchableOpacity,
   Modal,
-  StyleSheet,
   Text,
-  SafeAreaView,
   BackHandler,
+  Platform,
 } from 'react-native';
 import { API_BASE_URL } from '@env';
+import VideoPlayer from 'react-native-video';
+import { PlayCircle } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const screenWidth = Dimensions.get('window').width;
-const screenHeight = Dimensions.get('window').height;
-const carouselHeight = 300; // main screen carousel height
+
+interface MediaItem {
+  type: 'image' | 'video';
+  url: string;
+}
 
 interface ProductImageCarouselProps {
-  allImages: string[];
+  mediaItems: MediaItem[];
 }
 
 const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
-  allImages,
+  mediaItems,
 }) => {
+  const insets = useSafeAreaInsets();
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalIndex, setModalIndex] = useState(0);
+
   const flatListRef = useRef<FlatList>(null);
   const modalFlatListRef = useRef<FlatList>(null);
-  console.log('allImages in carousel', allImages);
+
   const onScroll = (event: any) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
     setActiveIndex(index);
   };
 
   const openModal = (index: number) => {
+    setActiveIndex(index);
     setModalIndex(index);
     setModalVisible(true);
   };
@@ -44,33 +53,98 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
     setModalVisible(false);
   };
 
-  // Handle Android Back Button
   useEffect(() => {
     const backAction = () => {
       if (modalVisible) {
         closeModal();
-        return true; // prevent default back behavior
+        return true;
       }
-      return false; // allow default back behavior
+      return false;
     };
-
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
       backAction,
     );
-
     return () => backHandler.remove();
   }, [modalVisible]);
+
+  const renderMedia = (
+    item: MediaItem,
+    index: number,
+    isFullscreen: boolean,
+  ) => {
+    const sourceUri = item.url
+      ? { uri: `${API_BASE_URL}/${item.url}` }
+      : require('../../../assets/images/photo.png');
+
+    const isActive = activeIndex === index;
+
+    if (item.type === 'video' && item.url) {
+      return (
+        <View
+          className={
+            isFullscreen
+              ? 'w-screen h-screen justify-center items-center bg-black'
+              : 'w-screen h-[300px] rounded-b-[48px] overflow-hidden bg-gray-200 dark:bg-neutral-800'
+          }
+          // FIX 1: Add paddingBottom to push the video controls above the nav bar
+          style={isFullscreen ? { paddingBottom: insets.bottom } : {}}
+        >
+          <VideoPlayer
+            source={{ uri: `${API_BASE_URL}/${item.url}` }}
+            className="w-full h-full"
+            resizeMode="contain"
+            paused={!isFullscreen || !isActive}
+            muted={!isFullscreen || !isActive}
+            controls={isFullscreen && isActive}
+            repeat={true}
+          />
+          {!isFullscreen && (
+            <View
+              style={{
+                position: 'absolute',
+                top: 0, left: 0, right: 0, bottom: 0,
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(0,0,0,0.2)'
+              }}
+            >
+              <PlayCircle color="white" size={48} opacity={0.8} />
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    // Default to Image
+    return (
+      <View
+        className={
+          isFullscreen
+            ? 'w-screen h-screen justify-center items-center bg-black'
+            : 'w-screen h-[300px] rounded-b-[48px] overflow-hidden bg-gray-200 dark:bg-neutral-800'
+        }
+        // FIX 1 (Continued): Center images accurately considering the nav bar
+        style={isFullscreen ? { paddingBottom: insets.bottom } : {}}
+      >
+        <Image
+          source={sourceUri}
+          className="w-full h-full"
+          resizeMode={isFullscreen ? 'contain' : 'cover'}
+        />
+      </View>
+    );
+  };
 
   return (
     <View className="relative">
       <FlatList
         ref={flatListRef}
-        data={allImages}
+        data={mediaItems}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(_, index) => index.toString()}
         onScroll={onScroll}
         scrollEventThrottle={16}
         renderItem={({ item, index }) => (
@@ -78,61 +152,45 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
             activeOpacity={0.9}
             onPress={() => openModal(index)}
           >
-            <View
-              style={{
-                width: screenWidth,
-                height: carouselHeight,
-                borderBottomLeftRadius: 48,
-                borderBottomRightRadius: 48,
-                overflow: 'hidden',
-              }}
-            >
-              <Image
-                source={
-                  item
-                    ? { uri: `${API_BASE_URL}/${item}` }
-                    : require('../../../assets/images/photo.png')
-                }
-                style={{ width: '100%', height: '100%' }}
-                resizeMode="cover"
-              />
-            </View>
+            {renderMedia(item, index, false)}
           </TouchableOpacity>
         )}
       />
 
       {/* Dot indicators */}
-      <View style={styles.dotContainer}>
-        {allImages.map((_, index) => (
-          <View
-            key={index}
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              marginHorizontal: 4,
-              backgroundColor: activeIndex === index ? '#007AFF' : '#ccc',
-            }}
-          />
-        ))}
-      </View>
+      {mediaItems.length > 1 && (
+        <View className="absolute bottom-3 w-full flex-row justify-center items-center">
+          {mediaItems.map((_, index) => (
+            <View
+              key={index}
+              className={`w-2 h-2 rounded-full mx-1 ${activeIndex === index ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+            />
+          ))}
+        </View>
+      )}
 
-      {/* Fullscreen Modal */}
       {/* Fullscreen Modal */}
       <Modal
         visible={modalVisible}
         animationType="slide"
         onRequestClose={closeModal}
+        statusBarTranslucent={true}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
-          {/* Close Button */}
-          <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-            <Text style={{ color: 'white', fontSize: 28 }}>×</Text>
+        <View className="flex-1 bg-black">
+          <TouchableOpacity
+            onPress={closeModal}
+            className="absolute left-2 z-50 p-1 bg-black/40 rounded-full w-10 h-10 items-center justify-center"
+            style={{
+              top: Platform.OS === 'android' ? (insets.top || 20) + 25 : Math.max(insets.top, 40)
+            }}
+          >
+            <Text className="text-white text-3xl leading-none font-light -mt-1">×</Text>
           </TouchableOpacity>
 
           <FlatList
             ref={modalFlatListRef}
-            data={allImages}
+            data={mediaItems}
             horizontal
             pagingEnabled
             initialScrollIndex={modalIndex}
@@ -148,69 +206,30 @@ const ProductImageCarousel: React.FC<ProductImageCarouselProps> = ({
               offset: screenWidth * index,
               index,
             })}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.modalImageWrapper}>
-                <Image
-                  source={
-                    item
-                      ? { uri: `${API_BASE_URL}/${item}` }
-                      : require('../../../assets/images/photo.png')
-                  }
-                  style={styles.modalImage}
-                  resizeMode="contain"
-                />
-              </View>
-            )}
+            keyExtractor={(_, index) => index.toString()}
+            renderItem={({ item, index }) => renderMedia(item, index, true)}
           />
 
           {/* Dot indicators for fullscreen */}
-          <View style={[styles.dotContainer, { bottom: 30 }]}>
-            {allImages.map((_, index) => (
-              <View
-                key={index}
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  marginHorizontal: 4,
-                  backgroundColor: activeIndex === index ? '#007AFF' : '#ccc',
-                }}
-              />
-            ))}
-          </View>
-        </SafeAreaView>
+          {mediaItems.length > 1 && (
+            <View
+              className="absolute w-full flex-row justify-center items-center"
+              // FIX 2: Push dots up slightly so they don't overlap video controls
+              style={{ bottom: Math.max(insets.bottom + 60, 60) }}
+            >
+              {mediaItems.map((_, index) => (
+                <View
+                  key={index}
+                  className={`w-2 h-2 rounded-full mx-1 ${activeIndex === index ? 'bg-blue-500' : 'bg-gray-400'
+                    }`}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       </Modal>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  dotContainer: {
-    position: 'absolute',
-    bottom: 12,
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalImageWrapper: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'black',
-  },
-  modalImage: {
-    width: '100%',
-    height: '100%',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    zIndex: 10,
-  },
-});
 
 export default ProductImageCarousel;

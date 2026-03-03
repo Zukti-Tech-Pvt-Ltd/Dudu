@@ -25,6 +25,7 @@ type RootStackParamList = {
     totalPrice: number;
     orderId: number; // Changed from number[] to number based on your navigation usage
   };
+  DetailScreen: { productId: number; productName: string };
 };
 
 export default function OrderCard({ order }: any) {
@@ -80,7 +81,24 @@ export default function OrderCard({ order }: any) {
 
       {/* Order Items */}
       {order.__orderItems__?.map((item: any) => (
-        <OrderItemRow key={item.id} item={item} />
+        <TouchableOpacity
+          key={item.id}
+          activeOpacity={0.7}
+          onPress={() => {
+            // Only navigate if the product is not deleted (optional safety check)
+            if (!item.__product__?.isDeleted) {
+              navigation.navigate('DetailScreen', {
+                productId: item.productId,
+                productName: item.__product__?.name || 'Product Detail',
+              });
+            } else {
+              // Optional: You could show a small alert here saying "Product no longer exists"
+              console.log('Product is deleted');
+            }
+          }}
+        >
+          <OrderItemRow item={item} />
+        </TouchableOpacity>
       ))}
 
       {/* Total Price */}

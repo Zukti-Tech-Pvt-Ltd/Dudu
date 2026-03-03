@@ -116,7 +116,9 @@ const useFCM = () => {
   useEffect(() => {
     if (!token) return;
 
-    const decoded = jwtDecode<JwtPayload & { userId: number }>(token);
+    const decoded = jwtDecode<
+      JwtPayload & { userId: number; username: string }
+    >(token);
 
     const handleNotification = async (remoteMessage: any) => {
       const title = remoteMessage.notification?.title;
@@ -165,6 +167,11 @@ const useFCM = () => {
         return;
       }
 
+      if (title === `Dear ${decoded.username}`) {
+        showModernAlert(title ?? 'Notification', body ?? '', 'INFO');
+        return;
+      }
+
       // 5. CONFIRMATION (Is order delivered?)
       if (title === 'Is the order delivered') {
         // Extract orderId safely
@@ -180,7 +187,7 @@ const useFCM = () => {
             try {
               const parsed = JSON.parse(orderId);
               if (parsed?.id) idToProcess = parsed.id;
-            } catch (e) {}
+            } catch (e) { }
 
             if (idToProcess) {
               await orderReceivedByUser(idToProcess); // Call API here
@@ -210,6 +217,9 @@ const useFCM = () => {
         });
         return;
       }
+
+      // 6. DEFAULT FOR ANY OTHER NOTIFICATION
+      showModernAlert(title ?? 'Notification', body ?? '', 'INFO');
     };
 
     const unsubscribe = messaging().onMessage(handleNotification);
@@ -407,9 +417,8 @@ const useFCM = () => {
                   <TouchableOpacity
                     onPress={closeModal}
                     disabled={isLoading} // Disable if processing
-                    className={`flex-1 bg-gray-100 py-4 rounded-2xl items-center justify-center ${
-                      isLoading ? 'opacity-50' : ''
-                    }`}
+                    className={`flex-1 bg-gray-100 py-4 rounded-2xl items-center justify-center ${isLoading ? 'opacity-50' : ''
+                      }`}
                   >
                     <Text className="text-gray-600 font-bold text-lg">No</Text>
                   </TouchableOpacity>
@@ -448,17 +457,17 @@ const useFCM = () => {
               {(modalConfig.type === 'INFO' ||
                 modalConfig.type === 'SUCCESS' ||
                 modalConfig.type === 'ERROR') && (
-                <TouchableOpacity
-                  onPress={() => {
-                    if (modalConfig.onConfirm) modalConfig.onConfirm();
-                    closeModal();
-                  }}
-                  style={{ width: '100%' }}
-                  className={`${getBtnColor()} py-4 rounded-2xl items-center justify-center shadow-md`}
-                >
-                  <Text className="text-white font-bold text-lg">Okay</Text>
-                </TouchableOpacity>
-              )}
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (modalConfig.onConfirm) modalConfig.onConfirm();
+                      closeModal();
+                    }}
+                    style={{ width: '100%' }}
+                    className={`${getBtnColor()} py-4 rounded-2xl items-center justify-center shadow-md`}
+                  >
+                    <Text className="text-white font-bold text-lg">Okay</Text>
+                  </TouchableOpacity>
+                )}
             </View>
           </View>
         </View>

@@ -37,6 +37,8 @@ import { useNotification } from './src/notification/useNotification';
 import useFCM from './src/hooks/useFCM';
 import OrdersScreen from './src/screens/order/order';
 import NotificationScreen from './src/screens/notificationScreen/notificationScreen';
+import WalletScreen from './src/screens/walletScreen/walletScreen';
+import khaltiTopUp from './src/screens/payment/khaltiTopUp';
 
 const Stack = createNativeStackNavigator();
 
@@ -117,6 +119,11 @@ export function AppInner() {
             options={{ title: 'PaymentMethodScreen' }}
           />
           <Stack.Screen
+            name="WalletScreen"
+            component={WalletScreen}
+            options={{ title: 'WalletScreen' }}
+          />
+          <Stack.Screen
             name="ESewaTestPayment"
             component={ESewaTestPayment}
             options={{ title: 'ESewaTestPayment' }}
@@ -125,6 +132,11 @@ export function AppInner() {
             name="KhaltiPayment"
             component={KhaltiPayment}
             options={{ title: 'KhaltiPayment' }}
+          />
+          <Stack.Screen
+            name="khaltiTopUp"
+            component={khaltiTopUp}
+            options={{ title: 'khaltiTopUp' }}
           />
           <Stack.Screen
             name="TenantScreen"
