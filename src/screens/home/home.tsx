@@ -10,9 +10,15 @@ import {
   useColorScheme,
   RefreshControl,
   StatusBar,
+  PanResponder,
+  Animated,
+  Dimensions, // <-- IMPORTED DIMENSIONS
 } from 'react-native';
 import React, { useRef, useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Header from './header';
@@ -22,6 +28,7 @@ import TwoByTwoGrid from './featureProducts';
 import { decodeToken } from '../../api/indexAuth';
 import { connectSocket } from '../../helper/socket';
 import { getnotification } from '../../api/notificationApi';
+import { getWinner } from '../../api/lottery/lotteryApi';
 
 export default function Home() {
   const [services, setServices] = useState<any[]>([]);
@@ -29,6 +36,127 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [claims, setClaims] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const [hasWonLottery, setHasWonLottery] = useState(false); // The Master Switch
+  const [showLotteryPopup, setShowLotteryPopup] = useState(true);
+  const [showLotteryIcon, setShowLotteryIcon] = useState(false);
+  const [lotteryPrize, setLotteryPrize] = useState<any>(null); // To store the won item
+
+  const insets = useSafeAreaInsets();
+
+  // --- DRAG LOGIC WITH STRICT BOUNDARIES ---
+  const pan = useRef(new Animated.ValueXY()).current;
+  const currentPanValue = useRef({ x: 0, y: 0 }); // Tracks real-time position
+  const panOffset = useRef({ x: 0, y: 0 }); // Tracks where a drag started
+
+  // Check if the user is a lottery winner
+  useEffect(() => {
+    const checkWinner = async () => {
+      try {
+        const response = await getWinner();
+
+        // Handle standard axios response where data is inside response.data
+        const winnersList = response?.data || response;
+
+        // If the array has items, they won! Turn everything on.
+        if (Array.isArray(winnersList) && winnersList.length > 0) {
+          setLotteryPrize(winnersList[0]);
+          setHasWonLottery(true); // Turns on the lottery feature
+          setShowLotteryPopup(true); // Shows the modal first
+        }
+      } catch (error) {
+        console.error('Error checking lottery winner:', error);
+      }
+    };
+
+    checkWinner();
+  }, []);
+
+  // 1. Reliably track the animation value without using private _value
+  useEffect(() => {
+    const listener = pan.addListener(value => {
+      currentPanValue.current = value;
+    });
+    return () => pan.removeListener(listener);
+  }, [pan]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderGrant: () => {
+        pan.setOffset({
+          x: currentPanValue.current.x,
+          y: currentPanValue.current.y,
+        });
+        pan.setValue({ x: 0, y: 0 });
+
+        panOffset.current = {
+          x: currentPanValue.current.x,
+          y: currentPanValue.current.y,
+        };
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        const { width, height } = Dimensions.get('window');
+
+        let nextX = gestureState.dx;
+        let nextY = gestureState.dy;
+
+        const absoluteX = panOffset.current.x + nextX;
+        const absoluteY = panOffset.current.y + nextY;
+
+        // 🛑 THE FIX: RESPONSIVE INVISIBLE WALLS
+        // By restricting upward travel to 60% of the screen height (height * 0.60),
+        // it is physically impossible for the icon to reach your top header/title,
+        // no matter what phone or screen size the user has!
+        const MIN_Y = -(height * 0.58); // Max UP limit (Safely below header)
+        const MAX_Y = 80; // Max DOWN limit (Safely above bottom)
+        const MIN_X = -(width - 100); // Max LEFT limit
+        const MAX_X = 10; // Max RIGHT limit
+
+        // Apply Clamping
+        if (absoluteY < MIN_Y) nextY = MIN_Y - panOffset.current.y;
+        if (absoluteY > MAX_Y) nextY = MAX_Y - panOffset.current.y;
+        if (absoluteX < MIN_X) nextX = MIN_X - panOffset.current.x;
+        if (absoluteX > MAX_X) nextX = MAX_X - panOffset.current.x;
+
+        pan.setValue({ x: nextX, y: nextY });
+      },
+      onPanResponderRelease: () => {
+        pan.flattenOffset(); // Merges the drag offset into the base value
+
+        const { width } = Dimensions.get('window');
+
+        // Match the same boundaries used in onPanResponderMove
+        const MIN_X = -(width - 100); // Left edge limit
+        const MAX_X = 10; // Right edge limit
+        const midPoint = (MIN_X + MAX_X) / 2; // The exact center of the screen
+
+        // Find the current position after release
+        const currentX = currentPanValue.current.x;
+        const currentY = currentPanValue.current.y;
+
+        // Determine if it was dropped on the left side or the right side
+        const targetX = currentX < midPoint ? MIN_X : MAX_X;
+
+        // Spring animation to slide it smoothly to the edge
+        Animated.spring(pan, {
+          toValue: { x: targetX, y: currentY }, // Keep current Y, snap to new X
+          useNativeDriver: false,
+          friction: 6, // Controls the "bounciness" of the snap
+          tension: 40, // Controls the speed of the snap
+        }).start();
+      },
+    }),
+  ).current;
+
+  // Function to handle claiming the prize from both popup and icon
+  const handleClaimPrize = () => {
+    setShowLotteryPopup(false);
+    setShowLotteryIcon(true); // Ensures the icon is there when they come back
+    navigation.navigate('LotteryPrizeScreen', { prize: lotteryPrize });
+  };
 
   // Dark Mode Logic
   const colorScheme = useColorScheme();
@@ -48,6 +176,7 @@ export default function Home() {
     DeliveryMapsScreen: undefined;
     TenantScreen: undefined;
     DetailScreen: { productId: string; productName: string; tableName: string };
+    LotteryPrizeScreen: { prize: any };
   };
 
   type HomeNavigationProp = NativeStackNavigationProp<
@@ -324,6 +453,112 @@ export default function Home() {
         {/* Ensure TwoByTwoGrid is wrapped or handles dark mode internally */}
         <TwoByTwoGrid />
       </ScrollView>
+
+      {hasWonLottery && (
+        <>
+          {/* Lottery Popup */}
+          {showLotteryPopup && (
+            <View
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: 1000,
+              }}
+            >
+              {/* Changed View to TouchableOpacity to make the whole card clickable */}
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={handleClaimPrize}
+                className="bg-white dark:bg-gray-800 p-5 rounded-2xl items-center w-4/5 shadow-2xl relative"
+              >
+                {/* --- TOP RIGHT X BUTTON --- */}
+                <TouchableOpacity
+                  className="absolute top-3 right-3 bg-gray-200 dark:bg-gray-700 w-8 h-8 rounded-full items-center justify-center z-50"
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setShowLotteryPopup(false);
+                    setShowLotteryIcon(true);
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text className="text-gray-600 dark:text-gray-300 font-bold text-base leading-none">
+                    ✕
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Lottery Image */}
+                <Image
+                  source={require('../../../assets/images/lottery.jpg')}
+                  className="w-full h-36 rounded-xl mb-4"
+                  resizeMode="cover"
+                />
+
+                <Text className="text-2xl font-black text-black dark:text-white mb-1 text-center mt-2">
+                  You won a lottery!
+                </Text>
+
+                {/* Show the actual prize name from the API */}
+                <Text className="text-lg font-bold text-yellow-500 mb-2 text-center">
+                  Prize: {lotteryPrize?.name || 'Mystery Box'}
+                </Text>
+
+                <Text className="text-sm text-gray-500 dark:text-gray-300 mb-2 text-center leading-5">
+                  Tap here to claim your amazing prize right now!
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Lottery Icon Floating */}
+          {showLotteryIcon && (
+            <Animated.View
+              style={[
+                {
+                  position: 'absolute',
+                  bottom: 120,
+                  right: 20,
+                  zIndex: 1000,
+                },
+                {
+                  transform: [{ translateX: pan.x }, { translateY: pan.y }],
+                },
+              ]}
+              {...panResponder.panHandlers}
+            >
+              <View style={{ width: 64, height: 64 }}>
+                <TouchableOpacity
+                  className="bg-white dark:bg-gray-700 w-16 h-16 rounded-full flex justify-center items-center shadow-lg overflow-hidden"
+                  onPress={handleClaimPrize}
+                  activeOpacity={0.8}
+                >
+                  {/* --- CONFETTI IMAGE FULLY COVERING THE CIRCLE --- */}
+                  <Image
+                    source={require('../../../assets/images/lottery.jpg')} // Using the main banner image
+                    className="w-16 h-16 rounded-full" // Sized to fill the whole bubble and shaped to a circle
+                    resizeMode="cover" // Ensure it covers the entire circle
+                  />
+                </TouchableOpacity>
+                {/* <TouchableOpacity
+                  className="absolute -top-1 -right-1 bg-red-500 w-6 h-6 rounded-full flex justify-center items-center"
+                  style={{ elevation: 5, zIndex: 10 }}
+                  onPress={() => setShowLotteryIcon(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Text className="text-white text-xs font-bold leading-none">
+                    X
+                  </Text>
+                </TouchableOpacity> */}
+              </View>
+            </Animated.View>
+          )}
+        </>
+      )}
     </SafeAreaView>
   );
 }

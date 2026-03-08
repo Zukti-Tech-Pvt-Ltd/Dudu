@@ -89,7 +89,7 @@ android {
         applicationId "com.dudu.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
+        versionCode 17
         versionName "1.2"
     }
     signingConfigs {

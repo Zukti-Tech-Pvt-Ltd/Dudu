@@ -39,6 +39,7 @@ import OrdersScreen from './src/screens/order/order';
 import NotificationScreen from './src/screens/notificationScreen/notificationScreen';
 import WalletScreen from './src/screens/walletScreen/walletScreen';
 import khaltiTopUp from './src/screens/payment/khaltiTopUp';
+import LotteryPrizeScreen from './src/screens/lottery/LotteryPrizeScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -197,6 +198,11 @@ export function AppInner() {
             name="NotificationScreen"
             component={NotificationScreen}
             options={{ title: 'NotificationScreen ', headerShown: false }}
+          />
+          <Stack.Screen
+            name="LotteryPrizeScreen"
+            component={LotteryPrizeScreen}
+            options={{ title: 'LotteryPrizeScreen ', headerShown: false }}
           />
         </Stack.Navigator>
       </NavigationContainer>
