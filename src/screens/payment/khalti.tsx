@@ -27,6 +27,7 @@ type RootStackParamList = {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
     orderId: number[];
+    couponId?: number;
   };
   maintab: undefined;
 };
@@ -64,6 +65,7 @@ const KhaltiPayment = () => {
   const { selectedItems } = route.params;
   const { totalPrice } = route.params;
   const { orderId } = route.params;
+  const { couponId } = route.params;
 
   const publicKey = KHALTI_TEST_PUBLIC_KEY; //test public key
   // const publicKey = KHALTI_PUBLIC_KEY; //live public key
@@ -94,6 +96,7 @@ const KhaltiPayment = () => {
           claim?.userId,
           priceInRs,
           orderId,
+          couponId
         );
         const pidx = response.pidx;
 
@@ -147,8 +150,8 @@ const KhaltiPayment = () => {
               console.log('Return URL reached:', url);
               const status = url.includes('status=')
                 ? decodeURIComponent(
-                    url.split('status=')[1].split('&')[0].replace(/\+/g, '%20'),
-                  )
+                  url.split('status=')[1].split('&')[0].replace(/\+/g, '%20'),
+                )
                 : null;
               // Define the navigation action (Reset to Main Tab)
               const handleCompletion = () => {
@@ -233,8 +236,8 @@ const KhaltiPayment = () => {
                   statusModal.type === 'success'
                     ? '#dcfce7' // green-100
                     : statusModal.type === 'error'
-                    ? '#fee2e2' // red-100
-                    : '#dbeafe', // blue-100
+                      ? '#fee2e2' // red-100
+                      : '#dbeafe', // blue-100
               }}
             >
               {statusModal.type === 'success' && (
@@ -288,8 +291,8 @@ const KhaltiPayment = () => {
                   statusModal.type === 'success'
                     ? '#22c55e'
                     : statusModal.type === 'error'
-                    ? '#ef4444'
-                    : '#3b82f6',
+                      ? '#ef4444'
+                      : '#3b82f6',
               }}
             >
               <Text

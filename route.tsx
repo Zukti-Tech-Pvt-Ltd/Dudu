@@ -40,6 +40,7 @@ import NotificationScreen from './src/screens/notificationScreen/notificationScr
 import WalletScreen from './src/screens/walletScreen/walletScreen';
 import khaltiTopUp from './src/screens/payment/khaltiTopUp';
 import LotteryPrizeScreen from './src/screens/lottery/LotteryPrizeScreen';
+import CouponsScreen from './src/screens/coupon/couponsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -203,6 +204,11 @@ export function AppInner() {
             name="LotteryPrizeScreen"
             component={LotteryPrizeScreen}
             options={{ title: 'LotteryPrizeScreen ', headerShown: false }}
+          />
+          <Stack.Screen
+            name="CouponsScreen"
+            component={CouponsScreen}
+            options={{ title: 'CouponsScreen ', headerShown: false }}
           />
         </Stack.Navigator>
       </NavigationContainer>

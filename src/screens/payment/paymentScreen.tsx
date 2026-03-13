@@ -22,16 +22,19 @@ type RootStackParamList = {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
     orderId: number[];
+    couponId?: number;
   };
   ESewaTestPayment: {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
     orderId: number[];
+    couponId?: number;
   };
   KhaltiPayment: {
     selectedItems: { id: string; quantity: number; price: number }[];
     totalPrice: number;
     orderId: number[];
+    couponId?: number;
   };
 };
 
@@ -56,6 +59,7 @@ export default function PaymentMethodScreen() {
   const { selectedItems } = route.params;
   const { totalPrice } = route.params;
   const { orderId } = route.params;
+  const { couponId } = route.params;
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   // console.log('Received selectedItems:', selectedItems); // Commented out to reduce noise
@@ -114,6 +118,7 @@ export default function PaymentMethodScreen() {
                 selectedItems: selectedItems,
                 totalPrice: totalPrice,
                 orderId: orderId,
+                couponId: couponId,
               })
             }
             className="bg-white dark:bg-neutral-800 px-5 py-4 mx-4 my-1 rounded-xl flex-row items-center border border-gray-200 dark:border-neutral-700 shadow-sm"
@@ -122,7 +127,7 @@ export default function PaymentMethodScreen() {
               source={require('../../../assets/images/khalti.png')}
               className="w-7 h-7 mr-4"
               resizeMode="contain"
-              // Logos usually don't need tinting, but verify if your logo has a transparent background
+            // Logos usually don't need tinting, but verify if your logo has a transparent background
             />
             <View className="flex-1">
               <Text className="font-bold text-base text-black dark:text-white">

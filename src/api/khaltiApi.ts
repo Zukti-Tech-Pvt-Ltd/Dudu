@@ -5,6 +5,7 @@ export const khaltiPayment = async (
   userId?: number,
   totalPrice?: number,
   orderId?: number[],
+  couponId?: number,
 ) => {
   //   const selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
 
@@ -15,6 +16,7 @@ export const khaltiPayment = async (
     selectedItems,
     totalPrice,
     orderId,
+    couponId,
   });
   console.log('=========userId', userId);
 

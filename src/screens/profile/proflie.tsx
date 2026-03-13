@@ -157,25 +157,36 @@ export default function ProfileScreen({ navigation }: any) {
           route="MessageProfileScreen"
           isDarkMode={isDarkMode}
         />
+
         {userType === 'customer' && (
-          <AccountAction
-            icon={require('../../../assets/navIcons/orders.png')}
-            label="Order History"
-            description="View your order history"
-            navigation={navigation}
-            route="OrdersScreen"
-            isDarkMode={isDarkMode}
-          />
-        )}
-        {userType === 'customer' && (
-          <AccountAction
-            icon={require('../../../assets/navIcons/orders.png')}
-            label="TopUp"
-            description="TopUp your wallet"
-            navigation={navigation}
-            route="WalletScreen"
-            isDarkMode={isDarkMode}
-          />
+          <>
+            <AccountAction
+              icon={require('../../../assets/navIcons/orders.png')}
+              label="Order History"
+              description="View your order history"
+              navigation={navigation}
+              route="OrdersScreen"
+              isDarkMode={isDarkMode}
+            />
+
+            <AccountAction
+              icon={require('../../../assets/navIcons/topup.png')}
+              label="TopUp"
+              description="TopUp your wallet"
+              navigation={navigation}
+              route="WalletScreen"
+              isDarkMode={isDarkMode}
+            />
+            {/* --- ADDED COUPON SECTION --- */}
+            <AccountAction
+              icon={require('../../../assets/navIcons/ticket.png')}
+              label="My Coupons"
+              description="View your available discount coupons"
+              navigation={navigation}
+              route="CouponsScreen" // <-- Make sure to create this screen!
+              isDarkMode={isDarkMode}
+            />
+          </>
         )}
       </View>
 
